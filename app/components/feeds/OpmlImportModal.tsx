@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 interface ImportSummary {
   totalFeeds: number;
@@ -30,6 +30,19 @@ export function OpmlImportModal({ onClose, onSuccess }: OpmlImportModalProps) {
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [importErrors, setImportErrors] = useState<ImportError[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Handle click outside modal
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [onClose]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -133,15 +146,15 @@ export function OpmlImportModal({ onClose, onSuccess }: OpmlImportModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800">
+      <div ref={modalRef} className="w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-lg border border-border bg-background shadow-xl border-border bg-background">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4 border-border">
+          <h2 className="text-xl font-semibold text-foreground">
             Import Feeds (OPML)
           </h2>
           <button
             onClick={handleClose}
-            className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="rounded-lg p-2 hover:bg-muted"
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -172,35 +185,35 @@ export function OpmlImportModal({ onClose, onSuccess }: OpmlImportModalProps) {
 
               {/* Summary Stats */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
+                <div className="rounded-lg border border-border p-4 border-border">
                   <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                     {summary.subscriptionsAdded}
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <div className="text-sm text-foreground/70">
                     New Subscriptions
                   </div>
                 </div>
-                <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
+                <div className="rounded-lg border border-border p-4 border-border">
                   <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                     {summary.feedsCreated}
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <div className="text-sm text-foreground/70">
                     New Feeds Created
                   </div>
                 </div>
-                <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
+                <div className="rounded-lg border border-border p-4 border-border">
                   <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
                     {summary.categoriesCreated}
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <div className="text-sm text-foreground/70">
                     New Categories
                   </div>
                 </div>
-                <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
-                  <div className="text-2xl font-bold text-gray-600 dark:text-gray-400">
+                <div className="rounded-lg border border-border p-4 border-border">
+                  <div className="text-2xl font-bold text-foreground/70">
                     {summary.feedsSkipped}
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <div className="text-sm text-foreground/70">
                     Already Existing
                   </div>
                 </div>
@@ -234,7 +247,7 @@ export function OpmlImportModal({ onClose, onSuccess }: OpmlImportModalProps) {
                 className={`relative rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
                   dragActive
                     ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                    : "border-gray-300 hover:border-gray-400 dark:border-gray-600"
+                    : "border-border hover:border-primary border-border"
                 }`}
               >
                 <input
@@ -251,10 +264,10 @@ export function OpmlImportModal({ onClose, onSuccess }: OpmlImportModalProps) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-gray-100">
+                      <p className="font-medium text-foreground">
                         {file.name}
                       </p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-foreground/60">
                         {(file.size / 1024).toFixed(2)} KB
                       </p>
                     </div>
@@ -272,11 +285,11 @@ export function OpmlImportModal({ onClose, onSuccess }: OpmlImportModalProps) {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="mx-auto h-12 w-12 text-foreground/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
                     <div>
-                      <p className="text-gray-700 dark:text-gray-300">
+                      <p className="text-foreground/70">
                         Drag and drop your OPML file here, or{" "}
                         <button
                           onClick={() => fileInputRef.current?.click()}
@@ -285,7 +298,7 @@ export function OpmlImportModal({ onClose, onSuccess }: OpmlImportModalProps) {
                           browse
                         </button>
                       </p>
-                      <p className="mt-1 text-sm text-gray-500">
+                      <p className="mt-1 text-sm text-foreground/60">
                         Accepts .opml and .xml files (max 10MB)
                       </p>
                     </div>
@@ -318,11 +331,11 @@ export function OpmlImportModal({ onClose, onSuccess }: OpmlImportModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4 dark:border-gray-700">
+        <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4 border-border">
           <button
             onClick={handleClose}
             disabled={importing}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-100 disabled:opacity-50 dark:border-gray-600 dark:hover:bg-gray-700"
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50 border-border"
           >
             {success ? "Done" : "Cancel"}
           </button>

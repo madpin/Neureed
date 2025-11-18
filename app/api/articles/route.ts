@@ -13,10 +13,26 @@ import { prisma } from "@/src/lib/db";
  */
 export const GET = createHandler(
   async ({ query }) => {
-    const { page, limit, feedId, categoryId } = query;
+    const { page, limit, feedId, categoryId, sortBy, sortDirection } = query;
 
     // Check if user is authenticated
     const user = await getCurrentUser();
+    
+    // Get sort preferences from user preferences if not provided in query
+    let finalSortBy: "publishedAt" | "relevance" | "title" | "feed" | "updatedAt" = sortBy || "publishedAt";
+    let finalSortDirection: "asc" | "desc" = sortDirection || "desc";
+    
+    if (user?.id && !sortBy) {
+      const userPrefs = await prisma.userPreferences.findUnique({
+        where: { userId: user.id },
+        select: { articleSortOrder: true, articleSortDirection: true },
+      });
+      
+      if (userPrefs) {
+        finalSortBy = userPrefs.articleSortOrder as typeof finalSortBy;
+        finalSortDirection = userPrefs.articleSortDirection as typeof finalSortDirection;
+      }
+    }
     
     // Get articles (filtered by feed or category if specified)
     let articles, total;
@@ -62,11 +78,32 @@ export const GET = createHandler(
         ? { feedId, feed: { id: { in: subscribedFeedIds } } }
         : { feedId: { in: subscribedFeedIds } };
 
+      // Build orderBy clause based on sort option
+      let orderBy: any;
+      
+      if (finalSortBy === "relevance") {
+        // For relevance sorting, we'll fetch scores and sort in memory
+        // First get articles without specific ordering
+        orderBy = { publishedAt: "desc" };
+      } else if (finalSortBy === "title") {
+        orderBy = { title: finalSortDirection };
+      } else if (finalSortBy === "updatedAt") {
+        orderBy = { updatedAt: finalSortDirection };
+      } else if (finalSortBy === "feed") {
+        orderBy = [
+          { feed: { name: finalSortDirection } },
+          { publishedAt: "desc" }
+        ];
+      } else {
+        // Default to publishedAt
+        orderBy = { publishedAt: finalSortDirection };
+      }
+
       [articles, total] = await Promise.all([
         prisma.article.findMany({
           where,
           include: { feed: true },
-          orderBy: { publishedAt: "desc" },
+          orderBy,
           skip,
           take: limit,
         }),
@@ -78,11 +115,29 @@ export const GET = createHandler(
       const readStatuses = await getReadArticles(user.id, articleIds);
       const readMap = new Map(readStatuses.map((rs) => [rs.articleId, rs]));
 
-      const articlesWithReadStatus = articles.map((article) => ({
+      let articlesWithReadStatus = articles.map((article) => ({
         ...article,
         isRead: readMap.get(article.id)?.isRead || false,
         readAt: readMap.get(article.id)?.readAt,
       }));
+
+      // If sorting by relevance, fetch scores and sort
+      if (finalSortBy === "relevance") {
+        const { getArticleScores } = await import("@/src/lib/services/article-scoring-service");
+        const scores = await getArticleScores(user.id, articleIds);
+        const scoreMap = new Map(scores.map((s) => [s.articleId, s.score]));
+        
+        articlesWithReadStatus = articlesWithReadStatus
+          .map((article) => ({
+            ...article,
+            relevanceScore: scoreMap.get(article.id) || 0,
+          }))
+          .sort((a, b) => {
+            const scoreA = a.relevanceScore || 0;
+            const scoreB = b.relevanceScore || 0;
+            return finalSortDirection === "desc" ? scoreB - scoreA : scoreA - scoreB;
+          });
+      }
 
       return {
         articles: articlesWithReadStatus,
@@ -95,11 +150,18 @@ export const GET = createHandler(
       };
     } else {
       // For unauthenticated users, show all articles
+      const sortOptions = {
+        page,
+        limit,
+        sortBy: finalSortBy,
+        sortDirection: finalSortDirection,
+      };
+      
       if (feedId) {
         const { getArticlesByFeed } = await import("@/src/lib/services/article-service");
-        ({ articles, total } = await getArticlesByFeed(feedId, { page, limit }));
+        ({ articles, total } = await getArticlesByFeed(feedId, sortOptions));
       } else {
-        ({ articles, total } = await getRecentArticles({ page, limit }));
+        ({ articles, total } = await getRecentArticles(sortOptions));
       }
 
       return {

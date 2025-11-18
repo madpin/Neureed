@@ -5,6 +5,9 @@ import {
   shouldUpdateArticle,
   deduplicateParsedArticles,
 } from "./article-deduplication";
+import { cacheDeletePattern } from "@/src/lib/cache/cache-service";
+import { InvalidationPatterns } from "@/src/lib/cache/cache-keys";
+import { logger } from "@/src/lib/logger";
 import type { Article, Prisma } from "@prisma/client";
 import type { ParsedArticle } from "@/src/lib/feed-parser";
 
@@ -40,8 +43,9 @@ export interface PaginationOptions {
 export interface SearchOptions extends PaginationOptions {
   feedId?: string;
   since?: Date;
-  sort?: "publishedAt" | "createdAt";
-  order?: "asc" | "desc";
+  sortBy?: "publishedAt" | "relevance" | "title" | "feed" | "updatedAt";
+  sortDirection?: "asc" | "desc";
+  userId?: string; // Required for relevance sorting
 }
 
 export interface UpsertResult {
@@ -153,7 +157,8 @@ export async function createArticle(
       excerpt: data.excerpt,
       imageUrl: data.imageUrl,
       contentHash,
-      publishedAt: data.publishedAt,
+      // Ensure publishedAt always has a value, fallback to current time
+      publishedAt: data.publishedAt || new Date(),
     },
   });
 }
@@ -175,18 +180,44 @@ export async function getArticle(id: string) {
  */
 export async function getArticlesByFeed(
   feedId: string,
-  options: PaginationOptions = {}
+  options: SearchOptions = {}
 ): Promise<{ articles: Article[]; total: number }> {
   const page = options.page || 1;
   const limit = options.limit || 20;
   const skip = (page - 1) * limit;
+  const sortBy = options.sortBy || "publishedAt";
+  const sortDirection = options.sortDirection || "desc";
+
+  // Build orderBy clause based on sort option
+  let orderBy: Prisma.ArticleOrderByWithRelationInput | Prisma.ArticleOrderByWithRelationInput[];
+  
+  switch (sortBy) {
+    case "title":
+      orderBy = { title: sortDirection };
+      break;
+    case "updatedAt":
+      orderBy = { updatedAt: sortDirection };
+      break;
+    case "feed":
+      // For single feed, just sort by publishedAt
+      orderBy = { publishedAt: sortDirection };
+      break;
+    case "relevance":
+      // Fall back to publishedAt
+      orderBy = { publishedAt: "desc" };
+      break;
+    case "publishedAt":
+    default:
+      orderBy = { publishedAt: sortDirection };
+      break;
+  }
 
   const [articles, total] = await Promise.all([
     prisma.article.findMany({
       where: { feedId },
       skip,
       take: limit,
-      orderBy: { publishedAt: "desc" },
+      orderBy,
       include: {
         feed: true,
       },
@@ -203,17 +234,47 @@ export async function getArticlesByFeed(
  * Get recent articles across all feeds
  */
 export async function getRecentArticles(
-  options: PaginationOptions = {}
+  options: SearchOptions = {}
 ): Promise<{ articles: Article[]; total: number }> {
   const page = options.page || 1;
   const limit = options.limit || 50;
   const skip = (page - 1) * limit;
+  const sortBy = options.sortBy || "publishedAt";
+  const sortDirection = options.sortDirection || "desc";
+
+  // Build orderBy clause based on sort option
+  let orderBy: Prisma.ArticleOrderByWithRelationInput | Prisma.ArticleOrderByWithRelationInput[];
+  
+  switch (sortBy) {
+    case "title":
+      orderBy = { title: sortDirection };
+      break;
+    case "updatedAt":
+      orderBy = { updatedAt: sortDirection };
+      break;
+    case "feed":
+      // Sort by feed name, then by publishedAt
+      orderBy = [
+        { feed: { name: sortDirection } },
+        { publishedAt: "desc" }
+      ];
+      break;
+    case "relevance":
+      // Relevance sorting requires special handling in the API route
+      // Fall back to publishedAt here
+      orderBy = { publishedAt: "desc" };
+      break;
+    case "publishedAt":
+    default:
+      orderBy = { publishedAt: sortDirection };
+      break;
+  }
 
   const [articles, total] = await Promise.all([
     prisma.article.findMany({
       skip,
       take: limit,
-      orderBy: { publishedAt: "desc" },
+      orderBy,
       include: {
         feed: true,
       },
@@ -234,8 +295,8 @@ export async function searchArticles(
   const page = options.page || 1;
   const limit = options.limit || 20;
   const skip = (page - 1) * limit;
-  const sort = options.sort || "publishedAt";
-  const order = options.order || "desc";
+  const sortBy = options.sortBy || "publishedAt";
+  const sortDirection = options.sortDirection || "desc";
 
   const where: Prisma.ArticleWhereInput = {
     OR: [
@@ -253,12 +314,38 @@ export async function searchArticles(
     where.publishedAt = { gte: options.since };
   }
 
+  // Build orderBy clause based on sort option
+  let orderBy: Prisma.ArticleOrderByWithRelationInput | Prisma.ArticleOrderByWithRelationInput[];
+  
+  switch (sortBy) {
+    case "title":
+      orderBy = { title: sortDirection };
+      break;
+    case "updatedAt":
+      orderBy = { updatedAt: sortDirection };
+      break;
+    case "feed":
+      orderBy = [
+        { feed: { name: sortDirection } },
+        { publishedAt: "desc" }
+      ];
+      break;
+    case "relevance":
+      // Fall back to publishedAt for search
+      orderBy = { publishedAt: "desc" };
+      break;
+    case "publishedAt":
+    default:
+      orderBy = { publishedAt: sortDirection };
+      break;
+  }
+
   const [articles, total] = await Promise.all([
     prisma.article.findMany({
       where,
       skip,
       take: limit,
-      orderBy: { [sort]: order },
+      orderBy,
       include: {
         feed: true,
       },
@@ -285,10 +372,15 @@ export async function updateArticle(
     updateData.contentHash = generateContentHash(data.content);
   }
 
-  return prisma.article.update({
+  const article = await prisma.article.update({
     where: { id },
     data: updateData,
   });
+
+  // Invalidate cache for this article
+  await invalidateArticleCache(id);
+
+  return article;
 }
 
 /**
@@ -300,6 +392,12 @@ export async function markArticleAsUpdated(
 ): Promise<void> {
   const contentHash = generateContentHash(newContent);
 
+  // Get articles to invalidate cache
+  const articles = await prisma.article.findMany({
+    where: { guid },
+    select: { id: true },
+  });
+
   await prisma.article.updateMany({
     where: { guid },
     data: {
@@ -308,6 +406,11 @@ export async function markArticleAsUpdated(
       updatedAt: new Date(),
     },
   });
+
+  // Invalidate cache for all updated articles
+  for (const article of articles) {
+    await invalidateArticleCache(article.id);
+  }
 }
 
 /**
@@ -317,6 +420,9 @@ export async function deleteArticle(id: string): Promise<void> {
   await prisma.article.delete({
     where: { id },
   });
+
+  // Invalidate cache for this article
+  await invalidateArticleCache(id);
 }
 
 /**
@@ -332,6 +438,25 @@ export async function deleteOldArticles(beforeDate: Date): Promise<number> {
   });
 
   return result.count;
+}
+
+/**
+ * Invalidate all cached data for an article
+ * Called when article is updated or deleted
+ */
+async function invalidateArticleCache(articleId: string): Promise<void> {
+  try {
+    // Invalidate all cache entries related to this article
+    const pattern = InvalidationPatterns.article(articleId);
+    const deleted = await cacheDeletePattern(pattern);
+
+    if (deleted > 0) {
+      logger.info("Cache invalidated for article", { articleId, deleted });
+    }
+  } catch (error) {
+    logger.error("Failed to invalidate article cache", { articleId, error });
+    // Don't throw - cache invalidation failure shouldn't break the flow
+  }
 }
 
 /**

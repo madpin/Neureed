@@ -100,20 +100,20 @@ export function ArticleFeedbackSection({
 
   if (isLoading) {
     return (
-      <div className="mt-8 border-t border-gray-200 pt-8 dark:border-gray-700">
+      <div className="mt-8 border-t border-border pt-8 border-border">
         <div className="flex justify-center">
-          <div className="h-20 w-64 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-700" />
+          <div className="h-20 w-64 animate-pulse rounded-lg bg-muted bg-background" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="mt-8 border-t border-gray-200 pt-8 dark:border-gray-700">
+    <div className="mt-8 border-t border-border pt-8 border-border">
       <div className="flex justify-center">
         <div className="inline-block">
           <div className="text-center">
-            <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+            <p className="mb-4 text-sm text-foreground/70">
               Help us learn your preferences
             </p>
             <div className="flex items-center gap-4">
@@ -123,7 +123,7 @@ export function ArticleFeedbackSection({
                 className={`flex flex-col items-center gap-2 rounded-lg border-2 px-8 py-4 transition-all ${
                   feedback === 1.0
                     ? "border-green-500 bg-green-50 dark:bg-green-900/20"
-                    : "border-gray-300 hover:border-green-500 hover:bg-green-50 dark:border-gray-600 dark:hover:border-green-500 dark:hover:bg-green-900/20"
+                    : "border-border hover:border-green-500 hover:bg-green-50 border-border dark:hover:border-green-500 dark:hover:bg-green-900/20"
                 } ${isSubmitting ? "cursor-not-allowed opacity-50" : ""}`}
               >
                 <svg
@@ -147,7 +147,7 @@ export function ArticleFeedbackSection({
                 className={`flex flex-col items-center gap-2 rounded-lg border-2 px-8 py-4 transition-all ${
                   feedback === -1.0
                     ? "border-red-500 bg-red-50 dark:bg-red-900/20"
-                    : "border-gray-300 hover:border-red-500 hover:bg-red-50 dark:border-gray-600 dark:hover:border-red-500 dark:hover:bg-red-900/20"
+                    : "border-border hover:border-red-500 hover:bg-red-50 border-border dark:hover:border-red-500 dark:hover:bg-red-900/20"
                 } ${isSubmitting ? "cursor-not-allowed opacity-50" : ""}`}
               >
                 <svg

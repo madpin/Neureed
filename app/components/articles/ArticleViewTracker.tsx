@@ -6,9 +6,10 @@ import { useRouter } from "next/navigation";
 
 interface ArticleViewTrackerProps {
   articleId: string;
+  onReadStatusChange?: () => void;
 }
 
-export function ArticleViewTracker({ articleId }: ArticleViewTrackerProps) {
+export function ArticleViewTracker({ articleId, onReadStatusChange }: ArticleViewTrackerProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const viewStartTime = useRef<number | null>(null);
@@ -76,6 +77,8 @@ export function ArticleViewTracker({ articleId }: ArticleViewTrackerProps) {
 
           if (readResponse.ok) {
             console.log("Article automatically marked as read");
+            // Trigger sidebar refresh
+            onReadStatusChange?.();
           } else {
             console.error("Failed to mark article as read:", readResponse.status);
           }

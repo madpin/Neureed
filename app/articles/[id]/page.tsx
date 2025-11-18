@@ -23,10 +23,10 @@ export default function ArticlePage() {
   }, [articleId, router, searchParams]);
 
   return (
-    <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
+    <div className="flex h-screen items-center justify-center bg-muted bg-background">
       <div className="text-center">
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
-        <p className="text-gray-600 dark:text-gray-400">Loading article...</p>
+        <p className="text-foreground/70">Loading article...</p>
       </div>
     </div>
   );

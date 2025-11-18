@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Feed, Category } from "@prisma/client";
 
 interface FeedWithCategories extends Feed {
@@ -22,10 +22,23 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<string>>(new Set());
   const [selectedFeedIds, setSelectedFeedIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadData();
   }, []);
+
+  // Handle click outside modal
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [onClose]);
 
   const loadData = async () => {
     try {
@@ -154,15 +167,15 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800">
+      <div ref={modalRef} className="w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-lg border border-border bg-background shadow-xl border-border bg-background">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4 border-border">
+          <h2 className="text-xl font-semibold text-foreground">
             Export Feeds (OPML)
           </h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="rounded-lg p-2 hover:bg-muted"
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -184,7 +197,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
             <div className="space-y-6">
               {/* Export Mode Selection */}
               <div>
-                <label className="mb-3 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="mb-3 block text-sm font-medium text-foreground/70">
                   What would you like to export?
                 </label>
                 <div className="space-y-2">
@@ -197,7 +210,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
                       onChange={(e) => setExportMode(e.target.value as any)}
                       className="h-4 w-4 text-blue-600"
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                    <span className="text-sm text-foreground/70">
                       All feeds ({feeds.length})
                     </span>
                   </label>
@@ -210,7 +223,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
                       onChange={(e) => setExportMode(e.target.value as any)}
                       className="h-4 w-4 text-blue-600"
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                    <span className="text-sm text-foreground/70">
                       Select by categories
                     </span>
                   </label>
@@ -223,7 +236,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
                       onChange={(e) => setExportMode(e.target.value as any)}
                       className="h-4 w-4 text-blue-600"
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                    <span className="text-sm text-foreground/70">
                       Select individual feeds
                     </span>
                   </label>
@@ -234,7 +247,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
               {exportMode === "categories" && (
                 <div>
                   <div className="mb-3 flex items-center justify-between">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <label className="text-sm font-medium text-foreground/70">
                       Select Categories
                     </label>
                     <div className="flex gap-2">
@@ -244,7 +257,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
                       >
                         Select All
                       </button>
-                      <span className="text-xs text-gray-400">|</span>
+                      <span className="text-xs text-foreground/50">|</span>
                       <button
                         onClick={deselectAllCategories}
                         className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400"
@@ -253,9 +266,9 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
                       </button>
                     </div>
                   </div>
-                  <div className="max-h-48 overflow-y-auto space-y-2 rounded-lg border border-gray-200 p-3 dark:border-gray-600">
+                  <div className="max-h-48 overflow-y-auto space-y-2 rounded-lg border border-border p-3 border-border">
                     {categories.length === 0 ? (
-                      <p className="text-sm text-gray-500">No categories found</p>
+                      <p className="text-sm text-foreground/60">No categories found</p>
                     ) : (
                       categories.map((category) => (
                         <label key={category.id} className="flex items-center gap-3 cursor-pointer">
@@ -265,7 +278,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
                             onChange={() => toggleCategory(category.id)}
                             className="h-4 w-4 rounded text-blue-600"
                           />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                          <span className="text-sm text-foreground/70">
                             {category.name}
                           </span>
                         </label>
@@ -279,7 +292,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
               {exportMode === "feeds" && (
                 <div>
                   <div className="mb-3 flex items-center justify-between">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <label className="text-sm font-medium text-foreground/70">
                       Select Feeds
                     </label>
                     <div className="flex gap-2">
@@ -289,7 +302,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
                       >
                         Select All
                       </button>
-                      <span className="text-xs text-gray-400">|</span>
+                      <span className="text-xs text-foreground/50">|</span>
                       <button
                         onClick={deselectAllFeeds}
                         className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400"
@@ -298,7 +311,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
                       </button>
                     </div>
                   </div>
-                  <div className="max-h-64 overflow-y-auto space-y-2 rounded-lg border border-gray-200 p-3 dark:border-gray-600">
+                  <div className="max-h-64 overflow-y-auto space-y-2 rounded-lg border border-border p-3 border-border">
                     {feeds.map((userFeed) => (
                       <label key={userFeed.feed.id} className="flex items-center gap-3 cursor-pointer">
                         <input
@@ -307,7 +320,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
                           onChange={() => toggleFeed(userFeed.feed.id)}
                           className="h-4 w-4 rounded text-blue-600"
                         />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                        <span className="text-sm text-foreground/70">
                           {userFeed.feed.name}
                         </span>
                       </label>
@@ -327,11 +340,11 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4 dark:border-gray-700">
+        <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4 border-border">
           <button
             onClick={onClose}
             disabled={exporting}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-100 disabled:opacity-50 dark:border-gray-600 dark:hover:bg-gray-700"
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50 border-border"
           >
             Cancel
           </button>

@@ -10,6 +10,7 @@ type Position = "right" | "left" | "top" | "bottom";
 
 interface ReadingPanelLayoutProps {
   children: ReactNode | ((props: { onArticleSelect?: (articleId: string) => void }) => ReactNode);
+  onArticleReadStatusChange?: () => void;
 }
 
 interface UserPreferences {
@@ -18,7 +19,7 @@ interface UserPreferences {
   readingPanelSize: number;
 }
 
-export function ReadingPanelLayout({ children }: ReadingPanelLayoutProps) {
+export function ReadingPanelLayout({ children, onArticleReadStatusChange }: ReadingPanelLayoutProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -204,7 +205,11 @@ export function ReadingPanelLayout({ children }: ReadingPanelLayoutProps) {
         onResize={handleResize}
         panel={
           <div className="relative h-full">
-            <ArticlePanel articleId={selectedArticleId} onClose={handleClosePanel} />
+            <ArticlePanel 
+              articleId={selectedArticleId} 
+              onClose={handleClosePanel}
+              onReadStatusChange={onArticleReadStatusChange}
+            />
             
             {/* Position switcher */}
             <div className="absolute bottom-4 right-4 z-10">
@@ -277,11 +282,11 @@ function PositionSwitcher({ currentPosition, onChange }: PositionSwitcherProps) 
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="rounded-lg border border-gray-300 bg-white p-2 shadow-lg hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
+        className="rounded-lg border border-border bg-background p-2 shadow-lg hover:bg-muted"
         title="Change panel position"
       >
         <svg
-          className="h-5 w-5 text-gray-700 dark:text-gray-300"
+          className="h-5 w-5 text-foreground/70"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -304,7 +309,7 @@ function PositionSwitcher({ currentPosition, onChange }: PositionSwitcherProps) 
           />
           
           {/* Menu */}
-          <div className="absolute bottom-full right-0 mb-2 z-50 w-40 rounded-lg border border-gray-300 bg-white shadow-xl dark:border-gray-600 dark:bg-gray-800">
+          <div className="absolute bottom-full right-0 mb-2 z-50 w-40 rounded-lg border border-border bg-background shadow-xl">
             <div className="p-1">
               {positions.map((pos) => (
                 <button
@@ -313,10 +318,10 @@ function PositionSwitcher({ currentPosition, onChange }: PositionSwitcherProps) 
                     onChange(pos.value);
                     setIsOpen(false);
                   }}
-                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-muted ${
                     currentPosition === pos.value
                       ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
-                      : "text-gray-700 dark:text-gray-300"
+                      : "text-foreground/70"
                   }`}
                 >
                   {pos.icon}

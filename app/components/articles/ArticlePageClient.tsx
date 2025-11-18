@@ -9,6 +9,7 @@ interface ReadingPreferences {
   readingFontSize: number;
   readingLineHeight: number;
   readingParagraphSpacing: number;
+  breakLineSpacing: number;
   showReadingTime: boolean;
 }
 
@@ -21,6 +22,8 @@ function getReadingStyles(preferences: ReadingPreferences | null): React.CSSProp
     lineHeight: preferences.readingLineHeight,
     // @ts-ignore - CSS custom properties
     '--paragraph-spacing': `${preferences.readingParagraphSpacing}rem`,
+    // @ts-ignore - CSS custom properties
+    '--break-line-spacing': `${preferences.breakLineSpacing}rem`,
   };
 }
 
@@ -65,6 +68,7 @@ export function ArticlePageClient({
               readingFontSize: prefs.readingFontSize || 18,
               readingLineHeight: prefs.readingLineHeight || 1.7,
               readingParagraphSpacing: prefs.readingParagraphSpacing || 1.5,
+              breakLineSpacing: prefs.breakLineSpacing || 0.75,
               showReadingTime: prefs.showReadingTime !== undefined ? prefs.showReadingTime : true,
             });
           }
@@ -77,6 +81,7 @@ export function ArticlePageClient({
           readingFontSize: 18,
           readingLineHeight: 1.7,
           readingParagraphSpacing: 1.5,
+          breakLineSpacing: 0.75,
           showReadingTime: true,
         });
       }
@@ -122,7 +127,7 @@ export function ArticlePageClient({
 
       {/* Main Content (Article body) */}
       <div
-        className="[&>div]:prose [&>div]:prose-lg [&>div]:max-w-none [&>div]:dark:prose-invert [&_p]:mb-[var(--paragraph-spacing)]"
+        className="[&>div]:prose [&>div]:prose-lg [&>div]:max-w-none [&>div]:dark:prose-invert [&_p]:mb-[var(--paragraph-spacing)] [&_br]:block [&_br]:mb-[var(--break-line-spacing)]"
         style={{
           ...getReadingStyles(preferences),
         }}

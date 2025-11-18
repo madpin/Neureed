@@ -83,14 +83,14 @@ export default function SearchPage() {
   return (
     <ReadingPanelLayout>
       {({ onArticleSelect }: { onArticleSelect?: (articleId: string) => void }) => (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="min-h-screen bg-background text-foreground">
           <div className="mx-auto max-w-7xl px-4 py-8">
             {/* Header */}
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+              <h1 className="text-3xl font-bold text-foreground">
                 Semantic Search
               </h1>
-              <p className="mt-2 text-gray-600 dark:text-gray-400">
+              <p className="mt-2 text-foreground/70">
                 Search articles using AI-powered semantic understanding
               </p>
             </div>
@@ -99,12 +99,12 @@ export default function SearchPage() {
             <form onSubmit={handleSubmit} className="mb-8">
           <div className="flex gap-4">
             <div className="flex-1">
-              <input
+                <input
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="What are you looking for?"
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                className="w-full rounded-lg border border-border bg-muted px-4 py-3 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
             <button
@@ -117,7 +117,7 @@ export default function SearchPage() {
             <button
               type="button"
               onClick={() => setShowFilters(!showFilters)}
-              className="rounded-lg border border-gray-300 px-4 py-3 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
+              className="rounded-lg border border-border px-4 py-3 hover:bg-muted"
             >
               <svg
                 className="h-5 w-5"
@@ -137,10 +137,10 @@ export default function SearchPage() {
 
           {/* Filters */}
           {showFilters && (
-            <div className="mt-4 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+            <div className="mt-4 rounded-lg border border-border bg-background p-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <label className="mb-2 block text-sm font-medium text-foreground/70">
                     Search Mode
                   </label>
                   <select
@@ -148,7 +148,7 @@ export default function SearchPage() {
                     onChange={(e) =>
                       setMode(e.target.value as "semantic" | "hybrid")
                     }
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                    className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                   >
                     <option value="semantic">Semantic Only</option>
                     <option value="hybrid">Hybrid (Semantic + Keyword)</option>
@@ -156,7 +156,7 @@ export default function SearchPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <label className="mb-2 block text-sm font-medium text-foreground/70">
                     Minimum Similarity: {Math.round(minScore * 100)}%
                   </label>
                   <input
@@ -178,11 +178,11 @@ export default function SearchPage() {
         {results.length > 0 && (
           <div>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <h2 className="text-lg font-semibold text-foreground">
                 {results.length} {results.length === 1 ? "result" : "results"}{" "}
                 found
               </h2>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
+              <div className="text-sm text-foreground/70">
                 Mode: {mode === "semantic" ? "Semantic" : "Hybrid"}
               </div>
             </div>
@@ -209,9 +209,9 @@ export default function SearchPage() {
 
         {/* No Results */}
         {!isSearching && query.length >= 2 && results.length === 0 && (
-          <div className="rounded-lg border border-gray-200 bg-white p-12 text-center dark:border-gray-700 dark:bg-gray-800">
+          <div className="rounded-lg border border-border bg-background p-12 text-center">
             <svg
-              className="mx-auto h-12 w-12 text-gray-400"
+              className="mx-auto h-12 w-12 text-foreground/50"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -223,10 +223,10 @@ export default function SearchPage() {
                 d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-gray-100">
+            <h3 className="mt-4 text-lg font-medium text-foreground">
               No results found
             </h3>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">
+            <p className="mt-2 text-foreground/70">
               Try adjusting your search query or lowering the similarity
               threshold
             </p>
@@ -235,9 +235,9 @@ export default function SearchPage() {
 
         {/* Empty State */}
         {!query && results.length === 0 && (
-          <div className="rounded-lg border border-gray-200 bg-white p-12 text-center dark:border-gray-700 dark:bg-gray-800">
+          <div className="rounded-lg border border-border bg-background p-12 text-center">
             <svg
-              className="mx-auto h-12 w-12 text-gray-400"
+              className="mx-auto h-12 w-12 text-foreground/50"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -249,10 +249,10 @@ export default function SearchPage() {
                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
               />
             </svg>
-            <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-gray-100">
+            <h3 className="mt-4 text-lg font-medium text-foreground">
               Start searching
             </h3>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">
+            <p className="mt-2 text-foreground/70">
               Enter a query to find articles using semantic search
             </p>
           </div>

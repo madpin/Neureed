@@ -1,19 +1,24 @@
 import cron from "node-cron";
 import { cleanupOldArticles, vacuumDatabase } from "../services/article-cleanup-service";
+import { logger } from "@/src/lib/logger";
 
 /**
  * Cron job for cleaning up old articles
+ * This runs system-wide cleanup for feeds not subscribed by any user
+ * Note: Per-user cleanup happens automatically after each feed refresh
  */
 
 let isRunning = false;
 let scheduledTask: cron.ScheduledTask | null = null;
 
 /**
- * Execute cleanup job
+ * Execute cleanup job (system-wide)
+ * Cleans up articles using system defaults
+ * Note: This is for system-wide maintenance. Per-user cleanup runs automatically after feed refresh.
  */
 export async function executeCleanupJob(): Promise<void> {
   if (isRunning) {
-    console.log("Cleanup job already running, skipping...");
+    logger.info("Cleanup job already running, skipping...");
     return;
   }
 
@@ -21,18 +26,18 @@ export async function executeCleanupJob(): Promise<void> {
   const startTime = Date.now();
 
   try {
-    console.log("Starting article cleanup job...");
+    logger.info("Starting system-wide article cleanup job (per-user cleanup runs automatically after feed refresh)...");
 
     const result = await cleanupOldArticles({
-      maxAge: 90, // 90 days
-      maxArticlesPerFeed: 1000,
+      maxAge: 90, // 90 days (system default)
+      maxArticlesPerFeed: 500, // 500 articles (system default)
       preserveStarred: true,
       dryRun: false,
     });
 
     const duration = Date.now() - startTime;
 
-    console.log("Article cleanup job completed:", {
+    logger.info("Article cleanup job completed", {
       duration: `${duration}ms`,
       deleted: result.deleted,
       preserved: result.preserved,
@@ -42,11 +47,11 @@ export async function executeCleanupJob(): Promise<void> {
 
     // Vacuum database after cleanup
     if (result.deleted > 100) {
-      console.log("Running database vacuum...");
+      logger.info("Running database vacuum...");
       await vacuumDatabase();
     }
   } catch (error) {
-    console.error("Cleanup job failed:", error);
+    logger.error("Cleanup job failed", { error });
   } finally {
     isRunning = false;
   }
@@ -55,12 +60,13 @@ export async function executeCleanupJob(): Promise<void> {
 /**
  * Start the cleanup cron job
  * Default: daily at 3 AM
+ * Note: This is for system-wide cleanup. Per-user cleanup runs automatically after feed refresh.
  */
 export function startCleanupScheduler(
   cronExpression = "0 3 * * *" // Daily at 3 AM
 ): void {
   if (scheduledTask) {
-    console.log("Cleanup scheduler already running");
+    logger.info("Cleanup scheduler already running");
     return;
   }
 
@@ -73,7 +79,7 @@ export function startCleanupScheduler(
     await executeCleanupJob();
   });
 
-  console.log(`Cleanup scheduler started with expression: ${cronExpression}`);
+  logger.info(`Cleanup scheduler started with expression: ${cronExpression}`);
 }
 
 /**
@@ -83,7 +89,7 @@ export function stopCleanupScheduler(): void {
   if (scheduledTask) {
     scheduledTask.stop();
     scheduledTask = null;
-    console.log("Cleanup scheduler stopped");
+    logger.info("Cleanup scheduler stopped");
   }
 }
 

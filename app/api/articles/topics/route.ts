@@ -18,10 +18,12 @@ export const GET = createHandler(async ({ request }) => {
   const { searchParams } = new URL(request.url);
   const topic = searchParams.get("topic");
   const limit = parseInt(searchParams.get("limit") || "50");
+  const sortBy = searchParams.get("sortBy") || "publishedAt";
+  const sortDirection = searchParams.get("sortDirection") || "desc";
 
   if (topic) {
     // Get articles by topic
-    const articles = await getArticlesByTopic(topic, limit);
+    const articles = await getArticlesByTopic(topic, limit, sortBy as any, sortDirection as any);
     return { topic, articles };
   } else {
     // Get all topics

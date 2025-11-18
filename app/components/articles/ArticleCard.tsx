@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import type { Article, Feed } from "@prisma/client";
 import { FeedbackButtons } from "./FeedbackButtons";
+import { formatSmartDate, toISOString } from "@/src/lib/date-utils";
 
 interface ArticleWithFeed extends Article {
   feed: Feed;
@@ -15,7 +16,7 @@ interface ArticleWithFeed extends Article {
 interface ArticleCardProps {
   article: ArticleWithFeed;
   variant?: "compact" | "expanded";
-  onReadStatusChange?: (articleId: string, isRead: boolean) => void;
+  onReadStatusChange?: (articleId?: string, isRead?: boolean) => void;
   onArticleClick?: (articleId: string) => void;
 }
 
@@ -42,23 +43,6 @@ export function ArticleCard({ article, variant = "compact", onReadStatusChange, 
   };
 
   const articleLink = getArticleLink();
-
-  const formatDate = (date: Date | string | null) => {
-    if (!date) return "Unknown date";
-    const d = new Date(date);
-    if (isNaN(d.getTime())) return "Unknown date";
-    
-    const now = new Date();
-    const diffMs = now.getTime() - d.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return d.toLocaleDateString();
-  };
 
   const toggleReadStatus = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -133,8 +117,8 @@ export function ArticleCard({ article, variant = "compact", onReadStatusChange, 
               <span className="font-medium">{article.feed.name}</span>
             )}
             <span>•</span>
-            <time dateTime={article.publishedAt ? new Date(article.publishedAt).toISOString() : undefined}>
-              {formatDate(article.publishedAt)}
+            <time dateTime={toISOString(article.publishedAt, article.createdAt)}>
+              {formatSmartDate(article.publishedAt, article.createdAt)}
             </time>
             {article.author && (
               <>

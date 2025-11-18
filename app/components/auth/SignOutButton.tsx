@@ -10,7 +10,7 @@ interface SignOutButtonProps {
 }
 
 export function SignOutButton({
-  className = "rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800",
+  className = "rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground/80 hover:bg-muted",
   children = "Sign Out",
   showConfirmation = true,
 }: SignOutButtonProps) {
@@ -39,7 +39,7 @@ export function SignOutButton({
         </button>
         <button
           onClick={handleCancel}
-          className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+          className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground/80 hover:bg-muted"
         >
           Cancel
         </button>

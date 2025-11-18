@@ -76,12 +76,12 @@ export function AddFeedForm({ onAdd, onClose }: AddFeedFormProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
+      <div className="w-full max-w-md rounded-lg bg-background p-6 shadow-xl bg-background">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold">Add New Feed</h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="rounded-lg p-1 hover:bg-muted"
           >
             <svg
               className="h-5 w-5"
@@ -103,7 +103,7 @@ export function AddFeedForm({ onAdd, onClose }: AddFeedFormProps) {
           <div>
             <label
               htmlFor="url"
-              className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+              className="mb-1 block text-sm font-medium text-foreground/70"
             >
               Feed URL
             </label>
@@ -114,14 +114,14 @@ export function AddFeedForm({ onAdd, onClose }: AddFeedFormProps) {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://example.com/feed.xml"
-                className="flex-1 rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                className="flex-1 rounded-lg border border-border px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border-border bg-background"
                 required
               />
               <button
                 type="button"
                 onClick={handleValidate}
                 disabled={!url || isValidating}
-                className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium hover:bg-gray-200 disabled:opacity-50 dark:bg-gray-700 dark:hover:bg-gray-600"
+                className="rounded-lg bg-muted px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50 bg-background"
               >
                 {isValidating ? "..." : "Validate"}
               </button>
@@ -182,7 +182,7 @@ export function AddFeedForm({ onAdd, onClose }: AddFeedFormProps) {
           <div>
             <label
               htmlFor="name"
-              className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+              className="mb-1 block text-sm font-medium text-foreground/70"
             >
               Feed Name (optional)
             </label>
@@ -192,7 +192,7 @@ export function AddFeedForm({ onAdd, onClose }: AddFeedFormProps) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Auto-detected from feed"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+              className="w-full rounded-lg border border-border px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border-border bg-background"
             />
           </div>
 
@@ -200,7 +200,7 @@ export function AddFeedForm({ onAdd, onClose }: AddFeedFormProps) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-lg border border-gray-300 px-4 py-2 font-medium hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700"
+              className="flex-1 rounded-lg border border-border px-4 py-2 font-medium hover:bg-muted"
             >
               Cancel
             </button>

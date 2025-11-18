@@ -4,6 +4,7 @@ import {
 } from "@/src/lib/services/user-preferences-service";
 import { z } from "zod";
 import { createHandler } from "@/src/lib/api-handler";
+import { articleSortOrderSchema, articleSortDirectionSchema } from "@/src/lib/validations/article-validation";
 
 /**
  * GET /api/user/preferences
@@ -44,7 +45,15 @@ const preferencesSchema = z.object({
   readingFontSize: z.number().int().min(12).max(32).optional(),
   readingLineHeight: z.number().min(1.2).max(2.5).optional(),
   readingParagraphSpacing: z.number().min(0.5).max(3).optional(),
+  breakLineSpacing: z.number().min(0.25).max(2).optional(),
   showReadingTime: z.boolean().optional(),
+  // Feed Refresh & Cleanup Settings
+  defaultRefreshInterval: z.number().int().min(15).max(1440).optional(),
+  defaultMaxArticlesPerFeed: z.number().int().min(50).max(5000).optional(),
+  defaultMaxArticleAge: z.number().int().min(1).max(365).optional(),
+  // Article Sorting Settings
+  articleSortOrder: articleSortOrderSchema.optional(),
+  articleSortDirection: articleSortDirectionSchema.optional(),
 });
 
 /**

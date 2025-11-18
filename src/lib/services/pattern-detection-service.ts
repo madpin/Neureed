@@ -1,5 +1,8 @@
 import { prisma } from "../db";
 import { stripHtml } from "../content-processor";
+import { logger } from "../logger";
+import { cacheDeletePattern } from "../cache/cache-service";
+import { InvalidationPatterns } from "../cache/cache-keys";
 import type { UserPattern } from "@prisma/client";
 
 /**
@@ -260,6 +263,9 @@ export async function updateUserPatterns(
   // Apply pattern decay and cleanup
   await applyPatternDecay(userId);
   await cleanupPatterns(userId);
+
+  // Invalidate cached scores for this user since patterns have changed
+  await invalidateUserCache(userId);
 }
 
 /**
@@ -284,6 +290,33 @@ export async function getUserPatternsMap(
 ): Promise<Map<string, number>> {
   const patterns = await getUserPatterns(userId);
   return new Map(patterns.map((p) => [p.keyword, p.weight]));
+}
+
+/**
+ * Invalidate all cached data for a user
+ * Called when user patterns change
+ */
+async function invalidateUserCache(userId: string): Promise<void> {
+  try {
+    // Invalidate all article scores for this user
+    const scoresPattern = InvalidationPatterns.userScores(userId);
+    const scoresDeleted = await cacheDeletePattern(scoresPattern);
+
+    // Invalidate user patterns cache
+    const patternsPattern = InvalidationPatterns.userPatterns(userId);
+    const patternsDeleted = await cacheDeletePattern(patternsPattern);
+
+    if (scoresDeleted > 0 || patternsDeleted > 0) {
+      logger.info("Cache invalidated for user", {
+        userId,
+        scoresDeleted,
+        patternsDeleted,
+      });
+    }
+  } catch (error) {
+    logger.error("Failed to invalidate user cache", { userId, error });
+    // Don't throw - cache invalidation failure shouldn't break the flow
+  }
 }
 
 /**

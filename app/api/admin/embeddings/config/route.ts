@@ -10,6 +10,7 @@ import {
   getEmbeddingConfig,
   testEmbeddingProvider,
 } from "@/src/lib/services/embedding-service";
+import { getEmbeddingConfiguration } from "@/src/lib/services/admin-settings-service";
 import { env } from "@/src/env";
 
 /**
@@ -18,6 +19,7 @@ import { env } from "@/src/env";
 export async function GET() {
   try {
     const config = getEmbeddingConfig();
+    const embeddingConfig = await getEmbeddingConfiguration();
 
     // Test both providers
     const openaiTest = await testEmbeddingProvider("openai").catch(() => ({
@@ -42,7 +44,9 @@ export async function GET() {
         openai: openaiTest,
         local: localTest,
       },
-      autoGenerate: env.EMBEDDING_AUTO_GENERATE,
+      autoGenerate: embeddingConfig.autoGenerate,
+      autoGenerateSource: embeddingConfig.autoGenerateSource,
+      envDefault: env.EMBEDDING_AUTO_GENERATE,
     });
   } catch (error) {
     logger.error("Failed to get embedding config", { error });

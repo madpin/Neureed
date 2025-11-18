@@ -21,6 +21,7 @@ const createCategorySchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().max(500).optional(),
   settings: z.record(z.any()).optional(),
+  icon: z.string().optional(),
 });
 
 /**
@@ -29,13 +30,14 @@ const createCategorySchema = z.object({
  */
 export const POST = createHandler(
   async ({ body, session }) => {
-    const { name, description, settings } = body;
+    const { name, description, settings, icon } = body;
 
     const category = await createUserCategory(
       session!.user!.id,
       name,
       description,
-      settings
+      settings,
+      icon
     );
 
     return {

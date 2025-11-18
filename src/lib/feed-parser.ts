@@ -196,7 +196,17 @@ function parseArticle(item: Parser.Item): ParsedArticle {
   const imageUrl = extractArticleImage(item, content);
   
   // Parse published date (Atom uses isoDate, RSS uses pubDate)
-  const publishedAt = item.isoDate ? new Date(item.isoDate) : item.pubDate ? new Date(item.pubDate) : undefined;
+  // If no date is provided, use current time as fallback
+  let publishedAt: Date | undefined;
+  if (item.isoDate) {
+    publishedAt = new Date(item.isoDate);
+  } else if (item.pubDate) {
+    publishedAt = new Date(item.pubDate);
+  } else {
+    // Fallback to current time if no date is provided by the feed
+    // This ensures articles always have a timestamp for sorting
+    publishedAt = new Date();
+  }
 
   // Extract author (handle both RSS and Atom formats)
   const author = extractAuthor(item);
@@ -217,7 +227,8 @@ function parseArticle(item: Parser.Item): ParsedArticle {
     content: sanitizeHtml(decodedContent),
     excerpt: decodedExcerpt ? sanitizeHtml(decodedExcerpt) : undefined,
     author: decodedAuthor || undefined,
-    publishedAt: publishedAt && !isNaN(publishedAt.getTime()) ? publishedAt : undefined,
+    // Always include publishedAt (validated or fallback to current time)
+    publishedAt: publishedAt && !isNaN(publishedAt.getTime()) ? publishedAt : new Date(),
     imageUrl,
   };
 }

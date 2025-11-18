@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { Feed } from "@prisma/client";
-import { FeedSettingsPanel } from "./FeedSettingsPanel";
+import { FeedManagementModal } from "./FeedManagementModal";
 import { Tooltip } from "../layout/Tooltip";
+import { IconPicker } from "./IconPicker";
 
 interface FeedInfo {
   id: string;
@@ -14,12 +15,14 @@ interface FeedInfo {
   feedId?: string;
   articleCount?: number;
   unreadCount?: number;
+  lastFetched?: Date | string | null;
 }
 
 interface CategoryInfo {
   id: string;
   name: string;
   description: string | null;
+  icon?: string | null;
   feedCount: number;
   feeds?: FeedInfo[];
 }
@@ -33,6 +36,7 @@ interface CategoryListProps {
   onUnsubscribeFeed: (feedId: string) => void;
   isCollapsed?: boolean;
   onSelectCategory?: (categoryId: string) => void;
+  refreshTrigger?: number;
 }
 
 export function CategoryList({
@@ -44,21 +48,31 @@ export function CategoryList({
   onUnsubscribeFeed,
   isCollapsed = false,
   onSelectCategory,
+  refreshTrigger,
 }: CategoryListProps) {
   const router = useRouter();
   const [categories, setCategories] = useState<CategoryInfo[]>([]);
   const [uncategorizedFeeds, setUncategorizedFeeds] = useState<FeedInfo[]>([]);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [expandedFeedId, setExpandedFeedId] = useState<string | null>(null);
-  const [settingsFeedId, setSettingsFeedId] = useState<string | null>(null);
+  const [managementModalState, setManagementModalState] = useState<{
+    isOpen: boolean;
+    view?: 'feed' | 'category' | 'overview';
+    feedId?: string;
+    categoryId?: string;
+  }>({ isOpen: false });
   const [categoryActionsId, setCategoryActionsId] = useState<string | null>(null);
-  const [settingsCategoryId, setSettingsCategoryId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [draggedCategoryId, setDraggedCategoryId] = useState<string | null>(null);
   const [dragOverCategoryId, setDragOverCategoryId] = useState<string | null>(null);
   const [draggedFeedId, setDraggedFeedId] = useState<string | null>(null);
   const [draggedFeedUserFeedId, setDraggedFeedUserFeedId] = useState<string | null>(null);
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [iconPickerState, setIconPickerState] = useState<{
+    isOpen: boolean;
+    categoryId?: string;
+    currentIcon?: string;
+  }>({ isOpen: false });
 
   const handleSelectFeed = (feedId: string | null) => {
     if (onSelectFeed) {
@@ -97,7 +111,7 @@ export function CategoryList({
 
   useEffect(() => {
     loadFeedsGroupedByCategory();
-  }, [isCollapsed]); // Reload when collapsed state changes
+  }, [isCollapsed, refreshTrigger]); // Reload when collapsed state or refresh trigger changes
 
   // Auto-collapse all categories when sidebar is collapsed
   useEffect(() => {
@@ -319,6 +333,27 @@ export function CategoryList({
     }
   };
 
+  const handleUpdateCategoryIcon = async (categoryId: string, icon: string) => {
+    try {
+      const response = await fetch(`/api/user/categories/${categoryId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ icon }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update category icon");
+      }
+
+      // Reload categories
+      await loadFeedsGroupedByCategory();
+    } catch (error) {
+      console.error("Failed to update category icon:", error);
+      alert(error instanceof Error ? error.message : "Failed to update category icon");
+    }
+  };
+
   const handleDeleteCategory = async (categoryId: string) => {
     try {
       const response = await fetch(`/api/user/categories/${categoryId}`, {
@@ -463,7 +498,7 @@ export function CategoryList({
             <button
               onClick={() => {
                 setExpandedFeedId(null);
-                setSettingsFeedId(feed.id);
+                setManagementModalState({ isOpen: true, view: 'feed', feedId: feed.id });
               }}
               className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-muted"
             >
@@ -498,7 +533,7 @@ export function CategoryList({
     const isSelected = selectedCategoryId === category.id;
 
     if (isCollapsed) {
-      // Icon-only mode: show folder icon with tooltip
+      // Icon-only mode: show category icon with tooltip
       return (
         <div key={category.id}>
           <Tooltip content={`${category.name} (${category.feedCount})`}>
@@ -509,9 +544,13 @@ export function CategoryList({
               }`}
               title={category.name}
             >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-              </svg>
+              {category.icon ? (
+                <span className="text-2xl">{category.icon}</span>
+              ) : (
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+              )}
             </button>
           </Tooltip>
           {/* Show feeds below when expanded */}
@@ -576,9 +615,13 @@ export function CategoryList({
             draggable={false}
             className="flex flex-1 items-center gap-2 text-left text-sm font-semibold"
           >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-            </svg>
+            {category.icon ? (
+              <span className="text-lg">{category.icon}</span>
+            ) : (
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+            )}
             <span className="flex-1">{category.name}</span>
             <span className="text-xs text-secondary">{category.feedCount}</span>
           </button>
@@ -637,8 +680,23 @@ export function CategoryList({
             <button
               onClick={() => {
                 setCategoryActionsId(null);
-                // Will open settings in a separate state
-                setSettingsCategoryId(category.id);
+                setIconPickerState({
+                  isOpen: true,
+                  categoryId: category.id,
+                  currentIcon: category.icon || "📁",
+                });
+              }}
+              className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-muted"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Change Icon
+            </button>
+            <button
+              onClick={() => {
+                setCategoryActionsId(null);
+                setManagementModalState({ isOpen: true, view: 'category', categoryId: category.id });
               }}
               className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-muted"
             >
@@ -793,216 +851,29 @@ export function CategoryList({
         </div>
       )}
 
-      {/* Feed Settings Panel */}
-      {settingsFeedId && (
-        <FeedSettingsPanel
-          feedId={settingsFeedId}
-          feedName={
-            [...categories.flatMap(c => c.feeds || []), ...uncategorizedFeeds]
-              .find(f => f.id === settingsFeedId)?.name || "Feed"
-          }
-          onClose={() => setSettingsFeedId(null)}
+      {/* Feed Management Modal */}
+      {managementModalState.isOpen && (
+        <FeedManagementModal
+          onClose={() => setManagementModalState({ isOpen: false })}
+          initialView={managementModalState.view}
+          feedId={managementModalState.feedId}
+          categoryId={managementModalState.categoryId}
+          onRefreshData={() => loadFeedsGroupedByCategory()}
         />
       )}
 
-      {/* Category Settings Panel */}
-      {settingsCategoryId && (
-        <CategorySettingsPanel
-          categoryId={settingsCategoryId}
-          categoryName={categories.find(c => c.id === settingsCategoryId)?.name || ""}
-          onClose={() => setSettingsCategoryId(null)}
-          onSaved={() => {
-            setSettingsCategoryId(null);
-            loadFeedsGroupedByCategory();
+      {/* Icon Picker Modal */}
+      {iconPickerState.isOpen && iconPickerState.categoryId && (
+        <IconPicker
+          currentIcon={iconPickerState.currentIcon}
+          onSelect={(icon) => {
+            handleUpdateCategoryIcon(iconPickerState.categoryId!, icon);
           }}
+          onClose={() => setIconPickerState({ isOpen: false })}
         />
       )}
     </div>
   );
 }
 
-// Category Settings Panel Component (inline)
-interface CategorySettingsPanelProps {
-  categoryId: string;
-  categoryName: string;
-  onClose: () => void;
-  onSaved?: () => void;
-}
-
-function CategorySettingsPanel({
-  categoryId,
-  categoryName,
-  onClose,
-  onSaved,
-}: CategorySettingsPanelProps) {
-  const [extractionMethod, setExtractionMethod] = useState<string>("readability");
-  const [fetchInterval, setFetchInterval] = useState<number>(60);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    loadCategorySettings();
-  }, [categoryId]);
-
-  const loadCategorySettings = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch(`/api/user/categories/${categoryId}`);
-      if (response.ok) {
-        const data = await response.json();
-        const settings = data.data?.category?.settings || {};
-        if (settings.extraction) {
-          setExtractionMethod(settings.extraction.method || "readability");
-        }
-        if (settings.fetchInterval) {
-          setFetchInterval(settings.fetchInterval);
-        }
-      }
-    } catch (err) {
-      console.error("Failed to load category settings:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setIsSubmitting(true);
-
-    try {
-      const settings = {
-        extraction: {
-          method: extractionMethod,
-        },
-        fetchInterval,
-      };
-
-      const response = await fetch(`/api/user/categories/${categoryId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ settings }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to save settings");
-      }
-
-      if (onSaved) {
-        onSaved();
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save settings");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-lg border border-border bg-background p-6 shadow-lg">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">
-            Settings for "{categoryName}"
-          </h2>
-          <button onClick={onClose} className="rounded-lg p-1 hover:bg-muted">
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
-
-        {isLoading ? (
-          <div className="py-8 text-center text-sm text-secondary">
-            Loading settings...
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="rounded-lg bg-red-50 p-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-300">
-                {error}
-              </div>
-            )}
-
-            <p className="text-sm text-secondary">
-              These settings will be used as defaults for all feeds in this category.
-              Individual feed settings will override these defaults.
-            </p>
-
-            <div>
-              <label
-                htmlFor="extractionMethod"
-                className="mb-1 block text-sm font-medium"
-              >
-                Content Extraction Method
-              </label>
-              <select
-                id="extractionMethod"
-                value={extractionMethod}
-                onChange={(e) => setExtractionMethod(e.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="readability">Readability (default)</option>
-                <option value="playwright">Playwright (JavaScript rendering)</option>
-              </select>
-              <p className="mt-1 text-xs text-secondary">
-                Readability is faster, Playwright supports JavaScript-heavy sites
-              </p>
-            </div>
-
-            <div>
-              <label
-                htmlFor="fetchInterval"
-                className="mb-1 block text-sm font-medium"
-              >
-                Feed Refresh Interval (minutes)
-              </label>
-              <input
-                id="fetchInterval"
-                type="number"
-                min="5"
-                max="1440"
-                value={fetchInterval}
-                onChange={(e) => setFetchInterval(parseInt(e.target.value, 10))}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <p className="mt-1 text-xs text-secondary">
-                How often to check for new articles (5-1440 minutes)
-              </p>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-              >
-                {isSubmitting ? "Saving..." : "Save Settings"}
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
-    </div>
-  );
-}
 

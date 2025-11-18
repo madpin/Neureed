@@ -52,14 +52,19 @@ export async function scoreArticle(
   // Get user patterns
   const userPatterns = await getUserPatternsMap(userId);
 
-  // If no patterns yet, return neutral score
+  // If no patterns yet, return neutral score (but still cache it)
   if (userPatterns.size === 0) {
-    return {
+    const result: ArticleScore = {
       articleId,
       score: 0.5,
       matchingPatterns: [],
       explanation: "No learned patterns yet",
     };
+    
+    // Cache the neutral score
+    await cacheSet(cacheKey, result, CacheTTL.articleScore);
+    
+    return result;
   }
 
   // Extract keywords from article

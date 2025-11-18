@@ -28,7 +28,7 @@ export function SignInWithGoogleButton() {
   return (
     <SignInButton
       provider="google"
-      className="flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 font-medium text-gray-700 hover:bg-gray-50 transition-colors dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+      className="flex items-center justify-center gap-2 rounded-lg border border-border bg-white px-4 py-2 font-medium text-gray-700 hover:bg-gray-50 transition-colors dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
     >
       <svg className="h-5 w-5" viewBox="0 0 24 24">
         <path
@@ -57,7 +57,7 @@ export function SignInWithGitHubButton() {
   return (
     <SignInButton
       provider="github"
-      className="flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-gray-900 px-4 py-2 font-medium text-white hover:bg-gray-800 transition-colors"
+      className="flex items-center justify-center gap-2 rounded-lg border border-border bg-gray-900 px-4 py-2 font-medium text-white hover:bg-gray-800 transition-colors"
     >
       <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
         <path

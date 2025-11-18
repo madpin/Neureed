@@ -53,13 +53,72 @@ export async function getUserCategories(
 export async function getUserCategory(
   userId: string,
   categoryId: string
-): Promise<UserCategory | null> {
-  return prisma.userCategory.findFirst({
+): Promise<any | null> {
+  const category = await prisma.userCategory.findFirst({
     where: {
       id: categoryId,
       userId,
     },
+    include: {
+      userFeedCategories: {
+        include: {
+          userFeed: {
+            include: {
+              feed: {
+                select: {
+                  id: true,
+                  name: true,
+                  imageUrl: true,
+                  lastFetched: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   });
+
+  if (!category) return null;
+
+  // Get feed IDs for unread count calculation
+  const feedIds = category.userFeedCategories.map((ufc) => ufc.userFeed.feed.id);
+
+  // Get unread article counts for feeds in this category
+  const unreadCounts = feedIds.length > 0
+    ? await prisma.article.groupBy({
+        by: ['feedId'],
+        where: {
+          feedId: { in: feedIds },
+          readArticles: {
+            none: {
+              userId: userId,
+            },
+          },
+        },
+        _count: {
+          id: true,
+        },
+      })
+    : [];
+
+  // Create a map of feedId -> unread count
+  const unreadCountMap = new Map(
+    unreadCounts.map((item) => [item.feedId, item._count.id])
+  );
+
+  // Transform to include feeds array
+  return {
+    ...category,
+    feeds: category.userFeedCategories.map((ufc) => ({
+      id: ufc.userFeed.feed.id,
+      name: ufc.userFeed.customName || ufc.userFeed.feed.name,
+      imageUrl: ufc.userFeed.feed.imageUrl,
+      userFeedId: ufc.userFeed.id,
+      lastFetched: ufc.userFeed.feed.lastFetched,
+      articleCount: unreadCountMap.get(ufc.userFeed.feed.id) || 0,
+    })),
+  };
 }
 
 /**
@@ -87,7 +146,8 @@ export async function createUserCategory(
   userId: string,
   name: string,
   description?: string,
-  settings?: Record<string, any>
+  settings?: Record<string, any>,
+  icon?: string
 ): Promise<UserCategory> {
   // Check if category already exists for this user
   const existing = await getUserCategoryByName(userId, name);
@@ -110,6 +170,7 @@ export async function createUserCategory(
       name: name.trim(),
       description: description?.trim(),
       settings,
+      icon: icon || "📁",
       order,
     },
   });
@@ -125,6 +186,7 @@ export async function updateUserCategory(
     name?: string;
     description?: string;
     settings?: Record<string, any>;
+    icon?: string;
   }
 ): Promise<UserCategory> {
   // Verify ownership
@@ -147,6 +209,7 @@ export async function updateUserCategory(
       name: data.name?.trim(),
       description: data.description?.trim(),
       settings: data.settings,
+      icon: data.icon,
     },
   });
 }
@@ -322,6 +385,7 @@ export async function getFeedsGroupedByCategory(
                   id: true,
                   name: true,
                   imageUrl: true,
+                  lastFetched: true,
                 },
               },
             },
@@ -340,6 +404,7 @@ export async function getFeedsGroupedByCategory(
           id: true,
           name: true,
           imageUrl: true,
+          lastFetched: true,
         },
       },
       userFeedCategories: {
@@ -350,6 +415,32 @@ export async function getFeedsGroupedByCategory(
     },
   });
 
+  // Get all feed IDs to calculate unread counts
+  const feedIds = allUserFeeds.map((uf) => uf.feed.id);
+
+  // Get unread article counts for all feeds in a single query
+  const unreadCounts = feedIds.length > 0 
+    ? await prisma.article.groupBy({
+        by: ['feedId'],
+        where: {
+          feedId: { in: feedIds },
+          readArticles: {
+            none: {
+              userId: userId,
+            },
+          },
+        },
+        _count: {
+          id: true,
+        },
+      })
+    : [];
+
+  // Create a map of feedId -> unread count
+  const unreadCountMap = new Map(
+    unreadCounts.map((item) => [item.feedId, item._count.id])
+  );
+
   // Find uncategorized feeds (feeds with no category assignments)
   const uncategorizedFeeds = allUserFeeds
     .filter((uf) => uf.userFeedCategories.length === 0)
@@ -359,6 +450,8 @@ export async function getFeedsGroupedByCategory(
       imageUrl: uf.feed.imageUrl,
       userFeedId: uf.id,
       feedId: uf.feed.id,
+      lastFetched: uf.feed.lastFetched,
+      articleCount: unreadCountMap.get(uf.feed.id) || 0,
     }));
 
   // Map categories with their feeds
@@ -368,6 +461,7 @@ export async function getFeedsGroupedByCategory(
       userId: cat.userId,
       name: cat.name,
       description: cat.description,
+      icon: cat.icon,
       order: cat.order,
       settings: cat.settings,
       createdAt: cat.createdAt,
@@ -378,6 +472,8 @@ export async function getFeedsGroupedByCategory(
         name: ufc.userFeed.customName || ufc.userFeed.feed.name,
         imageUrl: ufc.userFeed.feed.imageUrl,
         userFeedId: ufc.userFeed.id,
+        lastFetched: ufc.userFeed.feed.lastFetched,
+        articleCount: unreadCountMap.get(ufc.userFeed.feed.id) || 0,
       })),
     })
   );

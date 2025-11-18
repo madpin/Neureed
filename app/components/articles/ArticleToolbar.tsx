@@ -18,7 +18,7 @@ export function ArticleToolbar({
   showReadingTime = true,
 }: ArticleToolbarProps) {
   return (
-    <div className="sticky top-0 z-10 -mx-4 mb-4 border-y border-gray-200 bg-white/95 px-4 py-3 backdrop-blur-sm dark:border-gray-700 dark:bg-gray-800/95">
+    <div className="sticky top-0 z-10 -mx-4 mb-4 border-y border-border bg-background/95 px-4 py-3 backdrop-blur-sm border-border bg-background/95">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <a
@@ -34,7 +34,7 @@ export function ArticleToolbar({
           </a>
 
           {showReadingTime && readingTime !== undefined && (
-            <div className="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+            <div className="inline-flex items-center gap-2 rounded-lg bg-muted px-4 py-2 text-sm font-medium text-foreground/80 bg-background dark:text-foreground/40">
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -51,12 +51,12 @@ export function ArticleToolbar({
           <button
             onClick={onGenerateSummary}
             disabled={isGeneratingSummary}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:focus:ring-offset-gray-800"
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             title={hasSummary ? "View AI summary" : "Generate AI summary"}
           >
             {isGeneratingSummary ? (
               <>
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600"></div>
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-blue-600"></div>
                 <span className="hidden sm:inline">Generating...</span>
               </>
             ) : (

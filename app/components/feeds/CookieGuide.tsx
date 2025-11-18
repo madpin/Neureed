@@ -73,7 +73,7 @@ document.cookie.split(';').map(c => {
     <div className="space-y-4">
       <div>
         <h3 className="text-sm font-semibold mb-2">How to Extract Cookies</h3>
-        <p className="text-xs text-gray-600 dark:text-gray-400">
+        <p className="text-xs text-foreground/70">
           Follow these steps to extract cookies from your browser for authenticated content access.
         </p>
       </div>
@@ -85,7 +85,7 @@ document.cookie.split(';').map(c => {
           className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
             selectedBrowser === "chrome"
               ? "bg-blue-50 border-blue-500 text-blue-900 dark:bg-blue-900/20 dark:border-blue-400 dark:text-blue-100"
-              : "border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
+              : "border-border hover:bg-muted border-border dark:hover:bg-gray-800"
           }`}
         >
           Chrome
@@ -95,7 +95,7 @@ document.cookie.split(';').map(c => {
           className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
             selectedBrowser === "firefox"
               ? "bg-blue-50 border-blue-500 text-blue-900 dark:bg-blue-900/20 dark:border-blue-400 dark:text-blue-100"
-              : "border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
+              : "border-border hover:bg-muted border-border dark:hover:bg-gray-800"
           }`}
         >
           Firefox
@@ -105,7 +105,7 @@ document.cookie.split(';').map(c => {
           className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
             selectedBrowser === "safari"
               ? "bg-blue-50 border-blue-500 text-blue-900 dark:bg-blue-900/20 dark:border-blue-400 dark:text-blue-100"
-              : "border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
+              : "border-border hover:bg-muted border-border dark:hover:bg-gray-800"
           }`}
         >
           Safari
@@ -155,7 +155,7 @@ document.cookie.split(';').map(c => {
       {/* Tips */}
       <div className="space-y-2">
         <h4 className="text-xs font-semibold">Tips</h4>
-        <ul className="text-xs space-y-1 text-gray-600 dark:text-gray-400">
+        <ul className="text-xs space-y-1 text-foreground/70">
           <li>• Make sure you're logged in before extracting cookies</li>
           <li>• Test the extraction after saving to verify it works</li>
           <li>• Update cookies if you see authentication errors</li>

@@ -2,6 +2,16 @@
 
 /* Configure dark mode to use class strategy */
 @variant dark (&:where(.dark, .dark *));
+@variant nord-light (&:where(.nord-light, .nord-light *));
+@variant nord-dark (&:where(.nord-dark, .nord-dark *));
+@variant solarized-light (&:where(.solarized-light, .solarized-light *));
+@variant solarized-dark (&:where(.solarized-dark, .solarized-dark *));
+@variant barbie-light (&:where(.barbie-light, .barbie-light *));
+@variant barbie-dark (&:where(.barbie-dark, .barbie-dark *));
+@variant purple-light (&:where(.purple-light, .purple-light *));
+@variant purple-dark (&:where(.purple-dark, .purple-dark *));
+@variant orange-light (&:where(.orange-light, .orange-light *));
+@variant orange-dark (&:where(.orange-dark, .orange-dark *));
 
 @theme {
   --color-background: var(--background);
@@ -43,9 +53,129 @@
   --border: #334155;
 }
 
+/* Nord Light Theme */
+:root.nord-light {
+  --background: #eceff4; /* Snow Storm 1 */
+  --foreground: #2e3440; /* Polar Night 1 */
+  --primary: #5e81ac; /* Frost 4 */
+  --primary-foreground: #eceff4;
+  --secondary: #4c566a; /* Polar Night 4 */
+  --accent: #88c0d0; /* Frost 3 */
+  --muted: #e5e9f0; /* Snow Storm 2 */
+  --border: #d8dee9; /* Snow Storm 3 */
+}
+
+/* Nord Dark Theme */
+:root.nord-dark {
+  --background: #2e3440; /* Polar Night 1 */
+  --foreground: #eceff4; /* Snow Storm 1 */
+  --primary: #88c0d0; /* Frost 3 */
+  --primary-foreground: #2e3440;
+  --secondary: #81a1c1; /* Frost 2 */
+  --accent: #8fbcbb; /* Frost 1 */
+  --muted: #3b4252; /* Polar Night 2 */
+  --border: #4c566a; /* Polar Night 4 */
+}
+
+/* Solarized Light Theme */
+:root.solarized-light {
+  --background: #fdf6e3; /* Base3 - warm cream */
+  --foreground: #657b83; /* Base00 - primary content */
+  --primary: #268bd2; /* Blue */
+  --primary-foreground: #fdf6e3;
+  --secondary: #859900; /* Green */
+  --accent: #b58900; /* Yellow */
+  --muted: #eee8d5; /* Base2 - background highlights */
+  --border: #93a1a1; /* Base1 - optional emphasized content */
+}
+
+/* Solarized Dark Theme */
+:root.solarized-dark {
+  --background: #002b36; /* Base03 - dark blue-green */
+  --foreground: #839496; /* Base0 - body text */
+  --primary: #268bd2; /* Blue */
+  --primary-foreground: #002b36;
+  --secondary: #2aa198; /* Cyan */
+  --accent: #b58900; /* Yellow */
+  --muted: #073642; /* Base02 - background highlights */
+  --border: #586e75; /* Base01 - comments / secondary content */
+}
+
+/* Barbie Light Theme */
+:root.barbie-light {
+  --background: #fce7f3; /* Soft pink background */
+  --foreground: #831843; /* Deep magenta text */
+  --primary: #ec4899; /* Hot pink */
+  --primary-foreground: #ffffff;
+  --secondary: #f472b6; /* Medium pink */
+  --accent: #db2777; /* Vibrant pink */
+  --muted: #fbcfe8; /* Light pink highlights */
+  --border: #f9a8d4; /* Pink border */
+}
+
+/* Barbie Dark Theme */
+:root.barbie-dark {
+  --background: #500724; /* Deep burgundy pink */
+  --foreground: #fce7f3; /* Soft pink text */
+  --primary: #ec4899; /* Hot pink */
+  --primary-foreground: #500724;
+  --secondary: #f472b6; /* Medium pink */
+  --accent: #fbbf24; /* Gold accent */
+  --muted: #701a3c; /* Dark pink highlights */
+  --border: #9d174d; /* Pink-700 border */
+}
+
+/* Purple Light Theme */
+:root.purple-light {
+  --background: #faf5ff; /* Lightest purple */
+  --foreground: #581c87; /* Deep purple text */
+  --primary: #9333ea; /* Vibrant purple */
+  --primary-foreground: #ffffff;
+  --secondary: #a855f7; /* Medium purple */
+  --accent: #c084fc; /* Light purple accent */
+  --muted: #f3e8ff; /* Very light purple */
+  --border: #d8b4fe; /* Purple border */
+}
+
+/* Purple Dark Theme */
+:root.purple-dark {
+  --background: #3b0764; /* Deep purple */
+  --foreground: #f3e8ff; /* Light purple text */
+  --primary: #a855f7; /* Bright purple */
+  --primary-foreground: #3b0764;
+  --secondary: #c084fc; /* Light purple */
+  --accent: #e879f9; /* Magenta accent */
+  --muted: #581c87; /* Dark purple highlights */
+  --border: #7e22ce; /* Purple-700 border */
+}
+
+/* Orange Light Theme */
+:root.orange-light {
+  --background: #fff7ed; /* Warm cream */
+  --foreground: #7c2d12; /* Deep orange-brown text */
+  --primary: #ea580c; /* Vibrant orange */
+  --primary-foreground: #ffffff;
+  --secondary: #f97316; /* Bright orange */
+  --accent: #fb923c; /* Light orange accent */
+  --muted: #ffedd5; /* Peach highlights */
+  --border: #fdba74; /* Orange border */
+}
+
+/* Orange Dark Theme */
+:root.orange-dark {
+  --background: #431407; /* Deep burnt orange */
+  --foreground: #ffedd5; /* Warm cream text */
+  --primary: #f97316; /* Bright orange */
+  --primary-foreground: #431407;
+  --secondary: #fb923c; /* Medium orange */
+  --accent: #fbbf24; /* Golden yellow accent */
+  --muted: #7c2d12; /* Dark orange highlights */
+  --border: #c2410c; /* Orange-700 border */
+}
+
 /* System preference fallback */
 @media (prefers-color-scheme: dark) {
-  :root:not(.light):not(.dark) {
+  :root:not(.light):not(.dark):not(.nord-light):not(.nord-dark):not(.solarized-light):not(.solarized-dark):not(.barbie-light):not(.barbie-dark):not(.purple-light):not(.purple-dark):not(.orange-light):not(.orange-dark) {
     --background: #0a0a0a;
     --foreground: #ededed;
     --primary: #3b82f6;

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, createContext, useContext } from "react";
 import { useSession } from "next-auth/react";
 
-type ThemeMode = "light" | "dark" | "system";
+type ThemeMode = "light" | "dark" | "nord-light" | "nord-dark" | "solarized-light" | "solarized-dark" | "barbie-light" | "barbie-dark" | "purple-light" | "purple-dark" | "orange-light" | "orange-dark" | "system";
 
 interface ThemeContextType {
   theme: ThemeMode;
@@ -42,11 +42,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Apply theme logic
   const applyTheme = useCallback((themeMode: ThemeMode) => {
     const root = document.documentElement;
-    root.classList.remove("light", "dark");
+    root.classList.remove("light", "dark", "nord-light", "nord-dark", "solarized-light", "solarized-dark", "barbie-light", "barbie-dark", "purple-light", "purple-dark", "orange-light", "orange-dark");
 
     if (themeMode === "system") {
       const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
       root.classList.toggle("dark", mediaQuery.matches);
+    } else if (themeMode === "nord-dark" || themeMode === "solarized-dark" || themeMode === "barbie-dark" || themeMode === "purple-dark" || themeMode === "orange-dark") {
+      // Apply both theme class and dark so dark: utilities work
+      root.classList.add(themeMode, "dark");
     } else {
       root.classList.add(themeMode);
     }
@@ -76,7 +79,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const data = await response.json();
         const prefs = data.data?.preferences;
 
-        if (prefs?.theme && ["light", "dark", "system"].includes(prefs.theme)) {
+        if (prefs?.theme && ["light", "dark", "nord-light", "nord-dark", "solarized-light", "solarized-dark", "barbie-light", "barbie-dark", "purple-light", "purple-dark", "orange-light", "orange-dark", "system"].includes(prefs.theme)) {
           setTheme(prefs.theme as ThemeMode);
         }
         
@@ -110,7 +113,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const handlePreferencesUpdate = (event: CustomEvent) => {
       const { theme: themeName, fontSize: newFont } = event.detail;
-      if (themeName && ["light", "dark", "system"].includes(themeName)) {
+      if (themeName && ["light", "dark", "nord-light", "nord-dark", "solarized-light", "solarized-dark", "barbie-light", "barbie-dark", "purple-light", "purple-dark", "orange-light", "orange-dark", "system"].includes(themeName)) {
         setTheme(themeName as ThemeMode);
       }
       if (newFont) {

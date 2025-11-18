@@ -32,6 +32,7 @@ const updateCategorySchema = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().max(500).optional().nullable(),
   settings: z.record(z.any()).optional().nullable(),
+  icon: z.string().optional(),
 });
 
 /**

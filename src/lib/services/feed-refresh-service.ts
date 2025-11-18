@@ -5,10 +5,13 @@ import {
   recordFeedError,
   clearFeedError,
   getFeedsToRefresh,
+  getUserFeedsToRefresh,
 } from "./feed-service";
 import { upsertArticles } from "./article-service";
 import { generateBatchEmbeddings } from "./article-embedding-service";
 import { extractContent } from "./content-extraction-service";
+import { shouldAutoGenerateEmbeddings } from "./admin-settings-service";
+import { cleanupFeedArticles } from "./article-cleanup-service";
 import { env } from "@/src/env";
 import { logger } from "@/src/lib/logger";
 
@@ -26,12 +29,22 @@ export interface RefreshResult {
   embeddingTokens?: number;
   extractionMethod?: string;
   extractionUsed?: boolean;
+  cleanupResult?: {
+    deleted: number;
+    byAge: number;
+    byCount: number;
+  };
 }
 
 /**
  * Refresh a single feed
+ * @param feedId - Feed ID to refresh
+ * @param userId - Optional user ID for user-specific cleanup settings
  */
-export async function refreshFeed(feedId: string): Promise<RefreshResult> {
+export async function refreshFeed(
+  feedId: string,
+  userId?: string
+): Promise<RefreshResult> {
   const startTime = Date.now();
 
   try {
@@ -123,7 +136,8 @@ export async function refreshFeed(feedId: string): Promise<RefreshResult> {
     let embeddingsGenerated = 0;
     let embeddingTokens = 0;
 
-    if (env.EMBEDDING_AUTO_GENERATE && result.articleIds.length > 0) {
+    const autoGenerateEmbeddings = await shouldAutoGenerateEmbeddings();
+    if (autoGenerateEmbeddings && result.articleIds.length > 0) {
       try {
         const embeddingResult = await generateBatchEmbeddings(
           result.articleIds
@@ -153,6 +167,32 @@ export async function refreshFeed(feedId: string): Promise<RefreshResult> {
       await clearFeedError(feedId);
     }
 
+    // Cleanup old articles after refresh
+    let cleanupResult: { deleted: number; byAge: number; byCount: number } | undefined;
+    try {
+      const cleanup = await cleanupFeedArticles(feedId, userId);
+      cleanupResult = {
+        deleted: cleanup.deleted,
+        byAge: cleanup.details.byAge,
+        byCount: cleanup.details.byCount,
+      };
+      
+      if (cleanup.deleted > 0) {
+        logger.info("Cleaned up articles after feed refresh", {
+          feedId,
+          deleted: cleanup.deleted,
+          byAge: cleanup.details.byAge,
+          byCount: cleanup.details.byCount,
+        });
+      }
+    } catch (cleanupError) {
+      logger.error("Failed to cleanup articles after feed refresh", {
+        feedId,
+        error: cleanupError,
+      });
+      // Don't fail the refresh if cleanup fails
+    }
+
     return {
       feedId,
       success: true,
@@ -163,6 +203,7 @@ export async function refreshFeed(feedId: string): Promise<RefreshResult> {
       embeddingTokens,
       extractionMethod,
       extractionUsed,
+      cleanupResult,
     };
   } catch (error) {
     const errorMessage =
@@ -184,9 +225,13 @@ export async function refreshFeed(feedId: string): Promise<RefreshResult> {
 
 /**
  * Refresh multiple feeds in parallel
+ * @param feedIds - Array of feed IDs to refresh
+ * @param userId - Optional user ID for user-specific cleanup settings
+ * @param maxConcurrent - Maximum number of concurrent refreshes
  */
 export async function refreshFeeds(
   feedIds: string[],
+  userId?: string,
   maxConcurrent = 5
 ): Promise<RefreshResult[]> {
   const results: RefreshResult[] = [];
@@ -195,7 +240,7 @@ export async function refreshFeeds(
   for (let i = 0; i < feedIds.length; i += maxConcurrent) {
     const batch = feedIds.slice(i, i + maxConcurrent);
     const batchResults = await Promise.all(
-      batch.map((feedId) => refreshFeed(feedId))
+      batch.map((feedId) => refreshFeed(feedId, userId))
     );
     results.push(...batchResults);
   }
@@ -204,7 +249,7 @@ export async function refreshFeeds(
 }
 
 /**
- * Refresh all feeds that are due for refresh
+ * Refresh all feeds that are due for refresh (system-wide)
  */
 export async function refreshAllDueFeeds(): Promise<{
   total: number;
@@ -224,8 +269,53 @@ export async function refreshAllDueFeeds(): Promise<{
     };
   }
 
-  // Refresh feeds
+  // Refresh feeds (no userId, uses system defaults for cleanup)
   const results = await refreshFeeds(feeds.map((f) => f.id));
+
+  // Calculate stats
+  const successful = results.filter((r) => r.success).length;
+  const failed = results.filter((r) => !r.success).length;
+
+  return {
+    total: results.length,
+    successful,
+    failed,
+    results,
+  };
+}
+
+/**
+ * Refresh all feeds that are due for refresh for a specific user
+ * Uses user's configured refresh intervals and cleanup settings
+ */
+export async function refreshUserFeeds(userId: string): Promise<{
+  total: number;
+  successful: number;
+  failed: number;
+  results: RefreshResult[];
+}> {
+  // Get user's feeds that need refreshing
+  const feedsToRefresh = await getUserFeedsToRefresh(userId);
+
+  if (feedsToRefresh.length === 0) {
+    return {
+      total: 0,
+      successful: 0,
+      failed: 0,
+      results: [],
+    };
+  }
+
+  logger.info("Refreshing user feeds", {
+    userId,
+    feedCount: feedsToRefresh.length,
+  });
+
+  // Refresh feeds with user-specific settings
+  const results = await refreshFeeds(
+    feedsToRefresh.map((f) => f.feed.id),
+    userId
+  );
 
   // Calculate stats
   const successful = results.filter((r) => r.success).length;

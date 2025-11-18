@@ -95,7 +95,7 @@ export function FeedbackButtons({
           className={`p-1 rounded transition-colors ${
             feedback === 1.0
               ? "text-green-600 dark:text-green-400"
-              : "text-gray-400 hover:text-green-600 dark:hover:text-green-400"
+              : "text-foreground/50 hover:text-green-600 dark:hover:text-green-400"
           } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
           title="Like this article"
           aria-label="Like"
@@ -120,7 +120,7 @@ export function FeedbackButtons({
           className={`p-1 rounded transition-colors ${
             feedback === -1.0
               ? "text-red-600 dark:text-red-400"
-              : "text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+              : "text-foreground/50 hover:text-red-600 dark:hover:text-red-400"
           } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
           title="Dislike this article"
           aria-label="Dislike"
@@ -146,7 +146,7 @@ export function FeedbackButtons({
   // Prominent variant
   return (
     <div className="flex items-center gap-3">
-      <span className="text-sm text-gray-600 dark:text-gray-400">
+      <span className="text-sm text-foreground/70">
         Was this article helpful?
       </span>
       <div className="flex items-center gap-2">
@@ -156,7 +156,7 @@ export function FeedbackButtons({
           className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
             feedback === 1.0
               ? "bg-green-50 border-green-500 text-green-700 dark:bg-green-900/20 dark:border-green-500 dark:text-green-400"
-              : "border-gray-300 text-gray-700 hover:border-green-500 hover:bg-green-50 dark:border-gray-600 dark:text-gray-300 dark:hover:border-green-500 dark:hover:bg-green-900/20"
+              : "border-border text-foreground/80 hover:border-green-500 hover:bg-green-50 border-border dark:text-foreground/40 dark:hover:border-green-500 dark:hover:bg-green-900/20"
           } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
           aria-label="Like this article"
         >
@@ -181,7 +181,7 @@ export function FeedbackButtons({
           className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
             feedback === -1.0
               ? "bg-red-50 border-red-500 text-red-700 dark:bg-red-900/20 dark:border-red-500 dark:text-red-400"
-              : "border-gray-300 text-gray-700 hover:border-red-500 hover:bg-red-50 dark:border-gray-600 dark:text-gray-300 dark:hover:border-red-500 dark:hover:bg-red-900/20"
+              : "border-border text-foreground/80 hover:border-red-500 hover:bg-red-50 border-border dark:text-foreground/40 dark:hover:border-red-500 dark:hover:bg-red-900/20"
           } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
           aria-label="Dislike this article"
         >

@@ -165,7 +165,7 @@ model UserFeed {
   userId       String
   feedId       String
   customName   String?
-  settings     Json?
+  settings     Json?    // Feed-level settings: { refreshInterval?: number, maxArticlesPerFeed?: number, maxArticleAge?: number }
   subscribedAt DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -185,8 +185,9 @@ model UserCategory {
   userId      String
   name        String
   description String?
+  icon        String?  @default("📁") // Category icon (emoji or predefined icon)
   order       Int      @default(0) // For drag-and-drop ordering
-  settings    Json?    // Category-level feed settings
+  settings    Json?    // Category-level feed settings: { refreshInterval?: number, maxArticlesPerFeed?: number, maxArticleAge?: number }
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -266,7 +267,17 @@ model UserPreferences {
   readingFontSize          Int      @default(18) // Font size in pixels
   readingLineHeight        Float    @default(1.7) // Line height multiplier
   readingParagraphSpacing  Float    @default(1.5) // Paragraph spacing in rem
+  breakLineSpacing         Float    @default(0.75) // Break line (<br>) spacing in rem
   showReadingTime          Boolean  @default(true) // Show reading time estimation
+  
+  // Feed Refresh & Cleanup Settings
+  defaultRefreshInterval   Int      @default(60) // Default feed refresh interval in minutes
+  defaultMaxArticlesPerFeed Int     @default(500) // Default max articles to keep per feed
+  defaultMaxArticleAge     Int      @default(90) // Default max article age in days
+  
+  // Article Sorting Settings
+  articleSortOrder         String   @default("publishedAt") // "publishedAt", "relevance", "title", "feed", "updatedAt"
+  articleSortDirection     String   @default("desc") // "asc", "desc"
   
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
@@ -316,5 +327,18 @@ model UserPattern {
   @@index([userId, weight])
   @@index([updatedAt])
   @@map("user_patterns")
+}
+
+// Admin Settings
+model AdminSettings {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       Json
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([key])
+  @@map("admin_settings")
 }
 

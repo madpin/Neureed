@@ -119,10 +119,10 @@ function ArticleSummaryComponent(
   return (
     <div
       ref={setSummaryRef}
-      className="my-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800"
+      className="my-8 rounded-lg border border-border bg-background p-6 shadow-sm border-border bg-background"
     >
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+        <h2 className="text-xl font-bold text-foreground">
           AI Summary
         </h2>
         {summary && (
@@ -138,7 +138,7 @@ function ArticleSummaryComponent(
       {isLoading && (
         <div className="mt-4 flex items-center justify-center py-8">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
-          <span className="ml-3 text-gray-600 dark:text-gray-400">
+          <span className="ml-3 text-foreground/70">
             Generating summary...
           </span>
         </div>
@@ -154,19 +154,19 @@ function ArticleSummaryComponent(
         <div className="mt-4 space-y-4">
           {/* Summary */}
           <div>
-            <h3 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+            <h3 className="mb-2 text-sm font-semibold text-foreground/70">
               Summary
             </h3>
-            <p className="text-gray-700 dark:text-gray-300">{summary.summary}</p>
+            <p className="text-foreground/70">{summary.summary}</p>
           </div>
 
           {/* Key Points */}
           {summary.keyPoints && summary.keyPoints.length > 0 && (
             <div>
-              <h3 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+              <h3 className="mb-2 text-sm font-semibold text-foreground/70">
                 Key Points
               </h3>
-              <ul className="list-inside list-disc space-y-1 text-gray-700 dark:text-gray-300">
+              <ul className="list-inside list-disc space-y-1 text-foreground/70">
                 {summary.keyPoints.map((point, index) => (
                   <li key={index}>{point}</li>
                 ))}
@@ -177,7 +177,7 @@ function ArticleSummaryComponent(
           {/* Topics */}
           {summary.topics && summary.topics.length > 0 && (
             <div>
-              <h3 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+              <h3 className="mb-2 text-sm font-semibold text-foreground/70">
                 Topics
               </h3>
               <div className="flex flex-wrap gap-2">
@@ -196,13 +196,13 @@ function ArticleSummaryComponent(
       )}
 
       {summary && !isExpanded && (
-        <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+        <p className="mt-4 text-sm text-foreground/70">
           Click "Expand" to view the AI-generated summary
         </p>
       )}
 
       {!summary && !isLoading && !error && hasRequestedSummary && (
-        <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+        <p className="mt-4 text-sm text-foreground/70">
           Use the Summary button in the toolbar to generate an AI overview for this article.
         </p>
       )}

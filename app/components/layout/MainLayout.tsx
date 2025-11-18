@@ -3,14 +3,27 @@
 import { ReactNode, useState, useEffect } from "react";
 import { SemanticSearchBar } from "@/app/components/search/SemanticSearchBar";
 import { UserMenu } from "@/app/components/auth/UserMenu";
+import { ArticleSortDropdown } from "@/app/components/articles/ArticleSortDropdown";
 import Link from "next/link";
+import type { ArticleSortOrder, ArticleSortDirection } from "@/src/lib/validations/article-validation";
 
 interface MainLayoutProps {
   sidebar: ReactNode | ((props: { isCollapsed: boolean }) => ReactNode);
   children: ReactNode;
+  sortOrder?: ArticleSortOrder;
+  sortDirection?: ArticleSortDirection;
+  onSortChange?: (sortOrder: ArticleSortOrder, sortDirection: ArticleSortDirection) => void;
+  isLoadingArticles?: boolean;
 }
 
-export function MainLayout({ sidebar, children }: MainLayoutProps) {
+export function MainLayout({ 
+  sidebar, 
+  children, 
+  sortOrder, 
+  sortDirection, 
+  onSortChange,
+  isLoadingArticles 
+}: MainLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -159,6 +172,16 @@ export function MainLayout({ sidebar, children }: MainLayoutProps) {
             <div className="hidden md:block">
               <SemanticSearchBar />
             </div>
+
+            {/* Sort Dropdown */}
+            {sortOrder && sortDirection && onSortChange && (
+              <ArticleSortDropdown
+                currentSortOrder={sortOrder}
+                currentSortDirection={sortDirection}
+                onSortChange={onSortChange}
+                isLoading={isLoadingArticles}
+              />
+            )}
 
             {/* User Menu */}
             <UserMenu />

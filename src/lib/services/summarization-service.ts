@@ -316,23 +316,47 @@ export async function getAllTopics(limit = 50): Promise<Array<{ topic: string; c
  */
 export async function getArticlesByTopic(
   topic: string,
-  limit = 20
-): Promise<Array<{ id: string; title: string; excerpt: string | null }>> {
+  limit = 20,
+  sortBy: "publishedAt" | "relevance" | "title" | "feed" | "updatedAt" = "publishedAt",
+  sortDirection: "asc" | "desc" = "desc"
+) {
+  // Build orderBy clause based on sort option
+  let orderBy: any;
+  
+  switch (sortBy) {
+    case "title":
+      orderBy = { title: sortDirection };
+      break;
+    case "updatedAt":
+      orderBy = { updatedAt: sortDirection };
+      break;
+    case "feed":
+      orderBy = [
+        { feed: { name: sortDirection } },
+        { publishedAt: "desc" }
+      ];
+      break;
+    case "relevance":
+      // Fall back to publishedAt for topics
+      orderBy = { publishedAt: "desc" };
+      break;
+    case "publishedAt":
+    default:
+      orderBy = { publishedAt: sortDirection };
+      break;
+  }
+
   const articles = await prisma.article.findMany({
     where: {
       topics: {
         has: topic,
       },
     },
-    select: {
-      id: true,
-      title: true,
-      excerpt: true,
+    include: {
+      feed: true,
     },
     take: limit,
-    orderBy: {
-      publishedAt: "desc",
-    },
+    orderBy,
   });
 
   return articles;

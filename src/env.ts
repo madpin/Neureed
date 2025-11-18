@@ -73,6 +73,14 @@ export const env = createEnv({
       .default("openai"),
     LLM_MODEL: z.string().default("gpt-4o-mini"),
     OLLAMA_BASE_URL: z.string().default("http://localhost:11434"),
+    
+    // Cron job configuration
+    ENABLE_CRON_JOBS: z
+      .enum(["true", "false"])
+      .default("true")
+      .transform((val) => val === "true"),
+    FEED_REFRESH_SCHEDULE: z.string().default("*/30 * * * *"), // Every 30 minutes
+    CLEANUP_SCHEDULE: z.string().default("0 3 * * *"), // Daily at 3 AM
   },
 
   /**
@@ -129,6 +137,11 @@ export const env = createEnv({
     LLM_PROVIDER: process.env.LLM_PROVIDER,
     LLM_MODEL: process.env.LLM_MODEL,
     OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
+    
+    // Cron job configuration
+    ENABLE_CRON_JOBS: process.env.ENABLE_CRON_JOBS,
+    FEED_REFRESH_SCHEDULE: process.env.FEED_REFRESH_SCHEDULE,
+    CLEANUP_SCHEDULE: process.env.CLEANUP_SCHEDULE,
     // NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
   },
   /**

@@ -173,7 +173,7 @@ export function ResizableSplitPane({
       <div
         style={getDividerStyle()}
         onMouseDown={handleMouseDown}
-        className="hover:bg-blue-500 dark:bg-gray-700 dark:hover:bg-blue-600"
+        className="hover:bg-blue-500 bg-background dark:hover:bg-blue-600"
         role="separator"
         aria-orientation={isHorizontal ? "vertical" : "horizontal"}
         aria-valuenow={currentSize}

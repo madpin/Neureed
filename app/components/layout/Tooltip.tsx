@@ -47,7 +47,7 @@ export function Tooltip({ content, children }: TooltipProps) {
           transform: "translateY(-50%)",
         }}
       >
-        <div className="bg-gray-900 text-white px-3 py-2 rounded-md shadow-xl border border-gray-700 whitespace-nowrap dark:bg-gray-800 dark:border-gray-600">
+        <div className="rounded-md border border-border bg-foreground px-3 py-2 text-background shadow-xl whitespace-nowrap">
           {content}
         </div>
       </div>,

@@ -16,6 +16,7 @@ interface ArticleListProps {
   isLoading?: boolean;
   variant?: "compact" | "expanded";
   onArticleSelect?: (articleId: string) => void;
+  onReadStatusChange?: () => void;
 }
 
 export function ArticleList({
@@ -23,6 +24,7 @@ export function ArticleList({
   isLoading = false,
   variant = "compact",
   onArticleSelect,
+  onReadStatusChange,
 }: ArticleListProps) {
   const { data: session } = useSession();
   const [scores, setScores] = useState<Map<string, ArticleScore>>(new Map());
@@ -71,7 +73,7 @@ export function ArticleList({
         {[...Array(5)].map((_, i) => (
           <div
             key={i}
-            className="h-32 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-700"
+            className="h-32 animate-pulse rounded-lg bg-muted bg-background"
           />
         ))}
       </div>
@@ -82,7 +84,7 @@ export function ArticleList({
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <svg
-          className="mb-4 h-16 w-16 text-gray-400"
+          className="mb-4 h-16 w-16 text-foreground/50"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -94,10 +96,10 @@ export function ArticleList({
             d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
           />
         </svg>
-        <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+        <h3 className="mb-2 text-lg font-semibold text-foreground">
           No articles yet
         </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-foreground/60">
           Add some feeds to start reading articles
         </p>
       </div>
@@ -126,6 +128,7 @@ export function ArticleList({
               article={article} 
               variant={variant} 
               onArticleClick={onArticleSelect}
+              onReadStatusChange={onReadStatusChange}
             />
           </div>
         );

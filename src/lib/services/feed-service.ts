@@ -355,7 +355,7 @@ export async function deleteFeedWithArticles(id: string): Promise<void> {
 }
 
 /**
- * Get feeds that need to be refreshed
+ * Get feeds that need to be refreshed (system-wide)
  */
 export async function getFeedsToRefresh(): Promise<Feed[]> {
   const now = new Date();
@@ -381,6 +381,95 @@ export async function getFeedsToRefresh(): Promise<Feed[]> {
       lastFetched: "asc",
     },
   });
+}
+
+/**
+ * Get feeds that need to be refreshed for a specific user
+ * Uses user's configured refresh intervals (cascading from feed → category → user preferences)
+ */
+export async function getUserFeedsToRefresh(userId: string): Promise<
+  Array<{
+    feed: Feed;
+    userFeedId: string;
+    refreshInterval: number;
+  }>
+> {
+  const now = new Date();
+
+  // Get all user's subscribed feeds
+  const userFeeds = await prisma.userFeed.findMany({
+    where: { userId },
+    include: {
+      feed: true,
+      userFeedCategories: {
+        include: {
+          userCategory: true,
+        },
+      },
+    },
+  });
+
+  // Get user preferences for defaults
+  const userPreferences = await prisma.userPreferences.findUnique({
+    where: { userId },
+  });
+
+  const defaultRefreshInterval =
+    userPreferences?.defaultRefreshInterval || 60;
+
+  const feedsToRefresh: Array<{
+    feed: Feed;
+    userFeedId: string;
+    refreshInterval: number;
+  }> = [];
+
+  for (const userFeed of userFeeds) {
+    // Skip feeds with too many errors
+    if (userFeed.feed.errorCount >= 10) {
+      continue;
+    }
+
+    // Determine effective refresh interval using cascade logic
+    let refreshInterval = defaultRefreshInterval;
+
+    // Check category settings (if feed is in a category)
+    if (userFeed.userFeedCategories.length > 0) {
+      const categorySettings = userFeed.userFeedCategories[0].userCategory
+        .settings as any;
+      if (
+        categorySettings?.refreshInterval !== undefined &&
+        categorySettings?.refreshInterval !== null
+      ) {
+        refreshInterval = categorySettings.refreshInterval;
+      }
+    }
+
+    // Check feed-specific settings (highest priority)
+    const feedSettings = userFeed.settings as any;
+    if (
+      feedSettings?.refreshInterval !== undefined &&
+      feedSettings?.refreshInterval !== null
+    ) {
+      refreshInterval = feedSettings.refreshInterval;
+    }
+
+    // Check if feed needs refresh
+    const lastFetched = userFeed.feed.lastFetched;
+    const refreshIntervalMs = refreshInterval * 60 * 1000;
+
+    if (
+      !lastFetched ||
+      now.getTime() - lastFetched.getTime() >= refreshIntervalMs
+    ) {
+      feedsToRefresh.push({
+        feed: userFeed.feed,
+        userFeedId: userFeed.id,
+        refreshInterval,
+      });
+    }
+  }
+
+  return feedsToRefresh;
 }
 
 /**

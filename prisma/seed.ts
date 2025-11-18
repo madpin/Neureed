@@ -239,6 +239,19 @@ async function main() {
   }
 
   console.log("✅ Read articles created");
+
+  // Create admin settings
+  await prisma.adminSettings.upsert({
+    where: { key: "embedding_auto_generate" },
+    update: {},
+    create: {
+      key: "embedding_auto_generate",
+      value: false,
+      description: "Automatically generate embeddings when importing feed articles",
+    },
+  });
+
+  console.log("✅ Admin settings created");
   console.log("🎉 Database seed completed successfully!");
   console.log("\n📝 Test User Credentials:");
   console.log("   Email: test@neureed.com");

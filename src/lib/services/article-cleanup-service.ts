@@ -1,5 +1,7 @@
 import { prisma } from "@/src/lib/db";
 import type { Prisma } from "@prisma/client";
+import { getEffectiveFeedSettings } from "./feed-settings-cascade";
+import { logger } from "@/src/lib/logger";
 
 /**
  * Cleanup options
@@ -170,6 +172,101 @@ export async function keepOnlyRecentArticles(
   });
 
   return result.count;
+}
+
+/**
+ * Clean up articles for a specific feed using user-specific settings
+ * If userId is provided, uses cascading settings (feed → category → user → system)
+ * If no userId, uses system defaults
+ */
+export async function cleanupFeedArticles(
+  feedId: string,
+  userId?: string
+): Promise<CleanupResult> {
+  let maxAge = 90; // System default
+  let maxArticlesPerFeed = 500; // System default
+
+  // Get user-specific settings if userId provided
+  if (userId) {
+    try {
+      const settings = await getEffectiveFeedSettings(userId, feedId);
+      maxAge = settings.maxArticleAge;
+      maxArticlesPerFeed = settings.maxArticlesPerFeed;
+
+      logger.debug("Using user-specific cleanup settings", {
+        userId,
+        feedId,
+        maxAge,
+        maxArticlesPerFeed,
+        source: settings.source,
+      });
+    } catch (error) {
+      logger.error("Failed to get user settings, using system defaults", {
+        userId,
+        feedId,
+        error,
+      });
+      // Fall back to system defaults (already set above)
+    }
+  }
+
+  let deletedByAge = 0;
+  let deletedByCount = 0;
+
+  // Calculate cutoff date
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - maxAge);
+
+  // Delete old articles by age
+  const oldArticlesResult = await prisma.article.deleteMany({
+    where: {
+      feedId,
+      createdAt: {
+        lt: cutoffDate,
+      },
+    },
+  });
+  deletedByAge = oldArticlesResult.count;
+
+  // Clean up by count (keep only most recent N articles)
+  const articleCount = await prisma.article.count({
+    where: { feedId },
+  });
+
+  if (articleCount > maxArticlesPerFeed) {
+    const toDelete = articleCount - maxArticlesPerFeed;
+
+    // Get oldest articles to delete
+    const oldestArticles = await prisma.article.findMany({
+      where: { feedId },
+      orderBy: { createdAt: "asc" },
+      take: toDelete,
+      select: { id: true },
+    });
+
+    if (oldestArticles.length > 0) {
+      await prisma.article.deleteMany({
+        where: {
+          id: {
+            in: oldestArticles.map((a) => a.id),
+          },
+        },
+      });
+      deletedByCount = oldestArticles.length;
+    }
+  }
+
+  const totalDeleted = deletedByAge + deletedByCount;
+
+  return {
+    deleted: totalDeleted,
+    preserved: 0,
+    dryRun: false,
+    details: {
+      byAge: deletedByAge,
+      byCount: deletedByCount,
+    },
+  };
 }
 
 /**

@@ -9,12 +9,14 @@ import { RelatedArticles } from "./RelatedArticles";
 import { processArticleContent, estimateReadingTime } from "@/src/lib/content-processor";
 import type { Article, Feed } from "@prisma/client";
 import { useRef, useCallback } from "react";
+import { formatLocalizedDateTime, toISOString as formatISOString } from "@/src/lib/date-utils";
 
 interface ReadingPreferences {
   readingFontFamily: string;
   readingFontSize: number;
   readingLineHeight: number;
   readingParagraphSpacing: number;
+  breakLineSpacing: number;
   showReadingTime: boolean;
 }
 
@@ -27,6 +29,8 @@ function getReadingStyles(preferences: ReadingPreferences | null): React.CSSProp
     lineHeight: preferences.readingLineHeight,
     // @ts-ignore - CSS custom properties
     '--paragraph-spacing': `${preferences.readingParagraphSpacing}rem`,
+    // @ts-ignore - CSS custom properties
+    '--break-line-spacing': `${preferences.breakLineSpacing}rem`,
   };
 }
 
@@ -37,6 +41,7 @@ interface ArticleWithFeed extends Article {
 interface ArticlePanelProps {
   articleId: string;
   onClose: () => void;
+  onReadStatusChange?: () => void;
 }
 
 function normalizeKeyPoints(value: unknown): string[] {
@@ -48,7 +53,7 @@ function normalizeKeyPoints(value: unknown): string[] {
   return [];
 }
 
-export function ArticlePanel({ articleId, onClose }: ArticlePanelProps) {
+export function ArticlePanel({ articleId, onClose, onReadStatusChange }: ArticlePanelProps) {
   const [article, setArticle] = useState<ArticleWithFeed | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -100,6 +105,7 @@ export function ArticlePanel({ articleId, onClose }: ArticlePanelProps) {
               readingFontSize: prefs.readingFontSize || 18,
               readingLineHeight: prefs.readingLineHeight || 1.7,
               readingParagraphSpacing: prefs.readingParagraphSpacing || 1.5,
+              breakLineSpacing: prefs.breakLineSpacing || 0.75,
               showReadingTime: prefs.showReadingTime !== undefined ? prefs.showReadingTime : true,
             });
           }
@@ -112,6 +118,7 @@ export function ArticlePanel({ articleId, onClose }: ArticlePanelProps) {
           readingFontSize: 18,
           readingLineHeight: 1.7,
           readingParagraphSpacing: 1.5,
+          breakLineSpacing: 0.75,
           showReadingTime: true,
         });
       }
@@ -132,22 +139,6 @@ export function ArticlePanel({ articleId, onClose }: ArticlePanelProps) {
     }
   }, []);
 
-  const formatDate = (date: Date | string | null) => {
-    if (!date) return "Unknown date";
-    return new Date(date).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const toISOString = (date: Date | string | null | undefined) => {
-    if (!date) return undefined;
-    return new Date(date).toISOString();
-  };
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -164,7 +155,7 @@ export function ArticlePanel({ articleId, onClose }: ArticlePanelProps) {
       <div className="flex h-full items-center justify-center bg-background">
         <div className="text-center">
           <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-blue-600 border-t-transparent mx-auto"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading article...</p>
+          <p className="text-foreground/70">Loading article...</p>
         </div>
       </div>
     );
@@ -187,10 +178,10 @@ export function ArticlePanel({ articleId, onClose }: ArticlePanelProps) {
               d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
-          <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <h3 className="mb-2 text-lg font-semibold text-foreground">
             Failed to load article
           </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{error}</p>
+          <p className="text-sm text-foreground/60">{error}</p>
           <button
             onClick={onClose}
             className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
@@ -215,7 +206,7 @@ export function ArticlePanel({ articleId, onClose }: ArticlePanelProps) {
   return (
     <div className="flex h-full flex-col bg-background">
       {/* View Tracker */}
-      <ArticleViewTracker articleId={article.id} />
+      <ArticleViewTracker articleId={article.id} onReadStatusChange={onReadStatusChange} />
 
       {/* Header with controls */}
       <div className="flex-shrink-0 border-b border-border bg-background px-4 py-3">
@@ -240,7 +231,7 @@ export function ArticlePanel({ articleId, onClose }: ArticlePanelProps) {
                 />
               </svg>
             </button>
-            <span className="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">
+            <span className="text-sm font-medium text-foreground/70 truncate">
               Reading Panel
             </span>
           </div>
@@ -248,7 +239,7 @@ export function ArticlePanel({ articleId, onClose }: ArticlePanelProps) {
             href={`/articles/${article.id}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-shrink-0 inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium hover:bg-muted dark:border-gray-600"
+            className="flex-shrink-0 inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted border-border"
             title="Open in full page"
           >
             <svg
@@ -283,7 +274,7 @@ export function ArticlePanel({ articleId, onClose }: ArticlePanelProps) {
           )}
 
           {/* Feed Info */}
-          <div className="mb-3 flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+          <div className="mb-3 flex items-center gap-3 text-sm text-foreground/70">
             {article.feed.imageUrl && (
               <img
                 src={article.feed.imageUrl}
@@ -293,8 +284,8 @@ export function ArticlePanel({ articleId, onClose }: ArticlePanelProps) {
             )}
             <span className="font-medium">{article.feed.name}</span>
             <span>•</span>
-            <time dateTime={toISOString(article.publishedAt)}>
-              {formatDate(article.publishedAt)}
+            <time dateTime={formatISOString(article.publishedAt, article.createdAt)}>
+              {formatLocalizedDateTime(article.publishedAt, article.createdAt)}
             </time>
             {article.author && (
               <>
@@ -305,13 +296,13 @@ export function ArticlePanel({ articleId, onClose }: ArticlePanelProps) {
           </div>
 
           {/* Title */}
-          <h1 className="mb-4 text-3xl font-bold leading-tight text-gray-900 dark:text-gray-100">
+          <h1 className="mb-4 text-3xl font-bold leading-tight text-foreground">
             {article.title}
           </h1>
 
           {/* Excerpt */}
           {article.excerpt && (
-            <p className="mb-6 text-lg leading-relaxed text-gray-600 dark:text-gray-300">
+            <p className="mb-6 text-lg leading-relaxed text-foreground/70 dark:text-foreground/40">
               {article.excerpt}
             </p>
           )}
@@ -336,7 +327,7 @@ export function ArticlePanel({ articleId, onClose }: ArticlePanelProps) {
 
           {/* Content */}
           <div
-            className="prose prose-lg max-w-none dark:prose-invert prose-headings:font-bold prose-a:text-blue-600 hover:prose-a:underline dark:prose-a:text-blue-400 [&>p]:mb-[var(--paragraph-spacing)]"
+            className="prose prose-lg max-w-none dark:prose-invert prose-headings:font-bold prose-a:text-blue-600 hover:prose-a:underline dark:prose-a:text-blue-400 [&_p]:mb-[var(--paragraph-spacing)] [&_br]:block [&_br]:mb-[var(--break-line-spacing)]"
             style={{
               ...getReadingStyles(preferences),
             }}
