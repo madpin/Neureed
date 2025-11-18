@@ -3,7 +3,7 @@ nixPkgs = ["nodejs_20", "openssl"]
 
 [phases.install]
 cmds = [
-  "npm ci --prefer-offline --no-audit --legacy-peer-deps"
+  "npm ci --prefer-offline --no-audit"
 ]
 
 [phases.build]
