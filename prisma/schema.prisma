@@ -1,0 +1,290 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+model Feed {
+  id            String    @id @default(cuid())
+  name          String
+  url           String    @unique
+  description   String?   @db.Text
+  siteUrl       String?
+  imageUrl      String?
+  lastFetched   DateTime?
+  etag          String?
+  lastModified  String?
+  fetchInterval Int       @default(60) // in minutes
+  errorCount    Int       @default(0)
+  lastError     String?   @db.Text
+  settings      Json?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  articles        Article[]
+  feedCategories  FeedCategory[]
+  userFeeds       UserFeed[]
+
+  @@index([url])
+  @@index([lastFetched])
+  @@index([errorCount])
+  @@map("feeds")
+}
+
+model Article {
+  id          String    @id @default(cuid())
+  feedId      String
+  title       String
+  content     String    @db.Text
+  url         String    @unique
+  guid        String?
+  author      String?
+  excerpt     String?   @db.Text
+  imageUrl    String?
+  contentHash String?
+  publishedAt DateTime?
+  embedding   Unsupported("vector(1536)")?
+  summary     String?   @db.Text // LLM-generated summary
+  keyPoints   Json?     // LLM-extracted key points
+  topics      String[]  // Detected topics/tags
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  feed            Feed              @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  readArticles    ReadArticle[]
+  articleFeedback ArticleFeedback[]
+
+  @@index([feedId])
+  @@index([publishedAt])
+  @@index([url])
+  @@index([feedId, publishedAt])
+  @@index([guid])
+  @@index([contentHash])
+  @@map("articles")
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  feedCategories FeedCategory[]
+
+  @@map("categories")
+}
+
+model FeedCategory {
+  feedId     String
+  categoryId String
+  createdAt  DateTime @default(now())
+
+  feed     Feed     @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([feedId, categoryId])
+  @@map("feed_categories")
+}
+
+// NextAuth.js Models
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts        Account[]
+  sessions        Session[]
+  userFeeds       UserFeed[]
+  readArticles    ReadArticle[]
+  preferences     UserPreferences?
+  articleFeedback ArticleFeedback[]
+  userPatterns    UserPattern[]
+  userThemes      UserTheme[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// User Feed Subscriptions
+model UserFeed {
+  id           String   @id @default(cuid())
+  userId       String
+  feedId       String
+  customName   String?
+  settings     Json?
+  subscribedAt DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feed Feed @relation(fields: [feedId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, feedId])
+  @@index([userId])
+  @@index([feedId])
+  @@map("user_feeds")
+}
+
+// Read Article Tracking
+model ReadArticle {
+  id        String   @id @default(cuid())
+  userId    String
+  articleId String
+  readAt    DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, articleId])
+  @@index([userId])
+  @@index([articleId])
+  @@index([userId, readAt])
+  @@map("read_articles")
+}
+
+// User Preferences
+model UserPreferences {
+  id                       String   @id @default(cuid())
+  userId                   String   @unique
+  theme                    String   @default("system") // "light", "dark", "system"
+  fontSize                 String   @default("medium") // "small", "medium", "large"
+  articlesPerPage          Int      @default(20)
+  defaultView              String   @default("expanded") // "compact", "expanded"
+  showReadArticles         Boolean  @default(true)
+  autoMarkAsRead           Boolean  @default(false)
+  showRelatedExcerpts      Boolean  @default(false) // Show excerpts in related articles
+  bounceThreshold          Float    @default(0.25) // 25% of reading time to trigger bounce
+  showLowRelevanceArticles Boolean  @default(true) // Show dimmed vs hide completely
+  
+  // LLM Settings
+  llmProvider              String?  // "openai", "ollama", null (use system default)
+  llmModel                 String?  // Model name (e.g., "gpt-4o-mini", "llama2")
+  llmApiKey                String?  @db.Text // Encrypted API key for OpenAI
+  llmBaseUrl               String?  // Base URL for Ollama or custom endpoints
+  
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
+
+// Article Feedback (explicit and implicit)
+model ArticleFeedback {
+  id              String   @id @default(cuid())
+  userId          String
+  articleId       String
+  feedbackType    String   // "explicit" or "implicit"
+  feedbackValue   Float    // 1.0 (thumbs up), -1.0 (thumbs down), -0.5 (bounce)
+  timeSpent       Int?     // Time spent in seconds (for implicit feedback)
+  estimatedTime   Int?     // Estimated reading time in seconds
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, articleId])
+  @@index([userId])
+  @@index([articleId])
+  @@index([userId, createdAt])
+  @@index([feedbackType])
+  @@map("article_feedback")
+}
+
+// User Pattern Learning
+model UserPattern {
+  id            String   @id @default(cuid())
+  userId        String
+  keyword       String
+  weight        Float    // -1.0 to 1.0
+  feedbackCount Int      @default(1)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, keyword])
+  @@index([userId])
+  @@index([userId, weight])
+  @@index([updatedAt])
+  @@map("user_patterns")
+}
+
+// User Custom Themes
+model UserTheme {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?  @db.Text
+  css         String   @db.Text // Custom CSS content
+  isActive    Boolean  @default(false)
+  isPublic    Boolean  @default(false) // Allow sharing in theme gallery
+  isPreset    Boolean  @default(false) // System preset theme
+  previewUrl  String?  // Screenshot/preview image
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@index([userId, isActive])
+  @@index([isPublic])
+  @@map("user_themes")
+}
+

@@ -1,0 +1,42 @@
+# Cursor AI Rules for NeuReed Project
+
+## Database & Migrations
+- When making changes to Prisma schema, ALWAYS create and apply migrations using `npx prisma migrate dev --name <descriptive_name>`
+- Never use `prisma db push` in development - always use proper migrations for tracking schema changes
+- After schema changes, regenerate Prisma Client with `npx prisma generate` (usually done automatically by migrate)
+- Test migrations locally before committing
+
+## Development Workflow
+- Before running Python code, check for `.venv` or `venv` folders and activate if present
+- For Node.js projects, ensure dependencies are installed with `npm install` before running commands
+- Don't try to keep backward compatibility unless explicitly requested
+
+## Code Quality
+- Follow TypeScript best practices with strict type checking
+- Use Zod for runtime validation of API inputs
+- Implement proper error handling with meaningful error messages
+- Add JSDoc comments for public functions and complex logic
+
+## Security
+- Always sanitize user inputs, especially HTML content
+- Validate URLs before fetching external content
+- Use parameterized queries (Prisma handles this automatically)
+- Never expose sensitive data in error messages
+
+## Testing
+- Write tests for critical business logic
+- Test edge cases and error scenarios
+- Aim for 70%+ code coverage
+
+## API Design
+- Use RESTful conventions for API routes
+- Return consistent response formats with proper HTTP status codes
+- Implement pagination for list endpoints
+- Add rate limiting for public endpoints
+
+## Performance
+- Add database indexes for frequently queried fields
+- Implement caching where appropriate
+- Use database connection pooling
+- Monitor and optimize slow queries
+

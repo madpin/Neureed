@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# repository analysis files
+repomix-output.xml
+repomix-*.xml
+
+# prisma
+/prisma/migrations

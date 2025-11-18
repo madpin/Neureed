@@ -1,0 +1,452 @@
+import { prisma } from "@/src/lib/db";
+import { parseFeedUrl, validateFeedUrl, normalizeFeedUrl, isSafeFeedUrl } from "@/src/lib/feed-parser";
+import type { Feed, Prisma } from "@prisma/client";
+
+/**
+ * Input types for feed operations
+ */
+export interface CreateFeedInput {
+  name: string;
+  url: string;
+  description?: string;
+  siteUrl?: string;
+  imageUrl?: string;
+  categoryIds?: string[];
+  fetchInterval?: number;
+}
+
+export interface UpdateFeedInput {
+  name?: string;
+  description?: string;
+  siteUrl?: string;
+  imageUrl?: string;
+  fetchInterval?: number;
+  settings?: Prisma.JsonValue;
+}
+
+export interface PaginationOptions {
+  page?: number;
+  limit?: number;
+}
+
+export interface FeedWithStats extends Feed {
+  articleCount: number;
+  unreadCount?: number;
+}
+
+/**
+ * Create a new feed
+ */
+export async function createFeed(data: CreateFeedInput): Promise<Feed> {
+  // Normalize and validate URL
+  const normalizedUrl = normalizeFeedUrl(data.url);
+  
+  if (!isSafeFeedUrl(normalizedUrl)) {
+    throw new Error("Invalid or unsafe feed URL");
+  }
+
+  // Check if feed already exists
+  const existing = await prisma.feed.findUnique({
+    where: { url: normalizedUrl },
+  });
+
+  if (existing) {
+    throw new Error("Feed already exists");
+  }
+
+  // Create feed
+  const feed = await prisma.feed.create({
+    data: {
+      name: data.name,
+      url: normalizedUrl,
+      description: data.description,
+      siteUrl: data.siteUrl,
+      imageUrl: data.imageUrl,
+      fetchInterval: data.fetchInterval || 60,
+      feedCategories: data.categoryIds
+        ? {
+            create: data.categoryIds.map((categoryId) => ({
+              categoryId,
+            })),
+          }
+        : undefined,
+    },
+    include: {
+      feedCategories: {
+        include: {
+          category: true,
+        },
+      },
+    },
+  });
+
+  return feed;
+}
+
+/**
+ * Validate and create feed from URL
+ * Automatically fetches feed metadata
+ */
+export async function validateAndCreateFeed(
+  url: string,
+  name?: string,
+  categoryIds?: string[]
+): Promise<Feed> {
+  // Normalize URL
+  const normalizedUrl = normalizeFeedUrl(url);
+
+  // Security check
+  if (!isSafeFeedUrl(normalizedUrl)) {
+    throw new Error("Invalid or unsafe feed URL");
+  }
+
+  // Validate feed
+  const isValid = await validateFeedUrl(normalizedUrl);
+  if (!isValid) {
+    throw new Error("Invalid feed URL or unable to parse feed");
+  }
+
+  // Parse feed to get metadata
+  const parsedFeed = await parseFeedUrl(normalizedUrl);
+
+  // Ensure imageUrl is a string (handle array case)
+  let imageUrl = parsedFeed.imageUrl;
+  if (Array.isArray(imageUrl)) {
+    imageUrl = imageUrl[0];
+  }
+
+  // Create feed with metadata
+  return createFeed({
+    name: name || parsedFeed.title,
+    url: normalizedUrl,
+    description: parsedFeed.description,
+    siteUrl: parsedFeed.link,
+    imageUrl: imageUrl,
+    categoryIds,
+  });
+}
+
+/**
+ * Get a single feed by ID
+ */
+export async function getFeed(id: string): Promise<Feed | null> {
+  return prisma.feed.findUnique({
+    where: { id },
+    include: {
+      feedCategories: {
+        include: {
+          category: true,
+        },
+      },
+    },
+  });
+}
+
+/**
+ * Get a feed by URL
+ */
+export async function getFeedByUrl(url: string): Promise<Feed | null> {
+  const normalizedUrl = normalizeFeedUrl(url);
+  return prisma.feed.findUnique({
+    where: { url: normalizedUrl },
+  });
+}
+
+/**
+ * Get all feeds with pagination
+ */
+export async function getAllFeeds(
+  options: PaginationOptions = {}
+): Promise<{ feeds: FeedWithStats[]; total: number }> {
+  const page = options.page || 1;
+  const limit = options.limit || 50;
+  const skip = (page - 1) * limit;
+
+  const [feeds, total] = await Promise.all([
+    prisma.feed.findMany({
+      skip,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+      include: {
+        feedCategories: {
+          include: {
+            category: true,
+          },
+        },
+        _count: {
+          select: {
+            articles: true,
+          },
+        },
+      },
+    }),
+    prisma.feed.count(),
+  ]);
+
+  const feedsWithStats: FeedWithStats[] = feeds.map((feed) => ({
+    ...feed,
+    articleCount: feed._count.articles,
+    _count: undefined,
+  } as FeedWithStats));
+
+  return { feeds: feedsWithStats, total };
+}
+
+/**
+ * Get feeds by category
+ */
+export async function getFeedsByCategory(categoryId: string): Promise<Feed[]> {
+  return prisma.feed.findMany({
+    where: {
+      feedCategories: {
+        some: {
+          categoryId,
+        },
+      },
+    },
+    include: {
+      feedCategories: {
+        include: {
+          category: true,
+        },
+      },
+    },
+    orderBy: { name: "asc" },
+  });
+}
+
+/**
+ * Search feeds by name or description
+ */
+export async function searchFeeds(query: string): Promise<Feed[]> {
+  return prisma.feed.findMany({
+    where: {
+      OR: [
+        { name: { contains: query, mode: "insensitive" } },
+        { description: { contains: query, mode: "insensitive" } },
+        { url: { contains: query, mode: "insensitive" } },
+      ],
+    },
+    include: {
+      feedCategories: {
+        include: {
+          category: true,
+        },
+      },
+    },
+    orderBy: { name: "asc" },
+  });
+}
+
+/**
+ * Update a feed
+ */
+export async function updateFeed(
+  id: string,
+  data: UpdateFeedInput
+): Promise<Feed> {
+  return prisma.feed.update({
+    where: { id },
+    data: {
+      name: data.name,
+      description: data.description,
+      siteUrl: data.siteUrl,
+      imageUrl: data.imageUrl,
+      fetchInterval: data.fetchInterval,
+      settings: data.settings as any,
+    },
+    include: {
+      feedCategories: {
+        include: {
+          category: true,
+        },
+      },
+    },
+  });
+}
+
+/**
+ * Update feed metadata from parsed feed
+ */
+export async function updateFeedMetadata(
+  id: string,
+  metadata: {
+    title?: string;
+    description?: string;
+    link?: string;
+    imageUrl?: string;
+  }
+): Promise<Feed> {
+  return prisma.feed.update({
+    where: { id },
+    data: {
+      name: metadata.title,
+      description: metadata.description,
+      siteUrl: metadata.link,
+      imageUrl: metadata.imageUrl,
+    },
+  });
+}
+
+/**
+ * Record a feed error
+ */
+export async function recordFeedError(
+  id: string,
+  error: string
+): Promise<void> {
+  await prisma.feed.update({
+    where: { id },
+    data: {
+      errorCount: { increment: 1 },
+      lastError: error,
+    },
+  });
+}
+
+/**
+ * Clear feed error
+ */
+export async function clearFeedError(id: string): Promise<void> {
+  await prisma.feed.update({
+    where: { id },
+    data: {
+      errorCount: 0,
+      lastError: null,
+    },
+  });
+}
+
+/**
+ * Update feed last fetched time
+ */
+export async function updateFeedLastFetched(
+  id: string,
+  etag?: string,
+  lastModified?: string
+): Promise<void> {
+  await prisma.feed.update({
+    where: { id },
+    data: {
+      lastFetched: new Date(),
+      etag: etag || undefined,
+      lastModified: lastModified || undefined,
+    },
+  });
+}
+
+/**
+ * Delete a feed
+ */
+export async function deleteFeed(id: string): Promise<void> {
+  await prisma.feed.delete({
+    where: { id },
+  });
+}
+
+/**
+ * Delete a feed with all its articles
+ * (Cascade delete is handled by Prisma schema)
+ */
+export async function deleteFeedWithArticles(id: string): Promise<void> {
+  await prisma.feed.delete({
+    where: { id },
+  });
+}
+
+/**
+ * Get feeds that need to be refreshed
+ */
+export async function getFeedsToRefresh(): Promise<Feed[]> {
+  const now = new Date();
+
+  return prisma.feed.findMany({
+    where: {
+      OR: [
+        // Never fetched
+        { lastFetched: null },
+        // Fetched but interval has passed
+        {
+          lastFetched: {
+            lt: new Date(now.getTime() - 60 * 60 * 1000), // 1 hour ago (default)
+          },
+        },
+      ],
+      // Don't retry feeds with too many errors
+      errorCount: {
+        lt: 10,
+      },
+    },
+    orderBy: {
+      lastFetched: "asc",
+    },
+  });
+}
+
+/**
+ * Get feed statistics
+ */
+export async function getFeedStats(feedId: string): Promise<{
+  totalArticles: number;
+  articlesThisWeek: number;
+  articlesThisMonth: number;
+  lastArticleDate?: Date;
+}> {
+  const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const oneMonthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  const [totalArticles, articlesThisWeek, articlesThisMonth, lastArticle] =
+    await Promise.all([
+      prisma.article.count({
+        where: { feedId },
+      }),
+      prisma.article.count({
+        where: {
+          feedId,
+          createdAt: { gte: oneWeekAgo },
+        },
+      }),
+      prisma.article.count({
+        where: {
+          feedId,
+          createdAt: { gte: oneMonthAgo },
+        },
+      }),
+      prisma.article.findFirst({
+        where: { feedId },
+        orderBy: { publishedAt: "desc" },
+        select: { publishedAt: true },
+      }),
+    ]);
+
+  return {
+    totalArticles,
+    articlesThisWeek,
+    articlesThisMonth,
+    lastArticleDate: lastArticle?.publishedAt || undefined,
+  };
+}
+
+/**
+ * Update feed categories
+ */
+export async function updateFeedCategories(
+  feedId: string,
+  categoryIds: string[]
+): Promise<void> {
+  // Delete existing categories
+  await prisma.feedCategory.deleteMany({
+    where: { feedId },
+  });
+
+  // Create new categories
+  if (categoryIds.length > 0) {
+    await prisma.feedCategory.createMany({
+      data: categoryIds.map((categoryId) => ({
+        feedId,
+        categoryId,
+      })),
+    });
+  }
+}
+
