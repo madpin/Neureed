@@ -10,12 +10,13 @@ if (!Parser) {
 
 /**
  * Fetch and decode feed with proper encoding handling
+ * Supports both RSS and Atom feeds
  */
 async function fetchFeedWithEncoding(url: string): Promise<string> {
   const response = await fetch(url, {
     headers: {
-      "User-Agent": "NeuReed/1.0 (RSS Reader)",
-      Accept: "application/rss+xml, application/xml, text/xml, application/atom+xml",
+      "User-Agent": "NeuReed/1.0 (RSS/Atom Reader)",
+      Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml",
     },
   });
 
@@ -74,22 +75,36 @@ export interface ParsedArticle {
 
 /**
  * Feed parser configuration
+ * Supports both RSS 2.0 and Atom 1.0 feeds
  */
 const PARSER_CONFIG = {
   timeout: 30000, // 30 seconds
   maxRedirects: 5,
   headers: {
-    "User-Agent": "NeuReed/1.0 (RSS Reader)",
-    Accept: "application/rss+xml, application/xml, text/xml, application/atom+xml",
+    "User-Agent": "NeuReed/1.0 (RSS/Atom Reader)",
+    Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml",
     "Accept-Charset": "utf-8",
   },
   customFields: {
-    feed: ["subtitle", "image"],
+    feed: [
+      "subtitle", // Atom feed subtitle
+      "image",    // RSS feed image
+      "logo",     // Atom feed logo
+      "icon",     // Atom feed icon
+    ],
     item: [
+      // Media enclosures
       ["media:content", "mediaContent"],
       ["media:thumbnail", "mediaThumbnail"],
+      // Content fields (RSS)
       ["content:encoded", "contentEncoded"],
       ["description", "description"],
+      // Atom-specific fields
+      ["summary", "summary"],
+      ["content", "content"],
+      // Author fields
+      ["dc:creator", "creator"],
+      ["author", "author"],
     ],
   },
   defaultRSS: 2.0,
@@ -106,7 +121,7 @@ const PARSER_CONFIG = {
 const parser = new Parser(PARSER_CONFIG);
 
 /**
- * Parse an RSS/Atom feed from a URL
+ * Parse an RSS 2.0 or Atom 1.0 feed from a URL
  * @param url - The feed URL to parse
  * @returns Parsed feed data with articles
  * @throws Error if feed cannot be parsed or fetched
@@ -168,6 +183,7 @@ export async function validateFeedUrl(url: string): Promise<boolean> {
 
 /**
  * Parse a single feed item into an article
+ * Handles both RSS and Atom item formats
  */
 function parseArticle(item: Parser.Item): ParsedArticle {
   // Extract content (prefer content:encoded over description)
@@ -179,17 +195,20 @@ function parseArticle(item: Parser.Item): ParsedArticle {
   // Extract image
   const imageUrl = extractArticleImage(item, content);
   
-  // Parse published date
-  const publishedAt = item.pubDate ? new Date(item.pubDate) : item.isoDate ? new Date(item.isoDate) : undefined;
+  // Parse published date (Atom uses isoDate, RSS uses pubDate)
+  const publishedAt = item.isoDate ? new Date(item.isoDate) : item.pubDate ? new Date(item.pubDate) : undefined;
+
+  // Extract author (handle both RSS and Atom formats)
+  const author = extractAuthor(item);
 
   // Decode HTML entities from all text fields
   const decodedTitle = item.title ? decodeHtmlEntities(item.title) : "Untitled";
   const decodedContent = content ? decodeHtmlEntities(content) : "";
   const decodedExcerpt = excerpt ? decodeHtmlEntities(excerpt) : undefined;
-  const decodedAuthor = item.creator || (item as any).author ? decodeHtmlEntities(item.creator || (item as any).author || "") : undefined;
+  const decodedAuthor = author ? decodeHtmlEntities(author) : undefined;
 
-  // Generate fallback URL if link is missing
-  const link = item.link || (item.guid && item.guid.startsWith('http') ? item.guid : undefined);
+  // Generate fallback URL if link is missing (Atom uses id as fallback)
+  const link = item.link || (item.guid && item.guid.startsWith('http') ? item.guid : undefined) || (item as any).id;
   
   return {
     title: decodedTitle,
@@ -204,20 +223,60 @@ function parseArticle(item: Parser.Item): ParsedArticle {
 }
 
 /**
+ * Extract author from feed item
+ * Handles both RSS (dc:creator, author) and Atom (author) formats
+ */
+function extractAuthor(item: Parser.Item): string | undefined {
+  const customItem = item as Parser.Item & {
+    creator?: string;
+    author?: string | { name?: string; email?: string };
+    "dc:creator"?: string;
+  };
+
+  // Try dc:creator first (Dublin Core, common in RSS)
+  if (customItem["dc:creator"]) {
+    return customItem["dc:creator"];
+  }
+  
+  // Try creator field
+  if (customItem.creator) {
+    return customItem.creator;
+  }
+  
+  // Handle Atom author object format
+  if (customItem.author) {
+    if (typeof customItem.author === "string") {
+      return customItem.author;
+    } else if (customItem.author.name) {
+      return customItem.author.name;
+    } else if (customItem.author.email) {
+      return customItem.author.email;
+    }
+  }
+  
+  return undefined;
+}
+
+/**
  * Extract content from feed item (prefer content:encoded over description)
+ * Handles both RSS (content:encoded, description) and Atom (content, summary) formats
  */
 function extractContent(item: Parser.Item): string {
   const customItem = item as Parser.Item & {
     contentEncoded?: string;
     "content:encoded"?: string;
+    content?: string;
+    summary?: string;
   };
 
   // Priority: content:encoded > contentEncoded > content > description > summary
   return (
     customItem["content:encoded"] ||
     customItem.contentEncoded ||
+    customItem.content ||
     item.content ||
     item.contentSnippet ||
+    customItem.summary ||
     item.summary ||
     ""
   );
@@ -243,23 +302,48 @@ function extractExcerpt(item: Parser.Item, content: string): string | undefined 
 
 /**
  * Extract image URL from feed metadata
+ * Supports both RSS (image) and Atom (logo/icon) formats
  */
 function extractFeedImage(feed: Parser.Output<unknown>): string | undefined {
   const customFeed = feed as Parser.Output<unknown> & {
     image?: { url?: string; link?: string } | string | string[];
+    logo?: string | string[];  // Atom feed logo
+    icon?: string | string[];  // Atom feed icon
     itunes?: { image?: string | string[] };
   };
 
   // Handle different image formats
   let imageUrl: string | undefined;
 
+  // Try RSS image first
   if (typeof customFeed.image === "string") {
     imageUrl = customFeed.image;
   } else if (Array.isArray(customFeed.image)) {
     imageUrl = customFeed.image[0];
   } else if (customFeed.image?.url) {
     imageUrl = customFeed.image.url;
-  } else if (customFeed.itunes?.image) {
+  }
+  
+  // Try Atom logo
+  if (!imageUrl && customFeed.logo) {
+    if (Array.isArray(customFeed.logo)) {
+      imageUrl = customFeed.logo[0];
+    } else {
+      imageUrl = customFeed.logo;
+    }
+  }
+  
+  // Try Atom icon
+  if (!imageUrl && customFeed.icon) {
+    if (Array.isArray(customFeed.icon)) {
+      imageUrl = customFeed.icon[0];
+    } else {
+      imageUrl = customFeed.icon;
+    }
+  }
+  
+  // Try iTunes image
+  if (!imageUrl && customFeed.itunes?.image) {
     if (Array.isArray(customFeed.itunes.image)) {
       imageUrl = customFeed.itunes.image[0];
     } else {

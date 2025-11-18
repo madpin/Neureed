@@ -1,27 +1,14 @@
-import { NextRequest } from "next/server";
 import { getArticlesByDateRange } from "@/src/lib/services/article-service";
 import { recentArticlesSchema } from "@/src/lib/validations/article-validation";
-import { apiResponse, apiError } from "@/src/lib/api-response";
+import { createHandler } from "@/src/lib/api-handler";
 
 /**
  * GET /api/articles/recent
  * Get recent articles within a time window
  */
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-
-    // Parse and validate query parameters
-    const queryResult = recentArticlesSchema.safeParse({
-      limit: searchParams.get("limit"),
-      hours: searchParams.get("hours"),
-    });
-
-    if (!queryResult.success) {
-      return apiError("Invalid query parameters", 400, queryResult.error.errors);
-    }
-
-    const { limit, hours } = queryResult.data;
+export const GET = createHandler(
+  async ({ query }) => {
+    const { limit, hours } = query;
 
     // Calculate date range
     const endDate = new Date();
@@ -34,7 +21,7 @@ export async function GET(request: NextRequest) {
       { limit }
     );
 
-    return apiResponse({
+    return {
       articles,
       total,
       timeRange: {
@@ -42,14 +29,8 @@ export async function GET(request: NextRequest) {
         end: endDate,
         hours,
       },
-    });
-  } catch (error) {
-    console.error("Error fetching recent articles:", error);
-    return apiError(
-      "Failed to fetch recent articles",
-      500,
-      error instanceof Error ? error.message : undefined
-    );
-  }
-}
+    };
+  },
+  { querySchema: recentArticlesSchema }
+);
 

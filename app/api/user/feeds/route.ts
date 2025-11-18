@@ -1,86 +1,67 @@
-import { NextRequest } from "next/server";
-import { apiResponse, apiError } from "@/src/lib/api-response";
-import { withAuth } from "@/src/lib/middleware/auth-middleware";
 import {
   getUserFeeds,
   subscribeFeed,
   unsubscribeFeed,
   getAllFeedsWithSubscriptionStatus,
 } from "@/src/lib/services/user-feed-service";
+import { getFeedsGroupedByCategory } from "@/src/lib/services/user-category-service";
 import { z } from "zod";
+import { createHandler } from "@/src/lib/api-handler";
 
 /**
  * GET /api/user/feeds
  * Get user's subscribed feeds or all feeds with subscription status
+ * Optionally group by categories
  */
-export async function GET(request: NextRequest) {
-  return withAuth(async (user) => {
-    try {
-      const { searchParams } = new URL(request.url);
-      const includeAll = searchParams.get("includeAll") === "true";
+export const GET = createHandler(
+  async ({ request, session }) => {
+    const { searchParams } = new URL(request.url);
+    const includeAll = searchParams.get("includeAll") === "true";
+    const groupByCategory = searchParams.get("groupByCategory") === "true";
 
-      if (includeAll) {
-        // Return all feeds with subscription status
-        const feeds = await getAllFeedsWithSubscriptionStatus(user.id);
-        return apiResponse({ feeds });
-      } else {
-        // Return only subscribed feeds
-        const subscriptions = await getUserFeeds(user.id);
-        return apiResponse({ subscriptions });
-      }
-    } catch (error) {
-      console.error("Error fetching user feeds:", error);
-      return apiError(
-        "Failed to fetch feeds",
-        500,
-        error instanceof Error ? error.message : undefined
-      );
+    if (groupByCategory) {
+      // Return feeds grouped by categories
+      const grouped = await getFeedsGroupedByCategory(session!.user!.id);
+      return grouped;
+    } else if (includeAll) {
+      // Return all feeds with subscription status
+      const feeds = await getAllFeedsWithSubscriptionStatus(session!.user!.id);
+      return { feeds };
+    } else {
+      // Return only subscribed feeds
+      const subscriptions = await getUserFeeds(session!.user!.id);
+      return { subscriptions };
     }
-  });
-}
+  },
+  { requireAuth: true }
+);
 
 const subscribeSchema = z.object({
   feedId: z.string(),
   customName: z.string().optional(),
+  categoryId: z.string().optional(),
 });
 
 /**
  * POST /api/user/feeds
  * Subscribe to a feed
+ * Optionally assign to a category
  */
-export async function POST(request: NextRequest) {
-  return withAuth(async (user) => {
-    try {
-      const body = await request.json();
-      const result = subscribeSchema.safeParse(body);
+export const POST = createHandler(
+  async ({ body, session }) => {
+    const { feedId, customName, categoryId } = body;
 
-      if (!result.success) {
-        return apiError("Invalid request body", 400, result.error.errors);
-      }
+    const subscription = await subscribeFeed(
+      session!.user!.id,
+      feedId,
+      customName,
+      categoryId
+    );
 
-      const { feedId, customName } = result.data;
-
-      const subscription = await subscribeFeed(user.id, feedId, customName);
-
-      return apiResponse(
-        { subscription, message: "Successfully subscribed to feed" },
-        201
-      );
-    } catch (error) {
-      console.error("Error subscribing to feed:", error);
-      
-      if (error instanceof Error && error.message.includes("Unique constraint")) {
-        return apiError("Already subscribed to this feed", 409);
-      }
-
-      return apiError(
-        "Failed to subscribe to feed",
-        500,
-        error instanceof Error ? error.message : undefined
-      );
-    }
-  });
-}
+    return { subscription, message: "Successfully subscribed to feed" };
+  },
+  { bodySchema: subscribeSchema, requireAuth: true }
+);
 
 const unsubscribeSchema = z.object({
   feedId: z.string(),
@@ -90,29 +71,14 @@ const unsubscribeSchema = z.object({
  * DELETE /api/user/feeds
  * Unsubscribe from a feed
  */
-export async function DELETE(request: NextRequest) {
-  return withAuth(async (user) => {
-    try {
-      const body = await request.json();
-      const result = unsubscribeSchema.safeParse(body);
+export const DELETE = createHandler(
+  async ({ body, session }) => {
+    const { feedId } = body;
 
-      if (!result.success) {
-        return apiError("Invalid request body", 400, result.error.errors);
-      }
+    await unsubscribeFeed(session!.user!.id, feedId);
 
-      const { feedId } = result.data;
-
-      await unsubscribeFeed(user.id, feedId);
-
-      return apiResponse({ message: "Successfully unsubscribed from feed" });
-    } catch (error) {
-      console.error("Error unsubscribing from feed:", error);
-      return apiError(
-        "Failed to unsubscribe from feed",
-        500,
-        error instanceof Error ? error.message : undefined
-      );
-    }
-  });
-}
+    return { message: "Successfully unsubscribed from feed" };
+  },
+  { bodySchema: unsubscribeSchema, requireAuth: true }
+);
 

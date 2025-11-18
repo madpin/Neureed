@@ -1,5 +1,3 @@
-import { NextRequest } from "next/server";
-import { auth } from "@/src/lib/auth";
 import {
   recordExplicitFeedback,
   getUserFeedbackForArticle,
@@ -7,105 +5,70 @@ import {
   type ExplicitFeedbackValue,
 } from "@/src/lib/services/feedback-service";
 import { updateUserPatterns } from "@/src/lib/services/pattern-detection-service";
-import { apiResponse, apiError } from "@/src/lib/api-response";
+import { createHandler } from "@/src/lib/api-handler";
+import { z } from "zod";
 
 /**
  * GET /api/user/articles/[id]/feedback
  * Get user's feedback for an article
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return apiError("Unauthorized", 401);
-    }
-
-    const { id: articleId } = await params;
+export const GET = createHandler(
+  async ({ params, session }) => {
+    const { id: articleId } = params;
 
     const feedback = await getUserFeedbackForArticle(
-      session.user.id,
+      session!.user!.id,
       articleId
     );
 
-    return apiResponse({
-      feedback: feedback || null,
-    });
-  } catch (error) {
-    console.error("Error fetching feedback:", error);
-    return apiError("Failed to fetch feedback");
-  }
-}
+    return { feedback: feedback || null };
+  },
+  { requireAuth: true }
+);
+
+const feedbackSchema = z.object({
+  feedbackValue: z.union([z.literal(1.0), z.literal(-1.0)]),
+});
 
 /**
  * POST /api/user/articles/[id]/feedback
  * Submit explicit feedback (thumbs up/down)
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return apiError("Unauthorized", 401);
-    }
-
-    const { id: articleId } = await params;
-    const body = await request.json();
+export const POST = createHandler(
+  async ({ params, body, session }) => {
+    const { id: articleId } = params;
     const { feedbackValue } = body;
-
-    // Validate feedback value
-    if (feedbackValue !== 1.0 && feedbackValue !== -1.0) {
-      return apiError("Invalid feedback value. Must be 1.0 or -1.0", 400);
-    }
 
     // Record feedback
     const feedback = await recordExplicitFeedback(
-      session.user.id,
+      session!.user!.id,
       articleId,
       feedbackValue as ExplicitFeedbackValue
     );
 
     // Update user patterns in real-time
-    await updateUserPatterns(session.user.id, articleId, feedbackValue);
+    await updateUserPatterns(session!.user!.id, articleId, feedbackValue);
 
-    return apiResponse({
+    return {
       feedback,
       message: "Feedback recorded successfully",
-    });
-  } catch (error) {
-    console.error("Error recording feedback:", error);
-    return apiError("Failed to record feedback");
-  }
-}
+    };
+  },
+  { bodySchema: feedbackSchema, requireAuth: true }
+);
 
 /**
  * DELETE /api/user/articles/[id]/feedback
  * Delete feedback for an article
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return apiError("Unauthorized", 401);
-    }
+export const DELETE = createHandler(
+  async ({ params, session }) => {
+    const { id: articleId } = params;
 
-    const { id: articleId } = await params;
+    await deleteFeedback(session!.user!.id, articleId);
 
-    await deleteFeedback(session.user.id, articleId);
-
-    return apiResponse({
-      message: "Feedback deleted successfully",
-    });
-  } catch (error) {
-    console.error("Error deleting feedback:", error);
-    return apiError("Failed to delete feedback");
-  }
-}
+    return { message: "Feedback deleted successfully" };
+  },
+  { requireAuth: true }
+);
 

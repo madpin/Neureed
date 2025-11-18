@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Feed } from "@prisma/client";
 import { FeedSettingsPanel } from "./FeedSettingsPanel";
 
@@ -12,9 +13,10 @@ interface FeedWithStats extends Feed {
 interface FeedListProps {
   feeds: FeedWithStats[];
   selectedFeedId?: string;
-  onSelectFeed: (feedId: string | null) => void;
+  onSelectFeed?: (feedId: string | null) => void;
   onDeleteFeed: (feedId: string) => void;
   onRefreshFeed: (feedId: string) => void;
+  onUnsubscribeFeed: (feedId: string) => void;
 }
 
 export function FeedList({
@@ -23,12 +25,28 @@ export function FeedList({
   onSelectFeed,
   onDeleteFeed,
   onRefreshFeed,
+  onUnsubscribeFeed,
 }: FeedListProps) {
+  const router = useRouter();
   const [expandedFeedId, setExpandedFeedId] = useState<string | null>(null);
   const [settingsFeedId, setSettingsFeedId] = useState<string | null>(null);
 
   const handleToggleFeed = (feedId: string) => {
     setExpandedFeedId(expandedFeedId === feedId ? null : feedId);
+  };
+
+  const handleSelectFeed = (feedId: string | null) => {
+    if (onSelectFeed) {
+      // Use callback if provided (for backwards compatibility)
+      onSelectFeed(feedId);
+    } else {
+      // Use router navigation
+      if (feedId) {
+        router.push(`/feeds/${feedId}`);
+      } else {
+        router.push("/");
+      }
+    }
   };
 
   const hasExtractionSettings = (feed: Feed) => {
@@ -41,7 +59,7 @@ export function FeedList({
     <div className="flex flex-col gap-1">
       {/* All Articles */}
       <button
-        onClick={() => onSelectFeed(null)}
+        onClick={() => handleSelectFeed(null)}
         className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors ${
           !selectedFeedId
             ? "bg-accent/10 text-primary"
@@ -88,7 +106,7 @@ export function FeedList({
                 }`}
               >
                 <button
-                  onClick={() => onSelectFeed(feed.id)}
+                  onClick={() => handleSelectFeed(feed.id)}
                   className="flex flex-1 items-center gap-3 text-left min-w-0"
                 >
                   {feed.imageUrl ? (
@@ -202,34 +220,6 @@ export function FeedList({
                       <span className="ml-auto h-2 w-2 rounded-full bg-accent" title="Has extraction settings" />
                     )}
                   </button>
-                  <button
-                    onClick={() => {
-                      if (
-                        confirm(
-                          `Are you sure you want to delete "${feed.name}"? This will also delete all articles from this feed.`
-                        )
-                      ) {
-                        onDeleteFeed(feed.id);
-                      }
-                      setExpandedFeedId(null);
-                    }}
-                    className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-accent hover:bg-muted"
-                  >
-                    <svg
-                      className="h-4 w-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                    Delete
-                  </button>
                 </div>
               )}
             </div>
@@ -243,6 +233,8 @@ export function FeedList({
           feedId={settingsFeedId}
           feedName={feeds.find((f) => f.id === settingsFeedId)?.name || "Feed"}
           onClose={() => setSettingsFeedId(null)}
+          onUnsubscribe={onUnsubscribeFeed}
+          onDelete={onDeleteFeed}
         />
       )}
     </div>

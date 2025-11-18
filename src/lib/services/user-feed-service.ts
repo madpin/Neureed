@@ -1,6 +1,7 @@
 import { prisma } from "../db";
 import type { UserFeed, Feed } from "@prisma/client";
 import type { UserFeedSubscription, FeedWithSubscription } from "@/src/types/user";
+import { assignFeedToCategory } from "./user-category-service";
 
 /**
  * Get all feeds subscribed by a user
@@ -15,19 +16,28 @@ export async function getUserFeeds(userId: string): Promise<UserFeedSubscription
 
 /**
  * Subscribe a user to a feed
+ * Optionally assign to a category
  */
 export async function subscribeFeed(
   userId: string,
   feedId: string,
-  customName?: string
+  customName?: string,
+  categoryId?: string
 ): Promise<UserFeed> {
-  return await prisma.userFeed.create({
+  const userFeed = await prisma.userFeed.create({
     data: {
       userId,
       feedId,
       customName,
     },
   });
+
+  // If categoryId provided, assign to category
+  if (categoryId) {
+    await assignFeedToCategory(userId, userFeed.id, categoryId);
+  }
+
+  return userFeed;
 }
 
 /**

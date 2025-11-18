@@ -1,0 +1,75 @@
+import { createHandler } from "@/src/lib/api-handler";
+import { z } from "zod";
+import {
+  getUserCategory,
+  updateUserCategory,
+  deleteUserCategory,
+} from "@/src/lib/services/user-category-service";
+
+/**
+ * GET /api/user/categories/:categoryId
+ * Get a specific category
+ */
+export const GET = createHandler(
+  async ({ params, session }) => {
+    const { categoryId } = params;
+
+    const category = await getUserCategory(session!.user!.id, categoryId);
+
+    if (!category) {
+      return {
+        error: "Category not found",
+        status: 404,
+      };
+    }
+
+    return { category };
+  },
+  { requireAuth: true }
+);
+
+const updateCategorySchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  description: z.string().max(500).optional().nullable(),
+  settings: z.record(z.any()).optional().nullable(),
+});
+
+/**
+ * PUT /api/user/categories/:categoryId
+ * Update a category
+ */
+export const PUT = createHandler(
+  async ({ params, body, session }) => {
+    const { categoryId } = params;
+
+    const category = await updateUserCategory(
+      session!.user!.id,
+      categoryId,
+      body
+    );
+
+    return {
+      category,
+      message: "Category updated successfully",
+    };
+  },
+  { bodySchema: updateCategorySchema, requireAuth: true }
+);
+
+/**
+ * DELETE /api/user/categories/:categoryId
+ * Delete a category
+ */
+export const DELETE = createHandler(
+  async ({ params, session }) => {
+    const { categoryId } = params;
+
+    await deleteUserCategory(session!.user!.id, categoryId);
+
+    return {
+      message: "Category deleted successfully",
+    };
+  },
+  { requireAuth: true }
+);
+

@@ -4,6 +4,112 @@ All notable changes to NeuReed are documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **Nested Route Navigation with Browser History Support**
+  - Implemented nested URL structure for feeds and articles (`/feeds/[feedId]`, `/feeds/[feedId]/articles/[articleId]`)
+  - Browser back button now works granularly through feed changes and article navigation
+  - Each feed selection creates a proper browser history entry
+  - Each article opened in reading panel creates a history entry
+  - Context-aware article links maintain feed context in URLs
+  - Reading panel navigation uses `router.push()` instead of `router.replace()` for proper history
+  - Automatic redirects for article routes to open in reading panel
+  - Feed selection now uses router navigation instead of state-based navigation
+
+- **User-Specific Feed Categories**
+  - Create, rename, and delete personal feed categories
+  - Each user can organize their own feeds independently
+  - Category-level default settings (extraction method, refresh interval)
+  - Individual feed settings override category defaults
+  - Drag-and-drop feeds to assign them to categories
+  - Drag-and-drop feeds to "Uncategorized" to remove from all categories
+  - Category reordering via drag-and-drop
+  - Persistent category expand/collapse states per user
+  - Feed count badges on each category
+  - Comprehensive category management modal showing all categories
+
+- **Collapsible Sidebar**
+  - Icon-only mode (20px width) with tooltips on hover
+  - Toggle button at bottom of sidebar
+  - Sidebar state persists across sessions
+  - Full support in both expanded and collapsed modes
+  - Smooth transitions between states
+
+- **Enhanced Feed Organization**
+  - Feeds grouped by user categories
+  - Collapsible category sections with persistent state
+  - "Uncategorized" section (only shows when needed)
+  - Visual feedback during drag operations
+  - Dropdown menus for quick category and feed actions
+  - Settings button in each feed menu
+  - Click category name to filter articles by that category
+  - Category filter persists in URL (shareable links)
+  - Works from both home page and feed detail page
+  - Selected category is visually highlighted
+
+- **Feed Management**
+  - Users can now permanently delete feeds from the feed settings panel
+  - Separated "Unsubscribe" (removes user subscription) from "Delete Feed" (removes feed for all users)
+  - Added double confirmation for feed deletion with feed name verification
+  - Cascading deletion of all articles when feed is deleted
+  - Feed deletion options in a dedicated "Danger Zone" section in settings
+  - Clear visual distinction between unsubscribe and delete actions
+
+### Enhanced
+- **Improved UI/UX**
+  - Fixed dropdown menu positioning to prevent cutoff during scroll
+  - Menus now use fixed positioning with dynamic coordinates
+  - Separate click behaviors: arrow expands/collapses, name filters by category
+  - Removed drag handles in favor of entire row being draggable
+  - Consistent menu styling across feeds and categories
+
+- **Improved Atom Feed Support**
+  - Enhanced feed parser to better handle Atom 1.0 feeds
+  - Added support for Atom-specific fields (logo, icon, summary, content)
+  - Improved author extraction for both RSS and Atom formats
+  - Better date handling (isoDate for Atom, pubDate for RSS)
+  - Enhanced content extraction with fallback chain
+
+### Fixed
+- **Date Serialization Issue**
+  - Fixed TypeError when displaying article dates in ArticlePanel and article detail pages
+  - Added proper handling for dates serialized as strings from API responses
+  - Dates now correctly converted before calling toISOString()
+
+- **Drag-and-Drop Issues**
+  - Feed-to-category assignment now works correctly
+  - Visual feedback shows drop zones properly
+  - Categories highlight when dragging feeds over them
+  - Optimistic UI updates with backend persistence
+  - Fixed buttons inside categories blocking drop events (made them non-draggable)
+
+- **Feed Detail Page**
+  - Updated feed detail page (`/feeds/[feedId]`) to use CategoryList component
+  - Sidebar now shows categories on all pages consistently
+  - Added support for collapsed sidebar on feed pages
+  - Categories auto-collapse when sidebar is in icon-only mode to prevent long icon lists
+  - Fixed race condition where expanded categories from preferences would load even when sidebar is collapsed
+  - Fixed horizontal scrollbar appearing due to missing overflow-hidden on root container
+
+### Database Changes
+- Added `UserCategory` model for user-specific categories
+- Added `UserFeedCategory` junction table for feed-category assignments
+- Added `sidebarCollapsed` and `categoryStates` to `UserPreferences`
+- Migration: `20251118095229_add_user_categories_and_sidebar_preferences`
+
+### API Changes
+- `GET /api/user/categories` - List user categories
+- `POST /api/user/categories` - Create new category
+- `GET /api/user/categories/:categoryId` - Get category details
+- `PUT /api/user/categories/:categoryId` - Update category (name, description, settings)
+- `DELETE /api/user/categories/:categoryId` - Delete category
+- `POST /api/user/categories/reorder` - Reorder categories via drag-and-drop
+- `POST /api/user/categories/:categoryId/feeds` - Assign feed to category
+- `DELETE /api/user/categories/:categoryId/feeds` - Unassign feed from category
+- `DELETE /api/user/feeds/:userFeedId/categories` - Remove feed from all categories
+- `GET /api/user/feeds?groupByCategory=true` - Get feeds grouped by categories
+- `POST /api/user/feeds` - Now accepts optional `categoryId` parameter
+- `GET /api/articles?categoryId=xxx` - Filter articles by category
+
 ### Planned Features
 See `new_ideas.md` for upcoming feature backlog.
 

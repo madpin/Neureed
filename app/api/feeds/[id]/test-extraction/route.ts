@@ -1,8 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
 import { testFeedExtractionSettings } from "@/src/lib/services/feed-settings-service";
 import { testExtraction } from "@/src/lib/services/content-extraction-service";
 import { testExtractionSchema } from "@/src/lib/validations/extraction-validation";
-import { apiResponse, apiError } from "@/src/lib/api-response";
+import { createHandler } from "@/src/lib/api-handler";
 import { logger } from "@/src/lib/logger";
 import { prisma } from "@/src/lib/db";
 
@@ -10,26 +9,13 @@ import { prisma } from "@/src/lib/db";
  * POST /api/feeds/[id]/test-extraction
  * Test extraction configuration for a feed
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const body = await request.json();
+export const POST = createHandler(
+  async ({ params, body }) => {
+    const { id } = params;
 
     logger.info(`[API] Testing extraction for feed ${id}`);
 
-    // Validate request body
-    const validation = testExtractionSchema.safeParse(body);
-    if (!validation.success) {
-      return apiError(
-        `Validation error: ${validation.error.errors.map((e) => e.message).join(", ")}`,
-        400
-      );
-    }
-
-    const testConfig = validation.data;
+    const testConfig = body;
 
     // Get feed
     const feed = await prisma.feed.findUnique({
@@ -38,7 +24,7 @@ export async function POST(
     });
 
     if (!feed) {
-      return apiError("Feed not found", 404);
+      throw new Error("Feed not found");
     }
 
     // Determine URL to test
@@ -48,7 +34,7 @@ export async function POST(
       if (feed.articles.length > 0 && feed.articles[0].url) {
         testUrl = feed.articles[0].url;
       } else {
-        return apiError("No article URL available to test. Please add a URL parameter or refresh the feed first.", 400);
+        throw new Error("No article URL available to test. Please add a URL parameter or refresh the feed first.");
       }
     }
 
@@ -61,7 +47,7 @@ export async function POST(
     ) {
       // Test with feed's existing settings
       const result = await testFeedExtractionSettings(id);
-      return apiResponse({ result }, 200);
+      return { result };
     }
 
     // Test with custom config
@@ -93,13 +79,8 @@ export async function POST(
 
     const result = await testExtraction(testUrl, settings);
 
-    return apiResponse({ result }, 200);
-  } catch (error) {
-    logger.error(`[API] Test extraction failed: ${error}`);
-    return apiError(
-      error instanceof Error ? error.message : "Test extraction failed",
-      500
-    );
-  }
-}
+    return { result };
+  },
+  { bodySchema: testExtractionSchema }
+);
 

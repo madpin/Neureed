@@ -74,8 +74,10 @@ export function ReadingPanelLayout({ children }: ReadingPanelLayoutProps) {
     const articleId = searchParams.get("article");
     if (articleId && articleId !== selectedArticleId) {
       setSelectedArticleId(articleId);
+    } else if (!articleId && selectedArticleId) {
+      setSelectedArticleId(null);
     }
-  }, [searchParams]);
+  }, [searchParams, selectedArticleId]);
 
   // Update URL when article selection changes
   const handleArticleSelect = useCallback(
@@ -83,18 +85,27 @@ export function ReadingPanelLayout({ children }: ReadingPanelLayoutProps) {
       console.log("[ReadingPanelLayout] Article selected:", articleId);
       setSelectedArticleId(articleId);
 
-      // Update URL
-      const params = new URLSearchParams(searchParams.toString());
-      if (articleId) {
-        params.set("article", articleId);
-      } else {
-        params.delete("article");
-      }
+      // Get current path to determine context
+      const currentPath = window.location.pathname;
       
-      const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
-      router.replace(newUrl, { scroll: false });
+      if (articleId) {
+        // Extract feedId from path if we're on a feed page
+        const feedMatch = currentPath.match(/^\/feeds\/([^\/]+)/);
+        
+        if (feedMatch) {
+          const feedId = feedMatch[1];
+          // Navigate to nested article route which redirects with query param
+          router.push(`/feeds/${feedId}/articles/${articleId}`);
+        } else {
+          // Navigate to article route which redirects with query param
+          router.push(`/articles/${articleId}`);
+        }
+      } else {
+        // Closing the article, navigate back to current feed or home
+        router.push(currentPath);
+      }
     },
-    [searchParams, router]
+    [router]
   );
 
   const handleClosePanel = useCallback(() => {

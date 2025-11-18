@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { OpmlExportModal } from "@/app/components/feeds/OpmlExportModal";
+import { OpmlImportModal } from "@/app/components/feeds/OpmlImportModal";
 
 interface UserPreferences {
     theme: string;
@@ -24,7 +26,7 @@ interface UserPreferences {
     readingPanelSize: number;
 }
 
-type TabId = "profile" | "appearance" | "reading" | "learning" | "llm";
+type TabId = "profile" | "appearance" | "reading" | "learning" | "llm" | "feeds";
 
 interface Tab {
     id: TabId;
@@ -35,11 +37,20 @@ interface Tab {
 export default function PreferencesPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<TabId>("profile");
+    const searchParams = useSearchParams();
+    const tabFromUrl = searchParams.get("tab") as TabId | null;
+    const [activeTab, setActiveTab] = useState<TabId>(tabFromUrl || "profile");
     const [preferences, setPreferences] = useState<UserPreferences | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+    // Update active tab when URL changes
+    useEffect(() => {
+        if (tabFromUrl) {
+            setActiveTab(tabFromUrl);
+        }
+    }, [tabFromUrl]);
 
     const tabs: Tab[] = [
         {
@@ -84,6 +95,15 @@ export default function PreferencesPage() {
             icon: (
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                </svg>
+            ),
+        },
+        {
+            id: "feeds",
+            label: "Feeds & OPML",
+            icon: (
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                 </svg>
             ),
         },
@@ -216,20 +236,12 @@ export default function PreferencesPage() {
                             Customize your NeuReed experience
                         </p>
                     </div>
-                    <div className="flex gap-2">
-                        <Link
-                            href="/preferences/analytics"
-                            className="rounded-lg border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30"
-                        >
-                            Learning Dashboard
-                        </Link>
-                        <Link
-                            href="/"
-                            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-800"
-                        >
-                            Back to Home
-                        </Link>
-                    </div>
+                    <Link
+                        href="/"
+                        className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-800"
+                    >
+                        Back to Home
+                    </Link>
                 </div>
 
                 {/* Save Message */}
@@ -289,6 +301,10 @@ export default function PreferencesPage() {
 
                             {activeTab === "llm" && (
                                 <LLMTab preferences={preferences} updatePreference={updatePreference} />
+                            )}
+
+                            {activeTab === "feeds" && (
+                                <FeedsTab />
                             )}
                         </div>
 
@@ -810,6 +826,208 @@ function LLMTab({ preferences, updatePreference }: {
                     </div>
                 )}
             </div>
+        </div>
+    );
+}
+
+// Feeds Tab Component
+function FeedsTab() {
+    const [showExportModal, setShowExportModal] = useState(false);
+    const [showImportModal, setShowImportModal] = useState(false);
+    const [stats, setStats] = useState<{
+        totalFeeds: number;
+        totalCategories: number;
+    } | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        loadStats();
+    }, []);
+
+    const loadStats = async () => {
+        try {
+            setLoading(true);
+
+            // Load feed count
+            const feedsResponse = await fetch("/api/user/feeds");
+            const feedsData = await feedsResponse.json();
+            const totalFeeds = feedsData.data?.length || 0;
+
+            // Load categories
+            const categoriesResponse = await fetch("/api/feeds?limit=1000");
+            const categoriesData = await categoriesResponse.json();
+
+            // Extract unique categories
+            const uniqueCategories = new Set<string>();
+            for (const feed of feedsData.data || []) {
+                if (feed.feed?.feedCategories) {
+                    for (const fc of feed.feed.feedCategories) {
+                        if (fc.category) {
+                            uniqueCategories.add(fc.category.id);
+                        }
+                    }
+                }
+            }
+
+            setStats({
+                totalFeeds,
+                totalCategories: uniqueCategories.size,
+            });
+        } catch (error) {
+            console.error("Failed to load stats:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleImportSuccess = () => {
+        // Reload stats after successful import
+        loadStats();
+    };
+
+    return (
+        <div>
+            <h2 className="mb-6 text-xl font-semibold text-gray-900 dark:text-gray-100">
+                Feeds & OPML Management
+            </h2>
+            <div className="space-y-6">
+                {/* Info Section */}
+                <div className="rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
+                    <h3 className="mb-2 font-semibold text-blue-800 dark:text-blue-200">
+                        What is OPML?
+                    </h3>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                        OPML (Outline Processor Markup Language) is a standard format for exchanging lists of RSS feeds.
+                        Use it to backup your feeds or transfer them between applications.
+                    </p>
+                </div>
+
+                {/* Stats */}
+                {loading ? (
+                    <div className="flex items-center justify-center py-8">
+                        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+                    </div>
+                ) : stats ? (
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-700/50">
+                            <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                                {stats.totalFeeds}
+                            </div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                                Subscribed Feeds
+                            </div>
+                        </div>
+                        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-700/50">
+                            <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+                                {stats.totalCategories}
+                            </div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                                Categories
+                            </div>
+                        </div>
+                    </div>
+                ) : null}
+
+                {/* Export Section */}
+                <div className="rounded-lg border border-gray-200 p-6 dark:border-gray-600">
+                    <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                            <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                Export Feeds
+                            </h3>
+                            <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                                Download your feed subscriptions as an OPML file. You can select specific
+                                categories or individual feeds to export.
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => setShowExportModal(true)}
+                            disabled={loading || !stats || stats.totalFeeds === 0}
+                            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                        >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                            </svg>
+                            Export OPML
+                        </button>
+                    </div>
+                </div>
+
+                {/* Import Section */}
+                <div className="rounded-lg border border-gray-200 p-6 dark:border-gray-600">
+                    <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                            <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                Import Feeds
+                            </h3>
+                            <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                                Import feeds from an OPML file. New feeds will be created automatically,
+                                and you'll be subscribed to all imported feeds. Categories will be created if needed.
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => setShowImportModal(true)}
+                            disabled={loading}
+                            className="flex items-center gap-2 rounded-lg border border-blue-600 bg-white px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 disabled:opacity-50 dark:border-blue-500 dark:bg-gray-800 dark:text-blue-400 dark:hover:bg-gray-700"
+                        >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            Import OPML
+                        </button>
+                    </div>
+                </div>
+
+                {/* Features List */}
+                <div className="rounded-lg border border-gray-200 p-6 dark:border-gray-600">
+                    <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                        Features
+                    </h3>
+                    <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+                        <li className="flex items-start gap-2">
+                            <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Export all feeds or select specific categories/feeds</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Import OPML files from other RSS readers</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Automatic category creation during import</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Duplicate detection (existing feeds are skipped)</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Compatible with OPML 2.0 standard</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            {/* Modals */}
+            {showExportModal && (
+                <OpmlExportModal onClose={() => setShowExportModal(false)} />
+            )}
+            {showImportModal && (
+                <OpmlImportModal
+                    onClose={() => setShowImportModal(false)}
+                    onSuccess={handleImportSuccess}
+                />
+            )}
         </div>
     );
 }

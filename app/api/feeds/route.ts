@@ -1,5 +1,3 @@
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import {
   getAllFeeds,
   validateAndCreateFeed,
@@ -10,7 +8,7 @@ import {
   createFeedSchema,
   feedQuerySchema,
 } from "@/src/lib/validations/feed-validation";
-import { apiResponse, apiError } from "@/src/lib/api-response";
+import { createHandler } from "@/src/lib/api-handler";
 import { getCurrentUser } from "@/src/lib/middleware/auth-middleware";
 import { subscribeFeed } from "@/src/lib/services/user-feed-service";
 
@@ -18,50 +16,36 @@ import { subscribeFeed } from "@/src/lib/services/user-feed-service";
  * GET /api/feeds
  * List all feeds with pagination and filtering
  */
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    
-    // Parse and validate query parameters
-    const queryResult = feedQuerySchema.safeParse({
-      page: searchParams.get("page"),
-      limit: searchParams.get("limit"),
-      category: searchParams.get("category"),
-      search: searchParams.get("search"),
-    });
-
-    if (!queryResult.success) {
-      return apiError("Invalid query parameters", 400, queryResult.error.errors);
-    }
-
-    const { page, limit, category, search } = queryResult.data;
+export const GET = createHandler(
+  async ({ query }) => {
+    const { page, limit, category, search } = query;
 
     // Handle search
     if (search && search.trim()) {
       const feeds = await searchFeeds(search);
-      return apiResponse({
+      return {
         feeds,
         total: feeds.length,
         page: 1,
         limit: feeds.length,
-      });
+      };
     }
 
     // Handle category filter
     if (category && category.trim()) {
       const feeds = await getFeedsByCategory(category);
-      return apiResponse({
+      return {
         feeds,
         total: feeds.length,
         page: 1,
         limit: feeds.length,
-      });
+      };
     }
 
     // Get all feeds with pagination
     const { feeds, total } = await getAllFeeds({ page, limit });
 
-    return apiResponse({
+    return {
       feeds,
       pagination: {
         page,
@@ -69,37 +53,19 @@ export async function GET(request: NextRequest) {
         total,
         totalPages: Math.ceil(total / limit),
       },
-    });
-  } catch (error) {
-    console.error("Error fetching feeds:", error);
-    return apiError(
-      "Failed to fetch feeds",
-      500,
-      error instanceof Error ? error.message : undefined
-    );
-  }
-}
+    };
+  },
+  { querySchema: feedQuerySchema }
+);
 
 /**
  * POST /api/feeds
  * Create a new feed and auto-subscribe the user if authenticated
  * If feed already exists, just subscribe the user to it
  */
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-
-    // Validate input
-    const validationResult = createFeedSchema.safeParse(body);
-    if (!validationResult.success) {
-      return apiError(
-        "Invalid input",
-        400,
-        validationResult.error.errors
-      );
-    }
-
-    const { url, name, categoryIds } = validationResult.data;
+export const POST = createHandler(
+  async ({ body, session }) => {
+    const { url, name, categoryIds } = body;
 
     let feed;
     let isNewFeed = false;
@@ -149,52 +115,35 @@ export async function POST(request: NextRequest) {
         const { refreshFeed } = await import("@/src/lib/services/feed-refresh-service");
         const refreshResult = await refreshFeed(feed.id);
         
-        return apiResponse({ 
+        return { 
           feed,
           articlesAdded: refreshResult.newArticles,
           refreshSuccess: refreshResult.success,
           subscribed,
           isNewFeed: true
-        }, 201);
+        };
       } catch (refreshError) {
         // Feed was created but article fetch failed - still return success
         console.error("Failed to fetch articles for new feed:", refreshError);
-        return apiResponse({ 
+        return { 
           feed,
           articlesAdded: 0,
           refreshSuccess: false,
           subscribed,
           isNewFeed: true,
           warning: "Feed created but failed to fetch articles. Try refreshing manually."
-        }, 201);
+        };
       }
     } else {
       // Existing feed - just return it
-      return apiResponse({ 
+      return { 
         feed,
         subscribed,
         isNewFeed: false,
         message: subscribed ? "Subscribed to existing feed" : "Feed already exists"
-      }, 200);
+      };
     }
-  } catch (error) {
-    console.error("Error creating feed:", error);
-
-    if (error instanceof Error) {
-      // Handle specific errors
-      if (error.message.includes("Invalid") || error.message.includes("unsafe")) {
-        return apiError(error.message, 400);
-      }
-      if (error.message.includes("unable to parse")) {
-        return apiError("Invalid feed URL or unable to parse feed", 422);
-      }
-    }
-
-    return apiError(
-      "Failed to create feed",
-      500,
-      error instanceof Error ? error.message : undefined
-    );
-  }
-}
+  },
+  { bodySchema: createFeedSchema }
+);
 

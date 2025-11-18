@@ -1,63 +1,38 @@
-import { NextRequest } from "next/server";
 import { getArticle, deleteArticle } from "@/src/lib/services/article-service";
-import { apiResponse, apiError } from "@/src/lib/api-response";
+import { createHandler } from "@/src/lib/api-handler";
 
 /**
  * GET /api/articles/:id
  * Get a single article with feed information
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
+export const GET = createHandler(async ({ params }) => {
+  const { id } = params;
 
-    const article = await getArticle(id);
+  const article = await getArticle(id);
 
-    if (!article) {
-      return apiError("Article not found", 404);
-    }
-
-    return apiResponse({ article });
-  } catch (error) {
-    console.error("Error fetching article:", error);
-    return apiError(
-      "Failed to fetch article",
-      500,
-      error instanceof Error ? error.message : undefined
-    );
+  if (!article) {
+    throw new Error("Article not found");
   }
-}
+
+  return { article };
+});
 
 /**
  * DELETE /api/articles/:id
  * Delete an article
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
+export const DELETE = createHandler(async ({ params }) => {
+  const { id } = params;
 
-    // Check if article exists
-    const article = await getArticle(id);
-    if (!article) {
-      return apiError("Article not found", 404);
-    }
-
-    // Delete article
-    await deleteArticle(id);
-
-    return apiResponse({ success: true });
-  } catch (error) {
-    console.error("Error deleting article:", error);
-    return apiError(
-      "Failed to delete article",
-      500,
-      error instanceof Error ? error.message : undefined
-    );
+  // Check if article exists
+  const article = await getArticle(id);
+  if (!article) {
+    throw new Error("Article not found");
   }
-}
+
+  // Delete article
+  await deleteArticle(id);
+
+  return { success: true };
+});
 

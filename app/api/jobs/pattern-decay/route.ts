@@ -1,29 +1,23 @@
-import { NextRequest } from "next/server";
 import { runPatternDecayJob } from "@/src/lib/jobs/pattern-decay-job";
-import { apiResponse, apiError } from "@/src/lib/api-response";
+import { createHandler } from "@/src/lib/api-handler";
 
 /**
  * POST /api/jobs/pattern-decay
  * Run the pattern decay job
  * This should be called by a cron job or scheduled task
  */
-export async function POST(request: NextRequest) {
-  try {
-    // Optional: Add authentication/authorization for cron jobs
-    // const authHeader = request.headers.get("authorization");
-    // if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    //   return apiError("Unauthorized", 401);
-    // }
+export const POST = createHandler(async () => {
+  // Optional: Add authentication/authorization for cron jobs
+  // const authHeader = request.headers.get("authorization");
+  // if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  //   throw new Error("Unauthorized");
+  // }
 
-    const result = await runPatternDecayJob();
+  const result = await runPatternDecayJob();
 
-    return apiResponse({
-      message: "Pattern decay job completed",
-      ...result,
-    });
-  } catch (error) {
-    console.error("Error running pattern decay job:", error);
-    return apiError("Failed to run pattern decay job");
-  }
-}
+  return {
+    message: "Pattern decay job completed",
+    ...result,
+  };
+});
 

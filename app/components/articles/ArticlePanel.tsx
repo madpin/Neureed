@@ -81,6 +81,11 @@ export function ArticlePanel({ articleId, onClose }: ArticlePanelProps) {
     });
   };
 
+  const toISOString = (date: Date | string | null | undefined) => {
+    if (!date) return undefined;
+    return new Date(date).toISOString();
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -226,7 +231,7 @@ export function ArticlePanel({ articleId, onClose }: ArticlePanelProps) {
             )}
             <span className="font-medium">{article.feed.name}</span>
             <span>•</span>
-            <time dateTime={article.publishedAt?.toISOString()}>
+            <time dateTime={toISOString(article.publishedAt)}>
               {formatDate(article.publishedAt)}
             </time>
             {article.author && (

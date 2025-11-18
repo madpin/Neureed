@@ -1,27 +1,15 @@
-import { NextRequest } from "next/server";
 import { parseFeedUrl, validateFeedUrl, normalizeFeedUrl, isSafeFeedUrl } from "@/src/lib/feed-parser";
 import { validateFeedSchema } from "@/src/lib/validations/feed-validation";
-import { apiResponse, apiError } from "@/src/lib/api-response";
+import { createHandler } from "@/src/lib/api-handler";
+import { apiResponse } from "@/src/lib/api-response";
 
 /**
  * POST /api/feeds/validate
  * Validate a feed URL before adding it
  */
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-
-    // Validate input
-    const validationResult = validateFeedSchema.safeParse(body);
-    if (!validationResult.success) {
-      return apiError(
-        "Invalid input",
-        400,
-        validationResult.error.errors
-      );
-    }
-
-    const { url } = validationResult.data;
+export const POST = createHandler(
+  async ({ body }) => {
+    const { url } = body;
     const normalizedUrl = normalizeFeedUrl(url);
 
     // Check if URL is safe
@@ -61,13 +49,7 @@ export async function POST(request: NextRequest) {
         error: "Unable to fetch feed information",
       });
     }
-  } catch (error) {
-    console.error("Error validating feed:", error);
-    return apiError(
-      "Failed to validate feed",
-      500,
-      error instanceof Error ? error.message : undefined
-    );
-  }
-}
+  },
+  { bodySchema: validateFeedSchema }
+);
 

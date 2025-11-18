@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import type { Article, Feed } from "@prisma/client";
 import { FeedbackButtons } from "./FeedbackButtons";
@@ -19,6 +20,7 @@ interface ArticleCardProps {
 }
 
 export function ArticleCard({ article, variant = "compact", onReadStatusChange, onArticleClick }: ArticleCardProps) {
+  const pathname = usePathname();
   const [isRead, setIsRead] = useState(article.isRead || false);
   const [isTogglingRead, setIsTogglingRead] = useState(false);
 
@@ -26,6 +28,22 @@ export function ArticleCard({ article, variant = "compact", onReadStatusChange, 
   useEffect(() => {
     setIsRead(article.isRead || false);
   }, [article.isRead]);
+
+  // Determine the article link based on current context
+  const getArticleLink = () => {
+    // Extract feedId from current path if we're on a feed page
+    const feedMatch = pathname?.match(/^\/feeds\/([^\/]+)/);
+    
+    if (feedMatch) {
+      const feedId = feedMatch[1];
+      return `/feeds/${feedId}/articles/${article.id}`;
+    }
+    
+    // Default to article route (will redirect to home with query param)
+    return `/articles/${article.id}`;
+  };
+
+  const articleLink = getArticleLink();
 
   const formatDate = (date: Date | string | null) => {
     if (!date) return "Unknown date";
@@ -130,7 +148,7 @@ export function ArticleCard({ article, variant = "compact", onReadStatusChange, 
 
           {/* Title */}
           <Link
-            href={`/articles/${article.id}`}
+            href={articleLink}
             className="group-hover:text-primary transition-colors"
             onClick={handleArticleClick}
           >

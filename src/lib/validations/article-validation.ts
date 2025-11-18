@@ -8,6 +8,7 @@ export const articleQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional().default(1).catch(1),
   limit: z.coerce.number().int().min(1).max(100).optional().default(20).catch(20),
   feedId: z.string().optional().nullable(),
+  categoryId: z.string().optional().nullable(),
   since: z.coerce.date().optional().nullable(),
   sort: z.enum(["publishedAt", "createdAt"]).optional().default("publishedAt").catch("publishedAt"),
   order: z.enum(["asc", "desc"]).optional().default("desc").catch("desc"),

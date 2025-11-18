@@ -1,62 +1,36 @@
-import { NextRequest } from "next/server";
-import { apiResponse, apiError } from "@/src/lib/api-response";
-import { withAuth } from "@/src/lib/middleware/auth-middleware";
 import { markAsRead, markAsUnread } from "@/src/lib/services/read-status-service";
+import { createHandler } from "@/src/lib/api-handler";
 
 /**
  * POST /api/user/articles/:id/read
  * Mark an article as read
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  return withAuth(async (user) => {
-    try {
-      const { id: articleId } = await params;
-      
-      const readArticle = await markAsRead(user.id, articleId);
+export const POST = createHandler(
+  async ({ params, session }) => {
+    const { id: articleId } = params;
+    
+    const readArticle = await markAsRead(session!.user!.id, articleId);
 
-      return apiResponse({
-        readArticle,
-        message: "Article marked as read",
-      });
-    } catch (error) {
-      console.error("Error marking article as read:", error);
-      return apiError(
-        "Failed to mark article as read",
-        500,
-        error instanceof Error ? error.message : undefined
-      );
-    }
-  });
-}
+    return {
+      readArticle,
+      message: "Article marked as read",
+    };
+  },
+  { requireAuth: true }
+);
 
 /**
  * DELETE /api/user/articles/:id/read
  * Mark an article as unread
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  return withAuth(async (user) => {
-    try {
-      const { id: articleId } = await params;
-      
-      await markAsUnread(user.id, articleId);
+export const DELETE = createHandler(
+  async ({ params, session }) => {
+    const { id: articleId } = params;
+    
+    await markAsUnread(session!.user!.id, articleId);
 
-      return apiResponse({
-        message: "Article marked as unread",
-      });
-    } catch (error) {
-      console.error("Error marking article as unread:", error);
-      return apiError(
-        "Failed to mark article as unread",
-        500,
-        error instanceof Error ? error.message : undefined
-      );
-    }
-  });
-}
+    return { message: "Article marked as unread" };
+  },
+  { requireAuth: true }
+);
 

@@ -1,31 +1,21 @@
-import { NextRequest } from "next/server";
-import { apiResponse, apiError } from "@/src/lib/api-response";
-import { withAuth } from "@/src/lib/middleware/auth-middleware";
 import {
   getUserPreferences,
   updateUserPreferences,
 } from "@/src/lib/services/user-preferences-service";
 import { z } from "zod";
+import { createHandler } from "@/src/lib/api-handler";
 
 /**
  * GET /api/user/preferences
  * Get user preferences
  */
-export async function GET(request: NextRequest) {
-  return withAuth(async (user) => {
-    try {
-      const preferences = await getUserPreferences(user.id);
-      return apiResponse({ preferences });
-    } catch (error) {
-      console.error("Error fetching user preferences:", error);
-      return apiError(
-        "Failed to fetch preferences",
-        500,
-        error instanceof Error ? error.message : undefined
-      );
-    }
-  });
-}
+export const GET = createHandler(
+  async ({ session }) => {
+    const preferences = await getUserPreferences(session!.user!.id);
+    return { preferences };
+  },
+  { requireAuth: true }
+);
 
 const preferencesSchema = z.object({
   theme: z.string().optional(), // Allow any string for custom themes
@@ -46,41 +36,28 @@ const preferencesSchema = z.object({
   readingPanelEnabled: z.boolean().optional(),
   readingPanelPosition: z.enum(["right", "left", "top", "bottom"]).optional(),
   readingPanelSize: z.number().int().min(30).max(70).optional(),
+  // Sidebar Settings
+  sidebarCollapsed: z.boolean().optional(),
+  categoryStates: z.record(z.boolean()).optional(),
 });
 
 /**
  * PUT /api/user/preferences
  * Update user preferences
  */
-export async function PUT(request: NextRequest) {
-  return withAuth(async (user) => {
-    try {
-      const body = await request.json();
-      console.log("Received preferences update:", body);
-      
-      const result = preferencesSchema.safeParse(body);
+export const PUT = createHandler(
+  async ({ body, session }) => {
+    console.log("Received preferences update:", body);
+    console.log("Validated data:", body);
+    
+    const preferences = await updateUserPreferences(session!.user!.id, body);
+    console.log("Updated preferences:", preferences);
 
-      if (!result.success) {
-        console.error("Validation failed:", result.error.errors);
-        return apiError("Invalid request body", 400, result.error.errors);
-      }
-
-      console.log("Validated data:", result.data);
-      const preferences = await updateUserPreferences(user.id, result.data);
-      console.log("Updated preferences:", preferences);
-
-      return apiResponse({
-        preferences,
-        message: "Preferences updated successfully",
-      });
-    } catch (error) {
-      console.error("Error updating user preferences:", error);
-      return apiError(
-        "Failed to update preferences",
-        500,
-        error instanceof Error ? error.message : undefined
-      );
-    }
-  });
-}
+    return {
+      preferences,
+      message: "Preferences updated successfully",
+    };
+  },
+  { bodySchema: preferencesSchema, requireAuth: true }
+);
 

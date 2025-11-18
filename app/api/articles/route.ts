@@ -1,7 +1,6 @@
-import { NextRequest } from "next/server";
 import { getRecentArticles } from "@/src/lib/services/article-service";
 import { articleQuerySchema } from "@/src/lib/validations/article-validation";
-import { apiResponse, apiError } from "@/src/lib/api-response";
+import { createHandler } from "@/src/lib/api-handler";
 import { getCurrentUser } from "@/src/lib/middleware/auth-middleware";
 import { getUserFeedIds } from "@/src/lib/services/user-feed-service";
 import { getReadArticles } from "@/src/lib/services/read-status-service";
@@ -12,39 +11,40 @@ import { prisma } from "@/src/lib/db";
  * List articles with pagination and filtering
  * If user is authenticated, only shows articles from subscribed feeds and includes read status
  */
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-
-    // Parse and validate query parameters
-    const queryResult = articleQuerySchema.safeParse({
-      page: searchParams.get("page"),
-      limit: searchParams.get("limit"),
-      feedId: searchParams.get("feedId"),
-      since: searchParams.get("since"),
-      sort: searchParams.get("sort"),
-      order: searchParams.get("order"),
-    });
-
-    if (!queryResult.success) {
-      return apiError("Invalid query parameters", 400, queryResult.error.errors);
-    }
-
-    const { page, limit, feedId } = queryResult.data;
+export const GET = createHandler(
+  async ({ query }) => {
+    const { page, limit, feedId, categoryId } = query;
 
     // Check if user is authenticated
     const user = await getCurrentUser();
     
-    // Get articles (filtered by feed if specified)
+    // Get articles (filtered by feed or category if specified)
     let articles, total;
     
     if (user?.id) {
       // For authenticated users, filter by subscribed feeds
-      const subscribedFeedIds = await getUserFeedIds(user.id);
+      let subscribedFeedIds = await getUserFeedIds(user.id);
+      
+      // If categoryId is provided, filter to only feeds in that category
+      if (categoryId) {
+        const categoryFeeds = await prisma.userFeedCategory.findMany({
+          where: {
+            userCategoryId: categoryId,
+            userFeed: {
+              userId: user.id,
+            },
+          },
+          include: {
+            userFeed: true,
+          },
+        });
+        const categoryFeedIds = categoryFeeds.map((cf: { userFeed: { feedId: string } }) => cf.userFeed.feedId);
+        subscribedFeedIds = subscribedFeedIds.filter((id: string) => categoryFeedIds.includes(id));
+      }
       
       if (subscribedFeedIds.length === 0) {
-        // User has no subscriptions
-        return apiResponse({
+        // User has no subscriptions or no feeds in the selected category
+        return {
           articles: [],
           pagination: {
             page,
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
             total: 0,
             totalPages: 0,
           },
-        });
+        };
       }
 
       // Query articles from subscribed feeds
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
         readAt: readMap.get(article.id)?.readAt,
       }));
 
-      return apiResponse({
+      return {
         articles: articlesWithReadStatus,
         pagination: {
           page,
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
           total,
           totalPages: Math.ceil(total / limit),
         },
-      });
+      };
     } else {
       // For unauthenticated users, show all articles
       if (feedId) {
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
         ({ articles, total } = await getRecentArticles({ page, limit }));
       }
 
-      return apiResponse({
+      return {
         articles,
         pagination: {
           page,
@@ -110,15 +110,9 @@ export async function GET(request: NextRequest) {
           total,
           totalPages: Math.ceil(total / limit),
         },
-      });
+      };
     }
-  } catch (error) {
-    console.error("Error fetching articles:", error);
-    return apiError(
-      "Failed to fetch articles",
-      500,
-      error instanceof Error ? error.message : undefined
-    );
-  }
-}
+  },
+  { querySchema: articleQuerySchema }
+);
 

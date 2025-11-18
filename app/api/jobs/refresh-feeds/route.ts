@@ -1,7 +1,6 @@
-import { NextRequest } from "next/server";
 import { z } from "zod";
 import { refreshFeeds, refreshAllDueFeeds, getRefreshStats } from "@/src/lib/services/feed-refresh-service";
-import { apiResponse, apiError } from "@/src/lib/api-response";
+import { createHandler } from "@/src/lib/api-handler";
 
 /**
  * Request schema
@@ -17,36 +16,15 @@ const refreshFeedsSchema = z.object({
  * 
  * This endpoint should be protected in production with API key or admin auth
  */
-export async function POST(request: NextRequest) {
-  try {
+export const POST = createHandler(
+  async ({ body }) => {
     // TODO: Add authentication check here
     // const apiKey = request.headers.get("x-api-key");
     // if (!apiKey || apiKey !== process.env.API_KEY) {
-    //   return apiError("Unauthorized", 401);
+    //   throw new Error("Unauthorized");
     // }
 
-    // Parse body, defaulting to empty object if no body provided
-    let body = {};
-    try {
-      const text = await request.text();
-      if (text) {
-        body = JSON.parse(text);
-      }
-    } catch (e) {
-      // If parsing fails, use empty object (all fields are optional)
-    }
-
-    // Validate input
-    const validationResult = refreshFeedsSchema.safeParse(body);
-    if (!validationResult.success) {
-      return apiError(
-        "Invalid input",
-        400,
-        validationResult.error.errors
-      );
-    }
-
-    const { feedIds, force } = validationResult.data;
+    const { feedIds, force } = body;
 
     let results;
     let stats;
@@ -63,7 +41,7 @@ export async function POST(request: NextRequest) {
       results = refreshResult.results;
     }
 
-    return apiResponse({
+    return {
       success: true,
       stats,
       results: results.map((r) => ({
@@ -74,35 +52,20 @@ export async function POST(request: NextRequest) {
         error: r.error,
         duration: r.duration,
       })),
-    });
-  } catch (error) {
-    console.error("Error refreshing feeds:", error);
-    return apiError(
-      "Failed to refresh feeds",
-      500,
-      error instanceof Error ? error.message : undefined
-    );
-  }
-}
+    };
+  },
+  { bodySchema: refreshFeedsSchema }
+);
 
 /**
  * GET /api/jobs/refresh-feeds
  * Get refresh job status
  */
-export async function GET() {
-  try {
-    // Return job status info
-    return apiResponse({
-      status: "ready",
-      message: "Feed refresh job is available. Use POST to trigger.",
-    });
-  } catch (error) {
-    console.error("Error getting refresh job status:", error);
-    return apiError(
-      "Failed to get job status",
-      500,
-      error instanceof Error ? error.message : undefined
-    );
-  }
-}
+export const GET = createHandler(async () => {
+  // Return job status info
+  return {
+    status: "ready",
+    message: "Feed refresh job is available. Use POST to trigger.",
+  };
+});
 

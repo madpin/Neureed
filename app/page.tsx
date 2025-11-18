@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { MainLayout } from "./components/layout/MainLayout";
 import { ReadingPanelLayout } from "./components/layout/ReadingPanelLayout";
-import { FeedList } from "./components/feeds/FeedList";
+import { CategoryList } from "./components/feeds/CategoryList";
+import { CategoryManagement } from "./components/feeds/CategoryManagement";
 import { AddFeedForm } from "./components/feeds/AddFeedForm";
 import { FeedBrowser } from "./components/feeds/FeedBrowser";
 import { ArticleList } from "./components/articles/ArticleList";
@@ -23,13 +25,24 @@ interface ArticleWithFeed extends Article {
 
 export default function Home() {
   const { data: session, status } = useSession();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [feeds, setFeeds] = useState<FeedWithStats[]>([]);
   const [articles, setArticles] = useState<ArticleWithFeed[]>([]);
-  const [selectedFeedId, setSelectedFeedId] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [isAddFeedOpen, setIsAddFeedOpen] = useState(false);
   const [isFeedBrowserOpen, setIsFeedBrowserOpen] = useState(false);
+  const [isCategoryManagementOpen, setIsCategoryManagementOpen] = useState(false);
   const [isLoadingFeeds, setIsLoadingFeeds] = useState(true);
   const [isLoadingArticles, setIsLoadingArticles] = useState(true);
+
+  // Sync selectedCategoryId with URL params
+  useEffect(() => {
+    const categoryIdFromUrl = searchParams.get('categoryId');
+    if (categoryIdFromUrl !== selectedCategoryId) {
+      setSelectedCategoryId(categoryIdFromUrl);
+    }
+  }, [searchParams]);
 
   // Load feeds when session changes
   useEffect(() => {
@@ -38,10 +51,10 @@ export default function Home() {
     }
   }, [session, status]);
 
-  // Load articles when feed selection changes
+  // Load articles when category selection changes
   useEffect(() => {
     loadArticles();
-  }, [selectedFeedId]);
+  }, [selectedCategoryId]);
 
   // Reload articles when user returns to the page (to update read status)
   useEffect(() => {
@@ -55,7 +68,7 @@ export default function Home() {
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [selectedFeedId]);
+  }, []);
 
   const loadFeeds = async () => {
     if (!session?.user) {
@@ -90,9 +103,11 @@ export default function Home() {
   const loadArticles = async () => {
     setIsLoadingArticles(true);
     try {
-      const url = selectedFeedId
-        ? `/api/articles?feedId=${selectedFeedId}`
-        : "/api/articles";
+      // Build URL with optional category filter
+      let url = "/api/articles";
+      if (selectedCategoryId) {
+        url = `/api/articles?categoryId=${selectedCategoryId}`;
+      }
       const response = await fetch(url);
       const data = await response.json();
       // Handle wrapped response
@@ -103,6 +118,11 @@ export default function Home() {
     } finally {
       setIsLoadingArticles(false);
     }
+  };
+
+  const handleSelectCategory = (categoryId: string) => {
+    // Update URL to reflect category filter
+    router.push(`/?categoryId=${categoryId}`);
   };
 
   const handleAddFeed = async (url: string, name?: string) => {
@@ -133,12 +153,39 @@ export default function Home() {
       }
 
       await loadFeeds();
-      if (selectedFeedId === feedId) {
-        setSelectedFeedId(null);
-      }
+      // No need to change URL since we're on the "all articles" page
     } catch (error) {
       console.error("Failed to unsubscribe from feed:", error);
       alert("Failed to unsubscribe from feed");
+    }
+  };
+
+  const handleDeleteFeed = async (feedId: string) => {
+    try {
+      const response = await fetch(`/api/feeds/${feedId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to delete feed");
+      }
+
+      // Reload feeds
+      await loadFeeds();
+
+      alert("Feed deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete feed:", error);
+      alert(error instanceof Error ? error.message : "Failed to delete feed");
+    }
+  };
+
+  const handleSelectFeed = (feedId: string | null) => {
+    if (feedId) {
+      router.push(`/feeds/${feedId}`);
+    } else {
+      router.push("/");
     }
   };
 
@@ -197,48 +244,133 @@ export default function Home() {
 
   return (
     <MainLayout
-      sidebar={
+      sidebar={({ isCollapsed }) => (
         <div className="flex flex-col gap-4">
-          <div className="flex gap-2">
-            <button
-              onClick={() => setIsAddFeedOpen(true)}
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+          {!isCollapsed && (
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setIsAddFeedOpen(true)}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  Add
+                </button>
+                <button
+                  onClick={() => setIsFeedBrowserOpen(true)}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                  Browse
+                </button>
+              </div>
+              <button
+                onClick={() => setIsCategoryManagementOpen(true)}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              Add
-            </button>
-            <button
-              onClick={() => setIsFeedBrowserOpen(true)}
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
-            >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                  />
+                </svg>
+                Manage Categories
+              </button>
+            </div>
+          )}
+
+          {isCollapsed && (
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => setIsAddFeedOpen(true)}
+                className="flex items-center justify-center rounded-lg bg-blue-600 p-3 text-white hover:bg-blue-700"
+                title="Add Feed"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-              Browse
-            </button>
-          </div>
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+              </button>
+              <button
+                onClick={() => setIsFeedBrowserOpen(true)}
+                className="flex items-center justify-center rounded-lg border border-gray-300 p-3 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
+                title="Browse Feeds"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </button>
+              <button
+                onClick={() => setIsCategoryManagementOpen(true)}
+                className="flex items-center justify-center rounded-lg border border-gray-300 p-3 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
+                title="Manage Categories"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                  />
+                </svg>
+              </button>
+            </div>
+          )}
 
           {isLoadingFeeds ? (
             <div className="space-y-2">
@@ -250,16 +382,19 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <FeedList
-              feeds={feeds}
-              selectedFeedId={selectedFeedId || undefined}
-              onSelectFeed={setSelectedFeedId}
-              onDeleteFeed={handleUnsubscribeFeed}
+            <CategoryList
+              selectedFeedId={undefined}
+              selectedCategoryId={selectedCategoryId || undefined}
+              onSelectFeed={handleSelectFeed}
+              onSelectCategory={handleSelectCategory}
+              onDeleteFeed={handleDeleteFeed}
+              onUnsubscribeFeed={handleUnsubscribeFeed}
               onRefreshFeed={handleRefreshFeed}
+              isCollapsed={isCollapsed}
             />
           )}
         </div>
-      }
+      )}
     >
       <ReadingPanelLayout>
         {({ onArticleSelect }: { onArticleSelect?: (articleId: string) => void }) => (
@@ -284,6 +419,16 @@ export default function Home() {
           setIsFeedBrowserOpen(false);
           loadFeeds(); // Reload feeds after browsing
         }} />
+      )}
+
+      {isCategoryManagementOpen && (
+        <CategoryManagement
+          onClose={() => setIsCategoryManagementOpen(false)}
+          onCategoryCreated={() => {
+            setIsCategoryManagementOpen(false);
+            // The CategoryList component will automatically reload
+          }}
+        />
       )}
     </MainLayout>
   );

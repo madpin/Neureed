@@ -7,6 +7,8 @@ interface FeedSettingsPanelProps {
   feedId: string;
   feedName: string;
   onClose: () => void;
+  onUnsubscribe?: (feedId: string) => void;
+  onDelete?: (feedId: string) => void;
 }
 
 interface ExtractionSettings {
@@ -26,6 +28,8 @@ export function FeedSettingsPanel({
   feedId,
   feedName,
   onClose,
+  onUnsubscribe,
+  onDelete,
 }: FeedSettingsPanelProps) {
   const [settings, setSettings] = useState<ExtractionSettings>({
     method: "rss",
@@ -217,6 +221,29 @@ export function FeedSettingsPanel({
       setError(err instanceof Error ? err.message : "Failed to refresh feed");
     } finally {
       setIsRefreshing(false);
+    }
+  };
+
+  const handleUnsubscribe = () => {
+    if (
+      confirm(
+        `Are you sure you want to unsubscribe from "${feedName}"? The feed and articles will remain available to other users.`
+      )
+    ) {
+      onUnsubscribe?.(feedId);
+      onClose();
+    }
+  };
+
+  const handleDeleteFeed = () => {
+    if (
+      confirm(
+        `⚠️ DANGER: Are you sure you want to permanently delete "${feedName}"?\n\nThis will:\n• Delete the feed for ALL users\n• Delete ALL articles from this feed\n• This action CANNOT be undone\n\nType the feed name to confirm deletion.`
+      ) &&
+      prompt(`Type "${feedName}" to confirm deletion:`) === feedName
+    ) {
+      onDelete?.(feedId);
+      onClose();
     }
   };
 
@@ -471,6 +498,29 @@ export function FeedSettingsPanel({
             >
               {isSaving ? "Saving..." : "Save"}
             </button>
+          </div>
+
+          {/* Danger Zone */}
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Danger Zone</h3>
+            <div className="flex gap-2">
+              {onUnsubscribe && (
+                <button
+                  onClick={handleUnsubscribe}
+                  className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700"
+                >
+                  Unsubscribe from Feed
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  onClick={handleDeleteFeed}
+                  className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+                >
+                  Delete Feed Permanently
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
