@@ -17,13 +17,13 @@ export async function GET(request: NextRequest) {
         image: true,
         createdAt: true,
         updatedAt: true,
+        emailVerified: true,
         _count: {
           select: {
             userFeeds: true,
             readArticles: true,
             articleFeedback: true,
             userPatterns: true,
-            userThemes: true,
           },
         },
       },

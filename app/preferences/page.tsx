@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { UserTheme } from "@prisma/client";
 
 interface UserPreferences {
     theme: string;
@@ -38,10 +37,6 @@ export default function PreferencesPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-    const [customThemes, setCustomThemes] = useState<UserTheme[]>([]);
-    const [activeCustomTheme, setActiveCustomTheme] = useState<UserTheme | null>(null);
-    const [isThemeEditorOpen, setIsThemeEditorOpen] = useState(false);
-    const [editingTheme, setEditingTheme] = useState<UserTheme | undefined>();
 
     const tabs: Tab[] = [
         {
@@ -102,22 +97,13 @@ export default function PreferencesPage() {
     const loadPreferences = async () => {
         setIsLoading(true);
         try {
-            const [prefsResponse, themesResponse] = await Promise.all([
-                fetch("/api/user/preferences"),
-                fetch("/api/user/themes"),
-            ]);
+            const response = await fetch("/api/user/preferences");
 
-            if (prefsResponse.ok) {
-                const data = await prefsResponse.json();
+            if (response.ok) {
+                const data = await response.json();
                 setPreferences(data.data?.preferences || getDefaultPreferences());
             } else {
                 setPreferences(getDefaultPreferences());
-            }
-
-            if (themesResponse.ok) {
-                const data = await themesResponse.json();
-                setCustomThemes(data.data?.themes || []);
-                setActiveCustomTheme(data.data?.activeTheme || null);
             }
         } catch (error) {
             console.error("Failed to load preferences:", error);
@@ -284,73 +270,6 @@ export default function PreferencesPage() {
                                 <AppearanceTab
                                     preferences={preferences}
                                     updatePreference={updatePreference}
-                                    customThemes={customThemes}
-                                    activeCustomTheme={activeCustomTheme}
-                                    onCreateTheme={() => {
-                                        setEditingTheme(undefined);
-                                        setIsThemeEditorOpen(true);
-                                    }}
-                                    onEditTheme={(theme) => {
-                                        setEditingTheme(theme);
-                                        setIsThemeEditorOpen(true);
-                                    }}
-                                    onActivateTheme={async (themeId) => {
-                                        try {
-                                            // Check if it's a built-in theme
-                                            if (["light", "dark", "system"].includes(themeId)) {
-                                                // Update preferences directly
-                                                updatePreference("theme", themeId);
-                                                // Clear any active custom theme since we're switching to built-in
-                                                setActiveCustomTheme(null);
-                                                // Dispatch event to apply theme immediately
-                                                window.dispatchEvent(new CustomEvent("preferencesUpdated", {
-                                                    detail: { theme: themeId }
-                                                }));
-                                                setSaveMessage({ type: "success", text: "Theme activated! Click 'Save Preferences' to persist." });
-                                            } else {
-                                                // It's a custom theme - use the API
-                                                const response = await fetch(`/api/user/themes/${themeId}/activate`, {
-                                                    method: "POST",
-                                                });
-                                                if (response.ok) {
-                                                    const data = await response.json();
-                                                    const activatedTheme = data.data?.theme;
-                                                    if (activatedTheme) {
-                                                        // Update the active custom theme state
-                                                        setActiveCustomTheme(activatedTheme);
-                                                        // Dispatch event to apply theme immediately
-                                                        window.dispatchEvent(new CustomEvent("preferencesUpdated", {
-                                                            detail: {
-                                                                activeTheme: {
-                                                                    id: activatedTheme.id,
-                                                                    css: activatedTheme.css
-                                                                }
-                                                            }
-                                                        }));
-                                                        setSaveMessage({ type: "success", text: "Theme activated!" });
-                                                    }
-                                                }
-                                            }
-                                        } catch (error) {
-                                            console.error("Failed to activate theme:", error);
-                                            setSaveMessage({ type: "error", text: "Failed to activate theme" });
-                                        }
-                                    }}
-                                    onDeleteTheme={async (themeId) => {
-                                        if (!confirm("Are you sure you want to delete this theme?")) return;
-                                        try {
-                                            const response = await fetch(`/api/user/themes/${themeId}`, {
-                                                method: "DELETE",
-                                            });
-                                            if (response.ok) {
-                                                await loadPreferences();
-                                                setSaveMessage({ type: "success", text: "Theme deleted!" });
-                                            }
-                                        } catch (error) {
-                                            console.error("Failed to delete theme:", error);
-                                            setSaveMessage({ type: "error", text: "Failed to delete theme" });
-                                        }
-                                    }}
                                 />
                             )}
 
@@ -388,42 +307,6 @@ export default function PreferencesPage() {
                 </div>
             </div>
 
-            {/* Theme Editor Modal */}
-            {isThemeEditorOpen && (
-                <ThemeEditorModal
-                    theme={editingTheme}
-                    onSave={async (data) => {
-                        try {
-                            if (editingTheme) {
-                                const response = await fetch(`/api/user/themes/${editingTheme.id}`, {
-                                    method: "PUT",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify(data),
-                                });
-                                if (!response.ok) throw new Error("Failed to update theme");
-                            } else {
-                                const response = await fetch("/api/user/themes", {
-                                    method: "POST",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify(data),
-                                });
-                                if (!response.ok) throw new Error("Failed to create theme");
-                            }
-                            await loadPreferences();
-                            setIsThemeEditorOpen(false);
-                            setEditingTheme(undefined);
-                            setSaveMessage({ type: "success", text: "Theme saved!" });
-                        } catch (error) {
-                            console.error("Failed to save theme:", error);
-                            setSaveMessage({ type: "error", text: "Failed to save theme" });
-                        }
-                    }}
-                    onClose={() => {
-                        setIsThemeEditorOpen(false);
-                        setEditingTheme(undefined);
-                    }}
-                />
-            )}
         </div>
     );
 }
@@ -464,63 +347,40 @@ function ProfileTab({ session }: { session: any }) {
 function AppearanceTab({
     preferences,
     updatePreference,
-    customThemes,
-    activeCustomTheme,
-    onCreateTheme,
-    onEditTheme,
-    onActivateTheme,
-    onDeleteTheme,
 }: {
     preferences: UserPreferences;
     updatePreference: <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => void;
-    customThemes: UserTheme[];
-    activeCustomTheme: UserTheme | null;
-    onCreateTheme: () => void;
-    onEditTheme: (theme: UserTheme) => void;
-    onActivateTheme: (themeId: string) => void;
-    onDeleteTheme: (themeId: string) => void;
 }) {
-    // Extract colors from CSS for preview
-    const extractColors = (css: string): string[] => {
-        const colorRegex = /#[0-9a-fA-F]{3,8}|rgb\([^)]+\)|rgba\([^)]+\)|hsl\([^)]+\)|hsla\([^)]+\)/g;
-        const matches = css.match(colorRegex) || [];
-        return [...new Set(matches)].slice(0, 5); // Get unique colors, max 5
-    };
-
-    // Built-in themes
-    const builtInThemes = [
-        {
-            id: "light",
-            name: "Light",
-            description: "Clean light theme",
-            css: `:root { --background: #ffffff; --foreground: #171717; }`,
-            isPreset: true,
-        },
-        {
-            id: "dark",
-            name: "Dark",
-            description: "Dark theme for low-light environments",
-            css: `:root.dark { --background: #0a0a0a; --foreground: #ededed; }`,
-            isPreset: true,
-        },
-        {
-            id: "system",
-            name: "System",
-            description: "Follow system preference",
-            css: `/* Automatically switches between light and dark based on system settings */`,
-            isPreset: true,
-        },
-    ];
-
-    // Combine built-in and custom themes
-    const allThemes = [...builtInThemes, ...customThemes];
-
     return (
         <div>
             <h2 className="mb-6 text-xl font-semibold text-gray-900 dark:text-gray-100">
                 Appearance
             </h2>
             <div className="space-y-6">
+                {/* Theme Selection */}
+                <div>
+                    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Theme
+                    </label>
+                    <select
+                        value={preferences.theme}
+                        onChange={(e) => {
+                            updatePreference("theme", e.target.value);
+                            // Apply theme immediately
+                            window.dispatchEvent(new CustomEvent("preferencesUpdated", {
+                                detail: { theme: e.target.value }
+                            }));
+                        }}
+                        className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                    >
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                        <option value="system">System (Auto)</option>
+                    </select>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        System theme automatically switches between light and dark based on your device settings
+                    </p>
+                </div>
 
                 {/* Font Size */}
                 <div>
@@ -567,115 +427,6 @@ function AppearanceTab({
                         <option value="compact">Compact</option>
                         <option value="expanded">Expanded</option>
                     </select>
-                </div>
-
-                {/* Themes Section */}
-                <div className="mt-8 border-t border-gray-200 pt-6 dark:border-gray-700">
-                    <div className="mb-4 flex items-center justify-between">
-                        <div>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                                Themes
-                            </h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Built-in and custom CSS themes
-                            </p>
-                        </div>
-                        <button
-                            onClick={onCreateTheme}
-                            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                        >
-                            Create Theme
-                        </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        {allThemes.map((theme) => {
-                            const colors = extractColors(theme.css);
-                            // Check if this theme is active (prioritize active custom themes over built-in preferences)
-                            const isActive = activeCustomTheme?.id === theme.id ||
-                                (!activeCustomTheme && theme.isPreset && preferences.theme === theme.id);
-
-                            return (
-                                <div
-                                    key={theme.id}
-                                    className={`rounded-lg border p-4 transition-all ${isActive
-                                            ? "border-blue-500 bg-blue-50 shadow-md dark:bg-blue-900/20"
-                                            : "border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600"
-                                        }`}
-                                >
-                                    <div className="mb-3 flex items-start justify-between">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2">
-                                                <h4 className="font-semibold text-gray-900 dark:text-gray-100">
-                                                    {theme.name}
-                                                </h4>
-                                                {isActive && (
-                                                    <span className="rounded bg-blue-600 px-2 py-0.5 text-xs font-medium text-white">
-                                                        Active
-                                                    </span>
-                                                )}
-                                            </div>
-                                            {theme.description && (
-                                                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                                                    {theme.description}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Color Palette Preview */}
-                                    {colors.length > 0 && (
-                                        <div className="mb-3 flex gap-1">
-                                            {colors.map((color, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    className="h-8 flex-1 rounded border border-gray-300 dark:border-gray-600"
-                                                    style={{ backgroundColor: color }}
-                                                    title={color}
-                                                />
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {/* CSS Preview */}
-                                    <div className="mb-3 overflow-hidden rounded border border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-900">
-                                        <code className="block overflow-x-auto p-2 text-xs text-gray-700 dark:text-gray-300">
-                                            {theme.css.substring(0, 100)}
-                                            {theme.css.length > 100 && "..."}
-                                        </code>
-                                    </div>
-
-                                    {/* Actions */}
-                                    <div className="flex gap-2">
-                                        {!isActive && (
-                                            <button
-                                                onClick={() => onActivateTheme(theme.id)}
-                                                className="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                                            >
-                                                Activate
-                                            </button>
-                                        )}
-                                        {!theme.isPreset && (
-                                            <>
-                                                <button
-                                                    onClick={() => onEditTheme(theme as any)}
-                                                    className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
-                                                >
-                                                    Edit
-                                                </button>
-                                                <button
-                                                    onClick={() => onDeleteTheme(theme.id)}
-                                                    className="rounded-lg border border-red-300 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
-                                                >
-                                                    Delete
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
                 </div>
             </div>
         </div>
@@ -972,185 +723,3 @@ function LLMTab({ preferences, updatePreference }: {
     );
 }
 
-// Theme Editor Modal Component
-function ThemeEditorModal({
-    theme,
-    onSave,
-    onClose,
-}: {
-    theme?: UserTheme;
-    onSave: (data: { name: string; description?: string; css: string; isPublic: boolean }) => Promise<void>;
-    onClose: () => void;
-}) {
-    const [name, setName] = useState(theme?.name || "");
-    const [description, setDescription] = useState(theme?.description || "");
-    const [css, setCss] = useState(
-        theme?.css ||
-        `/* Custom Theme CSS */
-:root {
-  --primary-color: #3b82f6;
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-.dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-}
-
-/* Add your custom styles here */`
-    );
-    const [isPublic, setIsPublic] = useState(theme?.isPublic || false);
-    const [isSaving, setIsSaving] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    const handleSave = async () => {
-        if (!name.trim()) {
-            setError("Theme name is required");
-            return;
-        }
-
-        if (!css.trim()) {
-            setError("CSS content is required");
-            return;
-        }
-
-        setIsSaving(true);
-        setError(null);
-
-        try {
-            await onSave({
-                name: name.trim(),
-                description: description.trim() || undefined,
-                css: css.trim(),
-                isPublic,
-            });
-        } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to save theme");
-            setIsSaving(false);
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-4xl rounded-lg bg-white shadow-xl dark:bg-gray-800">
-                {/* Header */}
-                <div className="flex items-center justify-between border-b border-gray-200 p-6 dark:border-gray-700">
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                        {theme ? "Edit Theme" : "Create Theme"}
-                    </h2>
-                    <button
-                        onClick={onClose}
-                        className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-
-                {/* Content */}
-                <div className="max-h-[calc(100vh-200px)] overflow-y-auto p-6">
-                    {error && (
-                        <div className="mb-4 rounded-lg bg-red-50 p-4 text-red-800 dark:bg-red-900/20 dark:text-red-200">
-                            {error}
-                        </div>
-                    )}
-
-                    <div className="space-y-4">
-                        {/* Theme Name */}
-                        <div>
-                            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Theme Name *
-                            </label>
-                            <input
-                                type="text"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                placeholder="e.g., Solarized Dark"
-                                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-                            />
-                        </div>
-
-                        {/* Description */}
-                        <div>
-                            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Description
-                            </label>
-                            <input
-                                type="text"
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                placeholder="A brief description of your theme"
-                                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-                            />
-                        </div>
-
-                        {/* CSS Editor */}
-                        <div>
-                            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                CSS Code *
-                            </label>
-                            <div className="rounded-lg border border-gray-300 dark:border-gray-600">
-                                <textarea
-                                    value={css}
-                                    onChange={(e) => setCss(e.target.value)}
-                                    className="w-full rounded-lg bg-gray-50 p-4 font-mono text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-900 dark:text-gray-100"
-                                    rows={20}
-                                    spellCheck={false}
-                                    style={{
-                                        tabSize: 2,
-                                        fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
-                                    }}
-                                />
-                            </div>
-                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                                Write CSS to customize the appearance. Use CSS variables, classes, and selectors.
-                            </p>
-                        </div>
-
-                        {/* Public Toggle */}
-                        <div className="flex items-center justify-between rounded-lg border border-gray-200 p-4 dark:border-gray-700">
-                            <div>
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Make Public
-                                </label>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    Allow others to discover and use your theme
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => setIsPublic(!isPublic)}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isPublic ? "bg-blue-600" : "bg-gray-300 dark:bg-gray-600"
-                                    }`}
-                            >
-                                <span
-                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isPublic ? "translate-x-6" : "translate-x-1"
-                                        }`}
-                                />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Footer */}
-                <div className="flex justify-end gap-3 border-t border-gray-200 p-6 dark:border-gray-700">
-                    <button
-                        onClick={onClose}
-                        disabled={isSaving}
-                        className="rounded-lg border border-gray-300 px-6 py-2 font-medium hover:bg-gray-100 disabled:opacity-50 dark:border-gray-600 dark:hover:bg-gray-700"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        disabled={isSaving}
-                        className="rounded-lg bg-blue-600 px-6 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-                    >
-                        {isSaving ? "Saving..." : "Save Theme"}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}

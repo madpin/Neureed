@@ -112,7 +112,6 @@ model User {
   preferences     UserPreferences?
   articleFeedback ArticleFeedback[]
   userPatterns    UserPattern[]
-  userThemes      UserTheme[]
 
   @@map("users")
 }
@@ -263,28 +262,5 @@ model UserPattern {
   @@index([userId, weight])
   @@index([updatedAt])
   @@map("user_patterns")
-}
-
-// User Custom Themes
-model UserTheme {
-  id          String   @id @default(cuid())
-  userId      String
-  name        String
-  description String?  @db.Text
-  css         String   @db.Text // Custom CSS content
-  isActive    Boolean  @default(false)
-  isPublic    Boolean  @default(false) // Allow sharing in theme gallery
-  isPreset    Boolean  @default(false) // System preset theme
-  previewUrl  String?  // Screenshot/preview image
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, name])
-  @@index([userId])
-  @@index([userId, isActive])
-  @@index([isPublic])
-  @@map("user_themes")
 }
 

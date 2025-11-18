@@ -23,7 +23,6 @@ export async function GET(
             readArticles: true,
             articleFeedback: true,
             userPatterns: true,
-            userThemes: true,
           },
         },
       },

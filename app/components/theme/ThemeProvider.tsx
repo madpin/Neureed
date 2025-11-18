@@ -3,17 +3,12 @@
 import { useEffect, useState, useCallback, createContext, useContext } from "react";
 import { useSession } from "next-auth/react";
 
-interface Theme {
-  id: string;
-  name: string;
-  css?: string;
-  isCustom: boolean;
-}
+type ThemeMode = "light" | "dark" | "system";
 
 interface ThemeContextType {
-  theme: Theme;
+  theme: ThemeMode;
   fontSize: string;
-  setTheme: (theme: Theme) => void;
+  setTheme: (theme: ThemeMode) => void;
   setFontSize: (size: string) => void;
 }
 
@@ -29,7 +24,7 @@ export const useTheme = () => {
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
-  const [theme, setThemeState] = useState<Theme>({ id: "system", name: "system", isCustom: false });
+  const [theme, setThemeState] = useState<ThemeMode>("system");
   const [fontSize, setFontSizeState] = useState<string>("medium");
   const [mounted, setMounted] = useState(false);
 
@@ -44,44 +39,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     root.style.fontSize = sizeMap[size] || size || "16px";
   }, []);
 
-  // Apply theme logic (Classes + CSS Injection)
-  const applyTheme = useCallback((themeToApply: Theme) => {
+  // Apply theme logic
+  const applyTheme = useCallback((themeMode: ThemeMode) => {
     const root = document.documentElement;
     root.classList.remove("light", "dark");
 
-    // Remove existing custom style
-    const existingStyle = document.getElementById("custom-theme-css");
-    if (existingStyle) {
-      existingStyle.remove();
-    }
-
-    if (themeToApply.isCustom && themeToApply.css) {
-      // Custom Theme Logic
-      root.setAttribute("data-theme", themeToApply.id);
-      
-      const styleTag = document.createElement("style");
-      styleTag.id = "custom-theme-css";
-      styleTag.textContent = themeToApply.css;
-      document.head.appendChild(styleTag);
-      
-      // Most custom themes are dark-based, but we could parse this from CSS in the future
-      // For now, assume custom = dark base to ensure white text defaults if not specified
-      root.classList.add("dark"); 
+    if (themeMode === "system") {
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      root.classList.toggle("dark", mediaQuery.matches);
     } else {
-      // Built-in Theme Logic
-      root.removeAttribute("data-theme");
-      
-      if (themeToApply.name === "system") {
-        const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-        root.classList.toggle("dark", mediaQuery.matches);
-      } else {
-        root.classList.add(themeToApply.name.toLowerCase());
-      }
+      root.classList.add(themeMode);
     }
   }, []);
 
   // Public setters that update state and apply immediately
-  const setTheme = (newTheme: Theme) => {
+  const setTheme = (newTheme: ThemeMode) => {
     setThemeState(newTheme);
     applyTheme(newTheme);
   };
@@ -100,31 +72,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const [prefsRes, themesRes] = await Promise.all([
-          fetch("/api/user/preferences"),
-          fetch("/api/user/themes"),
-        ]);
+        const response = await fetch("/api/user/preferences");
+        const data = await response.json();
+        const prefs = data.data?.preferences;
 
-        const prefsData = await prefsRes.json();
-        const themesData = await themesRes.json();
-
-        const prefs = prefsData.data?.preferences;
-        const activeCustomTheme = themesData.data?.activeTheme;
-
-        let newTheme: Theme = { id: "system", name: "system", isCustom: false };
-
-        if (activeCustomTheme) {
-          newTheme = {
-            id: activeCustomTheme.id,
-            name: activeCustomTheme.name,
-            css: activeCustomTheme.css,
-            isCustom: true,
-          };
-        } else if (prefs?.theme) {
-          newTheme = { id: prefs.theme, name: prefs.theme, isCustom: false };
+        if (prefs?.theme && ["light", "dark", "system"].includes(prefs.theme)) {
+          setTheme(prefs.theme as ThemeMode);
         }
-
-        setTheme(newTheme);
         
         if (prefs?.fontSize) {
           setFontSize(prefs.fontSize);
@@ -137,35 +91,35 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
 
     loadUserPreferences();
-  }, [session, applyTheme, applyFontSize]);
+  }, [session]);
 
   // System theme listener
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handleChange = (e: MediaQueryListEvent) => {
-      if (theme.name === "system") {
+      if (theme === "system") {
         document.documentElement.classList.toggle("dark", e.matches);
       }
     };
     
     mediaQuery.addEventListener("change", handleChange);
     return () => mediaQuery.removeEventListener("change", handleChange);
-  }, [theme.name]);
+  }, [theme]);
 
-  // Listen for legacy event (for backward compatibility during refactor)
+  // Listen for preference updates
   useEffect(() => {
-    const handleLegacyEvent = (event: CustomEvent) => {
-       const { theme: themeName, fontSize: newFont, activeTheme } = event.detail;
-       if (activeTheme?.css) {
-         setTheme({ id: activeTheme.id, name: activeTheme.id, css: activeTheme.css, isCustom: true });
-       } else if (themeName) {
-         setTheme({ id: themeName, name: themeName, isCustom: false });
-       }
-       if (newFont) setFontSize(newFont);
+    const handlePreferencesUpdate = (event: CustomEvent) => {
+      const { theme: themeName, fontSize: newFont } = event.detail;
+      if (themeName && ["light", "dark", "system"].includes(themeName)) {
+        setTheme(themeName as ThemeMode);
+      }
+      if (newFont) {
+        setFontSize(newFont);
+      }
     };
 
-    window.addEventListener("preferencesUpdated" as any, handleLegacyEvent);
-    return () => window.removeEventListener("preferencesUpdated" as any, handleLegacyEvent);
+    window.addEventListener("preferencesUpdated" as any, handlePreferencesUpdate);
+    return () => window.removeEventListener("preferencesUpdated" as any, handlePreferencesUpdate);
   }, []);
 
   // Prevent hydration mismatch
@@ -179,4 +133,3 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     </ThemeContext.Provider>
   );
 }
-
