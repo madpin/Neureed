@@ -19,9 +19,6 @@ Also implement better feed categories. (and feed configurations should be possib
 The each category should be expandable/shrinkable, and it should be persistent
 the user should be able to add new categories and rename them.
 
----
-
-The user should be able to add only the rss feed, and it automatically digest what's the name should be.
 
 ---
 
@@ -43,7 +40,6 @@ We should:
 - Add touch gestures to FreshRSS. (configurable, touch screen only)
 
 In the configurations:
-- change the password/credential
 - change the email (and notifications settings)
 - Language of the system, implement a language switcher (following best practices of internationalization)
 - add "seen" beyond "read", seen means that the user seen the article card.
