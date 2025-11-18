@@ -111,7 +111,7 @@ All notable changes to NeuReed are documented in this file.
 - `GET /api/articles?categoryId=xxx` - Filter articles by category
 
 ### Planned Features
-See `new_ideas.md` for upcoming feature backlog.
+See [Feature Backlog](docs/BACKLOG.md) for upcoming feature backlog.
 
 ## [0.7.0] - 2024-11-17 - Phase 7: Advanced Features & Optimization
 
@@ -437,7 +437,7 @@ All database changes are tracked through Prisma migrations in `prisma/migrations
 - Content sanitization for HTML
 
 ### Future Roadmap
-See `new_ideas.md` for planned features including:
+See [Feature Backlog](docs/BACKLOG.md) for planned features including:
 - OPML import/export
 - News clustering and digest generation
 - Improved reading formats for accessibility

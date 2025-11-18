@@ -394,21 +394,36 @@ curl http://localhost:3000/api/articles/ARTICLE_ID/related?limit=5
 curl http://localhost:3000/api/admin/embeddings
 ```
 
+## Documentation
+
+### User Guides
+- [Content Extraction Guide](docs/guides/CONTENT_EXTRACTION.md) - Configure content extraction methods
+- [Cookie Extraction Guide](docs/guides/COOKIE_EXTRACTION_GUIDE.md) - Extract cookies for authenticated feeds
+- [Storage Management Guide](docs/guides/STORAGE_MANAGEMENT_GUIDE.md) - Monitor and manage database/cache storage
+
+### Implementation Details
+- [Cron System Implementation](docs/implementation/CRON_IMPLEMENTATION_SUMMARY.md) - Automated feed refresh and cleanup
+- [Recency Scoring](docs/implementation/RECENCY_SCORING_IMPLEMENTATION.md) - Time-based search result ranking
+- [Admin Recency Settings](docs/implementation/ADMIN_RECENCY_SETTINGS.md) - Configure default recency behavior
+- [Timezone Fix](docs/implementation/TIMEZONE_FIX_SUMMARY.md) - Proper date/time handling across timezones
+- [Cron Diagnosis](docs/implementation/CRON_DIAGNOSIS_RESULTS.md) - Troubleshooting cron jobs
+
+### Project Planning
+- [Changelog](CHANGELOG.md) - Version history and release notes
+- [Feature Backlog](docs/BACKLOG.md) - Upcoming features and ideas
+
 ## Next Steps
 
 ### Current Status
 - ✅ Phase 1: Foundation & Core Setup - COMPLETE
 - ✅ Phase 2: Feed Management & Article Storage - COMPLETE
 - ✅ Phase 3: Embeddings & Semantic Search - COMPLETE
-- 🔜 Phase 4: User System & Authentication - NEXT
+- ✅ Phase 4: User System & Authentication - COMPLETE
+- ✅ Phase 5: Advanced Content Extraction - COMPLETE
+- ✅ Phase 6: Learning & Personalization - COMPLETE
+- ✅ Phase 7: Advanced Features & Optimization - COMPLETE
 
-### Upcoming Features (Phase 4+)
-1. User authentication and personalization (Phase 4)
-2. Chrome extension for authenticated content (Phase 5)
-3. Learning system with feedback (Phase 6)
-4. LLM integration for summaries (Phase 7)
-
-See `IMPLEMENTATION_PLAN.md` for the complete roadmap and `PHASE_3_COMPLETE.md` for Phase 3 details.
+See the [Changelog](CHANGELOG.md) for detailed version history and [Feature Backlog](docs/BACKLOG.md) for upcoming enhancements.
 
 ## Tech Stack
 
