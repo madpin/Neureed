@@ -3,8 +3,13 @@ nixPkgs = ["nodejs_20", "openssl"]
 
 [phases.install]
 cmds = [
-  "npm ci --prefer-offline --no-audit"
+  "npm ci --prefer-offline --no-audit --omit=optional --no-fund"
 ]
+
+[variables]
+PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
+PUPPETEER_SKIP_DOWNLOAD = "1"
+SKIP_ENV_VALIDATION = "1"
 
 [phases.build]
 cmds = [
