@@ -8,6 +8,8 @@
  * - Convert relative URLs to absolute
  * - Add target="_blank" to external links
  * - Process images
+ * - Link plain text URLs
+ * - Embed YouTube videos
  */
 export function processArticleContent(
   content: string,
@@ -31,6 +33,12 @@ export function processArticleContent(
 
   // Process images (lazy loading, etc.)
   processed = processImages(processed);
+
+  // Link plain text URLs in HTML content
+  processed = linkifyHtmlContent(processed);
+
+  // Embed YouTube videos
+  processed = embedYouTubeVideos(processed);
 
   return processed;
 }
@@ -396,5 +404,83 @@ export function validateContentLength(
 ): boolean {
   const length = content.length;
   return length >= minLength && length <= maxLength;
+}
+
+/**
+ * Convert plain text URLs in HTML to clickable links
+ * @param html - HTML content
+ * @returns HTML with linkified URLs
+ */
+export function linkifyHtmlContent(html: string): string {
+  // URL pattern that matches http:// and https:// URLs not already in href or src attributes
+  // This regex looks for URLs that are NOT preceded by href=" or src="
+  const urlPattern = /(?<!href="|src="|href='|src=')(https?:\/\/[^\s<>"']+)(?![^<]*<\/a>)/gi;
+  
+  return html.replace(urlPattern, (url) => {
+    // Remove trailing punctuation that might be part of the sentence
+    let cleanUrl = url;
+    const trailingPunctuation = /[.,;:!?)]$/;
+    let suffix = '';
+    
+    while (trailingPunctuation.test(cleanUrl)) {
+      suffix = cleanUrl[cleanUrl.length - 1] + suffix;
+      cleanUrl = cleanUrl.slice(0, -1);
+    }
+    
+    const safeHref = escapeAttribute(cleanUrl);
+    const safeLabel = escapeHtml(cleanUrl);
+    
+    return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer">${safeLabel}</a>${suffix}`;
+  });
+}
+
+/**
+ * Embed YouTube videos from URLs
+ * @param html - HTML content
+ * @returns HTML with embedded YouTube videos
+ */
+export function embedYouTubeVideos(html: string): string {
+  // YouTube URL patterns
+  const youtubePatterns = [
+    // youtube.com/watch?v=VIDEO_ID
+    /(?:https?:)?\/\/(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})(?:[&\?][^\s<]*)?/gi,
+    // youtu.be/VIDEO_ID
+    /(?:https?:)?\/\/(?:www\.)?youtu\.be\/([a-zA-Z0-9_-]{11})(?:[&\?][^\s<]*)?/gi,
+    // youtube.com/embed/VIDEO_ID
+    /(?:https?:)?\/\/(?:www\.)?youtube\.com\/embed\/([a-zA-Z0-9_-]{11})(?:[&\?][^\s<]*)?/gi,
+  ];
+
+  let processed = html;
+
+  for (const pattern of youtubePatterns) {
+    processed = processed.replace(pattern, (match, videoId) => {
+      // Don't embed if already in an iframe
+      const beforeMatch = processed.substring(0, processed.indexOf(match));
+      if (beforeMatch.includes('<iframe') && !beforeMatch.includes('</iframe>')) {
+        return match;
+      }
+
+      // Create responsive YouTube embed
+      const embedHtml = `
+        <div class="youtube-embed-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1.5rem 0;">
+          <iframe
+            src="https://www.youtube.com/embed/${videoId}"
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+            loading="lazy"
+          ></iframe>
+        </div>
+        <p style="font-size: 0.875rem; color: #6b7280; margin-top: 0.5rem;">
+          Original: <a href="${match}" target="_blank" rel="noopener noreferrer">${match}</a>
+        </p>
+      `;
+
+      return embedHtml;
+    });
+  }
+
+  return processed;
 }
 

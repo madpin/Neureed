@@ -11,6 +11,7 @@ import { AddFeedForm } from "./components/feeds/AddFeedForm";
 import { FeedBrowser } from "./components/feeds/FeedBrowser";
 import { ArticleList } from "./components/articles/ArticleList";
 import { SignInWithGoogleButton, SignInWithGitHubButton } from "./components/auth/SignInButton";
+import { Tooltip } from "./components/layout/Tooltip";
 import type { Feed, Article } from "@prisma/client";
 
 interface FeedWithStats extends Feed {
@@ -135,16 +136,17 @@ export default function Home() {
   };
 
   const handleSelectFeed = (feedId: string | null) => {
-    // Update URL to reflect feed filter
+    // Update URL to reflect feed filter and clear category
     if (feedId) {
       router.push(`/?feed=${feedId}`);
     } else {
+      // Clear all filters - show all articles
       router.push("/");
     }
   };
 
   const handleSelectCategory = (categoryId: string) => {
-    // Update URL to reflect category filter
+    // Update URL to reflect category filter and clear feed
     router.push(`/?categoryId=${categoryId}`);
   };
 
@@ -330,63 +332,69 @@ export default function Home() {
 
           {isCollapsed && (
             <div className="flex flex-col gap-2">
-              <button
-                onClick={() => setIsAddFeedOpen(true)}
-                className="flex items-center justify-center rounded-lg bg-blue-600 p-3 text-white hover:bg-blue-700"
-                title="Add Feed"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              <Tooltip content="Add Feed">
+                <button
+                  onClick={() => setIsAddFeedOpen(true)}
+                  className="flex items-center justify-center rounded-lg bg-blue-600 p-3 text-white hover:bg-blue-700"
+                  title="Add Feed"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
-              </button>
-              <button
-                onClick={() => setIsFeedBrowserOpen(true)}
-                className="flex items-center justify-center rounded-lg border border-gray-300 p-3 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
-                title="Browse Feeds"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                </button>
+              </Tooltip>
+              <Tooltip content="Browse Feeds">
+                <button
+                  onClick={() => setIsFeedBrowserOpen(true)}
+                  className="flex items-center justify-center rounded-lg border border-gray-300 p-3 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
+                  title="Browse Feeds"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-              </button>
-              <button
-                onClick={() => setIsCategoryManagementOpen(true)}
-                className="flex items-center justify-center rounded-lg border border-gray-300 p-3 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
-                title="Manage Categories"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </button>
+              </Tooltip>
+              <Tooltip content="Manage Categories">
+                <button
+                  onClick={() => setIsCategoryManagementOpen(true)}
+                  className="flex items-center justify-center rounded-lg border border-gray-300 p-3 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
+                  title="Manage Categories"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-                  />
-                </svg>
-              </button>
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                    />
+                  </svg>
+                </button>
+              </Tooltip>
             </div>
           )}
 

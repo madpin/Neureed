@@ -39,6 +39,12 @@ const preferencesSchema = z.object({
   // Sidebar Settings
   sidebarCollapsed: z.boolean().optional(),
   categoryStates: z.record(z.boolean()).optional(),
+  // Reading Typography Settings
+  readingFontFamily: z.string().optional(),
+  readingFontSize: z.number().int().min(12).max(32).optional(),
+  readingLineHeight: z.number().min(1.2).max(2.5).optional(),
+  readingParagraphSpacing: z.number().min(0.5).max(3).optional(),
+  showReadingTime: z.boolean().optional(),
 });
 
 /**

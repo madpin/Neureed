@@ -215,7 +215,14 @@ export default function AdminDashboardPage() {
 
       if (response.ok) {
         const data = await response.json();
-        alert(`Refreshed ${data.data.refreshed} feeds successfully!`);
+        const stats = data.data.stats;
+        alert(
+          `Refreshed ${stats.totalFeeds} feeds successfully!\n` +
+          `Successful: ${stats.successful}\n` +
+          `Failed: ${stats.failed}\n` +
+          `New articles: ${stats.totalNewArticles}\n` +
+          `Updated articles: ${stats.totalUpdatedArticles}`
+        );
       }
     } catch (error) {
       console.error("Refresh failed:", error);

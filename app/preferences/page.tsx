@@ -24,6 +24,11 @@ interface UserPreferences {
     readingPanelEnabled: boolean;
     readingPanelPosition: string;
     readingPanelSize: number;
+    readingFontFamily?: string;
+    readingFontSize?: number;
+    readingLineHeight?: number;
+    readingParagraphSpacing?: number;
+    showReadingTime?: boolean;
 }
 
 type TabId = "profile" | "appearance" | "reading" | "learning" | "llm" | "feeds";
@@ -124,7 +129,12 @@ export default function PreferencesPage() {
 
             if (response.ok) {
                 const data = await response.json();
-                setPreferences(data.data?.preferences || getDefaultPreferences());
+                const loadedPrefs = data.data?.preferences;
+                // Merge with defaults to ensure new fields are present
+                setPreferences({
+                    ...getDefaultPreferences(),
+                    ...loadedPrefs,
+                });
             } else {
                 setPreferences(getDefaultPreferences());
             }
@@ -153,6 +163,11 @@ export default function PreferencesPage() {
         readingPanelEnabled: false,
         readingPanelPosition: "right",
         readingPanelSize: 50,
+        readingFontFamily: "Georgia",
+        readingFontSize: 18,
+        readingLineHeight: 1.7,
+        readingParagraphSpacing: 1.5,
+        showReadingTime: true,
     });
 
     const handleSave = async (closeAfter = false) => {
@@ -545,6 +560,160 @@ function ReadingTab({ preferences, updatePreference }: {
                                 }`}
                         />
                     </button>
+                </div>
+
+                {/* Typography Section */}
+                <div className="border-t border-gray-200 pt-6 mt-6 dark:border-gray-700">
+                    <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                        Typography
+                    </h3>
+
+                    {/* Live Preview */}
+                    <div className="mb-6 rounded-lg border-2 border-blue-200 bg-blue-50 p-6 dark:border-blue-800 dark:bg-blue-900/20">
+                        <div className="mb-3 flex items-center gap-2">
+                            <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                                Live Preview
+                            </h4>
+                        </div>
+                        <div 
+                            className="rounded bg-white p-4 shadow-sm dark:bg-gray-800 [&>p]:mb-[var(--paragraph-spacing)]"
+                            style={{
+                                fontFamily: preferences.readingFontFamily || "Georgia",
+                                fontSize: `${preferences.readingFontSize ?? 18}px`,
+                                lineHeight: preferences.readingLineHeight ?? 1.7,
+                                // @ts-ignore
+                                '--paragraph-spacing': `${preferences.readingParagraphSpacing ?? 1.5}rem`,
+                            }}
+                        >
+                            <p className="text-gray-900 dark:text-gray-100">
+                                The quick brown fox jumps over the lazy dog. This is a sample paragraph to demonstrate how your typography settings will appear in articles. Typography plays a crucial role in readability and user experience.
+                            </p>
+                            <p className="text-gray-900 dark:text-gray-100">
+                                Good typography makes reading effortless and enjoyable. The right combination of font family, size, line height, and paragraph spacing can significantly enhance your reading experience.
+                            </p>
+                            <p className="text-gray-900 dark:text-gray-100">
+                                Adjust the settings below and watch this preview update in real-time to find your perfect reading configuration.
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Font Family */}
+                    <div className="mb-6">
+                        <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Font Family
+                        </label>
+                        <select
+                            value={preferences.readingFontFamily || "Georgia"}
+                            onChange={(e) => updatePreference("readingFontFamily", e.target.value)}
+                            className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                        >
+                            <option value="Georgia">Georgia (Serif)</option>
+                            <option value="'Merriweather', serif">Merriweather (Serif)</option>
+                            <option value="'Lora', serif">Lora (Serif)</option>
+                            <option value="'ui-serif', 'Georgia', serif">System Serif</option>
+                            <option value="'ui-sans-serif', 'system-ui', sans-serif">System Sans-Serif</option>
+                            <option value="'Inter', sans-serif">Inter (Sans-Serif)</option>
+                            <option value="'Arial', sans-serif">Arial (Sans-Serif)</option>
+                        </select>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            Choose a font that's comfortable for extended reading
+                        </p>
+                    </div>
+
+                    {/* Font Size */}
+                    <div className="mb-6">
+                        <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Font Size: {preferences.readingFontSize ?? 18}px
+                        </label>
+                        <input
+                            type="range"
+                            min="12"
+                            max="32"
+                            step="1"
+                            value={preferences.readingFontSize ?? 18}
+                            onChange={(e) => updatePreference("readingFontSize", parseInt(e.target.value))}
+                            className="w-full"
+                        />
+                        <div className="mt-1 flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                            <span>12px</span>
+                            <span>22px</span>
+                            <span>32px</span>
+                        </div>
+                    </div>
+
+                    {/* Line Height */}
+                    <div className="mb-6">
+                        <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Line Height: {(preferences.readingLineHeight ?? 1.7).toFixed(1)}
+                        </label>
+                        <input
+                            type="range"
+                            min="1.2"
+                            max="2.5"
+                            step="0.1"
+                            value={preferences.readingLineHeight ?? 1.7}
+                            onChange={(e) => updatePreference("readingLineHeight", parseFloat(e.target.value))}
+                            className="w-full"
+                        />
+                        <div className="mt-1 flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                            <span>1.2</span>
+                            <span>1.85</span>
+                            <span>2.5</span>
+                        </div>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            Spacing between lines of text
+                        </p>
+                    </div>
+
+                    {/* Paragraph Spacing */}
+                    <div className="mb-6">
+                        <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Paragraph Spacing: {(preferences.readingParagraphSpacing ?? 1.5).toFixed(1)}rem
+                        </label>
+                        <input
+                            type="range"
+                            min="0.5"
+                            max="3"
+                            step="0.1"
+                            value={preferences.readingParagraphSpacing ?? 1.5}
+                            onChange={(e) => updatePreference("readingParagraphSpacing", parseFloat(e.target.value))}
+                            className="w-full"
+                        />
+                        <div className="mt-1 flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                            <span>0.5rem</span>
+                            <span>1.75rem</span>
+                            <span>3rem</span>
+                        </div>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            Space between paragraphs
+                        </p>
+                    </div>
+
+                    {/* Show Reading Time */}
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Show Reading Time
+                            </label>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                Display estimated reading time on the article toolbar
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => updatePreference("showReadingTime", !(preferences.showReadingTime ?? true))}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${(preferences.showReadingTime ?? true) ? "bg-blue-600" : "bg-gray-300 dark:bg-gray-600"
+                                }`}
+                        >
+                            <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${(preferences.showReadingTime ?? true) ? "translate-x-6" : "translate-x-1"
+                                    }`}
+                            />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Reading Panel Section */}

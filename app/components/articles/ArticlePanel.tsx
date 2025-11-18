@@ -6,9 +6,29 @@ import { ArticleToolbar } from "./ArticleToolbar";
 import { ArticleSummary, ArticleSummaryRef } from "./ArticleSummary";
 import { ArticleFeedbackSection } from "./ArticleFeedbackSection";
 import { RelatedArticles } from "./RelatedArticles";
-import { processArticleContent } from "@/src/lib/content-processor";
+import { processArticleContent, estimateReadingTime } from "@/src/lib/content-processor";
 import type { Article, Feed } from "@prisma/client";
 import { useRef, useCallback } from "react";
+
+interface ReadingPreferences {
+  readingFontFamily: string;
+  readingFontSize: number;
+  readingLineHeight: number;
+  readingParagraphSpacing: number;
+  showReadingTime: boolean;
+}
+
+function getReadingStyles(preferences: ReadingPreferences | null): React.CSSProperties {
+  if (!preferences) return {};
+  
+  return {
+    fontFamily: preferences.readingFontFamily,
+    fontSize: `${preferences.readingFontSize}px`,
+    lineHeight: preferences.readingLineHeight,
+    // @ts-ignore - CSS custom properties
+    '--paragraph-spacing': `${preferences.readingParagraphSpacing}rem`,
+  };
+}
 
 interface ArticleWithFeed extends Article {
   feed: Feed;
@@ -35,6 +55,8 @@ export function ArticlePanel({ articleId, onClose }: ArticlePanelProps) {
   const summaryRef = useRef<ArticleSummaryRef>(null);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [hasSummary, setHasSummary] = useState(false);
+  const [preferences, setPreferences] = useState<ReadingPreferences | null>(null);
+  const [readingTime, setReadingTime] = useState<number>(0);
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -46,8 +68,15 @@ export function ArticlePanel({ articleId, onClose }: ArticlePanelProps) {
           throw new Error("Failed to load article");
         }
         const data = await response.json();
-        setArticle(data.data?.article || data.article || data);
+        const articleData = data.data?.article || data.article || data;
+        setArticle(articleData);
         setHasSummary(!!(data.data?.article?.summary || data.article?.summary || data.summary));
+        
+        // Calculate reading time
+        if (articleData?.content) {
+          const time = estimateReadingTime(articleData.content);
+          setReadingTime(time);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load article");
       } finally {
@@ -57,6 +86,39 @@ export function ArticlePanel({ articleId, onClose }: ArticlePanelProps) {
 
     fetchArticle();
   }, [articleId]);
+
+  useEffect(() => {
+    const fetchPreferences = async () => {
+      try {
+        const response = await fetch("/api/user/preferences");
+        if (response.ok) {
+          const data = await response.json();
+          const prefs = data.data?.preferences;
+          if (prefs) {
+            setPreferences({
+              readingFontFamily: prefs.readingFontFamily || "Georgia",
+              readingFontSize: prefs.readingFontSize || 18,
+              readingLineHeight: prefs.readingLineHeight || 1.7,
+              readingParagraphSpacing: prefs.readingParagraphSpacing || 1.5,
+              showReadingTime: prefs.showReadingTime !== undefined ? prefs.showReadingTime : true,
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load preferences:", err);
+        // Use defaults if preferences can't be loaded
+        setPreferences({
+          readingFontFamily: "Georgia",
+          readingFontSize: 18,
+          readingLineHeight: 1.7,
+          readingParagraphSpacing: 1.5,
+          showReadingTime: true,
+        });
+      }
+    };
+
+    fetchPreferences();
+  }, []);
 
   const handleGenerateSummary = useCallback(async () => {
     if (!summaryRef.current) return;
@@ -260,6 +322,8 @@ export function ArticlePanel({ articleId, onClose }: ArticlePanelProps) {
             onGenerateSummary={handleGenerateSummary}
             isGeneratingSummary={isGeneratingSummary}
             hasSummary={hasSummary}
+            readingTime={readingTime}
+            showReadingTime={preferences?.showReadingTime}
           />
 
           {/* AI Summary */}
@@ -272,7 +336,10 @@ export function ArticlePanel({ articleId, onClose }: ArticlePanelProps) {
 
           {/* Content */}
           <div
-            className="prose prose-lg max-w-none dark:prose-invert prose-headings:font-bold prose-a:text-blue-600 hover:prose-a:underline dark:prose-a:text-blue-400"
+            className="prose prose-lg max-w-none dark:prose-invert prose-headings:font-bold prose-a:text-blue-600 hover:prose-a:underline dark:prose-a:text-blue-400 [&>p]:mb-[var(--paragraph-spacing)]"
+            style={{
+              ...getReadingStyles(preferences),
+            }}
             dangerouslySetInnerHTML={{ __html: processedContent }}
           />
 

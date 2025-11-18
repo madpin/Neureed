@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { Feed } from "@prisma/client";
 import { FeedSettingsPanel } from "./FeedSettingsPanel";
+import { Tooltip } from "../layout/Tooltip";
 
 interface FeedInfo {
   id: string;
@@ -57,6 +58,7 @@ export function CategoryList({
   const [dragOverCategoryId, setDragOverCategoryId] = useState<string | null>(null);
   const [draggedFeedId, setDraggedFeedId] = useState<string | null>(null);
   const [draggedFeedUserFeedId, setDraggedFeedUserFeedId] = useState<string | null>(null);
+  const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleSelectFeed = (feedId: string | null) => {
     if (onSelectFeed) {
@@ -72,6 +74,27 @@ export function CategoryList({
     }
   };
 
+  const handleCategoryClick = (categoryId: string) => {
+    // Clear any existing timer
+    if (clickTimerRef.current) {
+      clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+      // This is a double click - toggle expansion
+      toggleCategory(categoryId);
+    } else {
+      // This is a single click - set timer to select category
+      clickTimerRef.current = setTimeout(() => {
+        clickTimerRef.current = null;
+        // Single click - select category
+        if (onSelectCategory) {
+          onSelectCategory(categoryId);
+        } else {
+          router.push(`/?categoryId=${categoryId}`);
+        }
+      }, 250); // 250ms delay for double-click detection
+    }
+  };
+
   useEffect(() => {
     loadFeedsGroupedByCategory();
   }, [isCollapsed]); // Reload when collapsed state changes
@@ -82,6 +105,15 @@ export function CategoryList({
       setExpandedCategories(new Set());
     }
   }, [isCollapsed]);
+
+  // Cleanup click timer on unmount
+  useEffect(() => {
+    return () => {
+      if (clickTimerRef.current) {
+        clearTimeout(clickTimerRef.current);
+      }
+    };
+  }, []);
 
   const loadFeedsGroupedByCategory = async () => {
     try {
@@ -341,22 +373,18 @@ export function CategoryList({
     if (isCollapsed) {
       // Icon-only mode with tooltip
       return (
-        <div key={feed.id} className="relative group">
-          <button
-            onClick={() => handleSelectFeed(feed.id)}
-            className={`flex h-12 w-12 items-center justify-center rounded-lg transition-colors ${
-              isSelected ? "bg-accent/10 text-primary" : "hover:bg-muted"
-            }`}
-            title={feed.name}
-          >
-            {renderFeedIcon(feed)}
-          </button>
-          {/* Tooltip */}
-          <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 z-50 hidden group-hover:block">
-            <div className="bg-popover text-popover-foreground px-3 py-2 rounded-md shadow-lg border border-border whitespace-nowrap">
-              {feed.name}
-            </div>
-          </div>
+        <div key={feed.id}>
+          <Tooltip content={feed.name}>
+            <button
+              onClick={() => handleSelectFeed(feed.id)}
+              className={`flex h-12 w-12 items-center justify-center rounded-lg transition-colors ${
+                isSelected ? "bg-accent/10 text-primary" : "hover:bg-muted"
+              }`}
+              title={feed.name}
+            >
+              {renderFeedIcon(feed)}
+            </button>
+          </Tooltip>
         </div>
       );
     }
@@ -472,22 +500,20 @@ export function CategoryList({
     if (isCollapsed) {
       // Icon-only mode: show folder icon with tooltip
       return (
-        <div key={category.id} className="relative group">
-          <button
-            onClick={() => toggleCategory(category.id)}
-            className="flex h-12 w-12 items-center justify-center rounded-lg hover:bg-muted transition-colors"
-            title={category.name}
-          >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-            </svg>
-          </button>
-          {/* Tooltip */}
-          <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 z-50 hidden group-hover:block">
-            <div className="bg-popover text-popover-foreground px-3 py-2 rounded-md shadow-lg border border-border whitespace-nowrap">
-              {category.name} ({category.feedCount})
-            </div>
-          </div>
+        <div key={category.id}>
+          <Tooltip content={`${category.name} (${category.feedCount})`}>
+            <button
+              onClick={() => handleCategoryClick(category.id)}
+              className={`flex h-12 w-12 items-center justify-center rounded-lg hover:bg-muted transition-colors ${
+                isSelected ? "bg-accent/10 text-primary" : ""
+              }`}
+              title={category.name}
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+            </button>
+          </Tooltip>
           {/* Show feeds below when expanded */}
           {isExpanded && category.feeds && (
             <div className="mt-1 space-y-1">
@@ -543,14 +569,9 @@ export function CategoryList({
             </svg>
           </button>
 
-          {/* Category Name - Click to show feeds in this category */}
+          {/* Category Name - Single click to show feeds in this category, double click to expand */}
           <button
-            onClick={() => {
-              // Filter/show only feeds from this category
-              if (onSelectCategory) {
-                onSelectCategory(category.id);
-              }
-            }}
+            onClick={() => handleCategoryClick(category.id)}
             onDragStart={(e) => e.stopPropagation()}
             draggable={false}
             className="flex flex-1 items-center gap-2 text-left text-sm font-semibold"
@@ -669,7 +690,7 @@ export function CategoryList({
         <button
           onClick={() => handleSelectFeed(null)}
           className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors ${
-            !selectedFeedId ? "bg-accent/10 text-primary" : "hover:bg-muted"
+            !selectedFeedId && !selectedCategoryId ? "bg-accent/10 text-primary" : "hover:bg-muted"
           }`}
         >
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
@@ -682,25 +703,22 @@ export function CategoryList({
           </div>
         </button>
       ) : (
-        <div className="relative group">
-          <button
-            onClick={() => handleSelectFeed(null)}
-            className={`flex h-12 w-12 items-center justify-center rounded-lg transition-colors ${
-              !selectedFeedId ? "bg-accent/10 text-primary" : "hover:bg-muted"
-            }`}
-            title="All Articles"
-          >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-              </svg>
-            </div>
-          </button>
-          <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 z-50 hidden group-hover:block">
-            <div className="bg-popover text-popover-foreground px-3 py-2 rounded-md shadow-lg border border-border whitespace-nowrap">
-              All Articles
-            </div>
-          </div>
+        <div>
+          <Tooltip content="All Articles">
+            <button
+              onClick={() => handleSelectFeed(null)}
+              className={`flex h-12 w-12 items-center justify-center rounded-lg transition-colors ${
+                !selectedFeedId && !selectedCategoryId ? "bg-accent/10 text-primary" : "hover:bg-muted"
+              }`}
+              title="All Articles"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                </svg>
+              </div>
+            </button>
+          </Tooltip>
         </div>
       )}
 

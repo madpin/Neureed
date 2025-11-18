@@ -261,6 +261,13 @@ model UserPreferences {
   sidebarCollapsed         Boolean  @default(false) // Sidebar collapsed to icon-only mode
   categoryStates           Json?    // Object mapping categoryId to expanded state { [categoryId]: boolean }
   
+  // Reading Typography Settings
+  readingFontFamily        String   @default("Georgia") // Font family for article content
+  readingFontSize          Int      @default(18) // Font size in pixels
+  readingLineHeight        Float    @default(1.7) // Line height multiplier
+  readingParagraphSpacing  Float    @default(1.5) // Paragraph spacing in rem
+  showReadingTime          Boolean  @default(true) // Show reading time estimation
+  
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
 

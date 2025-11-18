@@ -185,7 +185,7 @@ export function RelatedArticles({
         {articles.map((article) => (
           <Link
             key={article.id}
-            href={`/articles/${article.id}`}
+            href={`/?article=${article.id}`}
             className="group block rounded-lg border border-gray-200 p-4 transition-all hover:border-blue-500 hover:shadow-md dark:border-gray-700 dark:hover:border-blue-500"
           >
             <div className="flex gap-4">

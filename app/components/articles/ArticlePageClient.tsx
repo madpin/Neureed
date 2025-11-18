@@ -1,8 +1,28 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { ArticleToolbar } from "./ArticleToolbar";
 import { ArticleSummary, ArticleSummaryRef } from "./ArticleSummary";
+
+interface ReadingPreferences {
+  readingFontFamily: string;
+  readingFontSize: number;
+  readingLineHeight: number;
+  readingParagraphSpacing: number;
+  showReadingTime: boolean;
+}
+
+function getReadingStyles(preferences: ReadingPreferences | null): React.CSSProperties {
+  if (!preferences) return {};
+  
+  return {
+    fontFamily: preferences.readingFontFamily,
+    fontSize: `${preferences.readingFontSize}px`,
+    lineHeight: preferences.readingLineHeight,
+    // @ts-ignore - CSS custom properties
+    '--paragraph-spacing': `${preferences.readingParagraphSpacing}rem`,
+  };
+}
 
 interface ArticlePageClientProps {
   articleId: string;
@@ -10,6 +30,7 @@ interface ArticlePageClientProps {
   headerContent: React.ReactNode;
   mainContent: React.ReactNode;
   footerContent: React.ReactNode;
+  readingTime?: number;
   initialSummary?: {
     summary: string;
     keyPoints: string[];
@@ -23,11 +44,46 @@ export function ArticlePageClient({
   headerContent,
   mainContent,
   footerContent,
+  readingTime,
   initialSummary = null,
 }: ArticlePageClientProps) {
   const summaryRef = useRef<ArticleSummaryRef>(null);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [hasSummary, setHasSummary] = useState(!!initialSummary);
+  const [preferences, setPreferences] = useState<ReadingPreferences | null>(null);
+
+  useEffect(() => {
+    const fetchPreferences = async () => {
+      try {
+        const response = await fetch("/api/user/preferences");
+        if (response.ok) {
+          const data = await response.json();
+          const prefs = data.data?.preferences;
+          if (prefs) {
+            setPreferences({
+              readingFontFamily: prefs.readingFontFamily || "Georgia",
+              readingFontSize: prefs.readingFontSize || 18,
+              readingLineHeight: prefs.readingLineHeight || 1.7,
+              readingParagraphSpacing: prefs.readingParagraphSpacing || 1.5,
+              showReadingTime: prefs.showReadingTime !== undefined ? prefs.showReadingTime : true,
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load preferences:", err);
+        // Use defaults if preferences can't be loaded
+        setPreferences({
+          readingFontFamily: "Georgia",
+          readingFontSize: 18,
+          readingLineHeight: 1.7,
+          readingParagraphSpacing: 1.5,
+          showReadingTime: true,
+        });
+      }
+    };
+
+    fetchPreferences();
+  }, []);
 
   const handleGenerateSummary = useCallback(async () => {
     if (!summaryRef.current) return;
@@ -52,6 +108,8 @@ export function ArticlePageClient({
         onGenerateSummary={handleGenerateSummary}
         isGeneratingSummary={isGeneratingSummary}
         hasSummary={hasSummary}
+        readingTime={readingTime}
+        showReadingTime={preferences?.showReadingTime}
       />
 
       {/* AI Summary */}
@@ -63,7 +121,14 @@ export function ArticlePageClient({
       />
 
       {/* Main Content (Article body) */}
-      {mainContent}
+      <div
+        className="[&>div]:prose [&>div]:prose-lg [&>div]:max-w-none [&>div]:dark:prose-invert [&_p]:mb-[var(--paragraph-spacing)]"
+        style={{
+          ...getReadingStyles(preferences),
+        }}
+      >
+        {mainContent}
+      </div>
 
       {/* Footer Content (Feedback, Related Articles) */}
       {footerContent}
