@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { MainLayout } from "./components/layout/MainLayout";
+import { ReadingPanelLayout } from "./components/layout/ReadingPanelLayout";
 import { FeedList } from "./components/feeds/FeedList";
 import { AddFeedForm } from "./components/feeds/AddFeedForm";
 import { FeedBrowser } from "./components/feeds/FeedBrowser";
@@ -260,11 +261,16 @@ export default function Home() {
         </div>
       }
     >
-      <ArticleList
-        articles={articles}
-        isLoading={isLoadingArticles}
-        variant="expanded"
-      />
+      <ReadingPanelLayout>
+        {({ onArticleSelect }: { onArticleSelect?: (articleId: string) => void }) => (
+          <ArticleList
+            articles={articles}
+            isLoading={isLoadingArticles}
+            variant="expanded"
+            onArticleSelect={onArticleSelect}
+          />
+        )}
+      </ReadingPanelLayout>
 
       {isAddFeedOpen && (
         <AddFeedForm

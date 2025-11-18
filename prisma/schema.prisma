@@ -214,6 +214,11 @@ model UserPreferences {
   llmApiKey                String?  @db.Text // Encrypted API key for OpenAI
   llmBaseUrl               String?  // Base URL for Ollama or custom endpoints
   
+  // Reading Panel Settings
+  readingPanelEnabled      Boolean  @default(false) // Enable split-pane reading panel
+  readingPanelPosition     String   @default("right") // "right", "left", "top", "bottom"
+  readingPanelSize         Int      @default(50) // Percentage of viewport (30-70)
+  
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
 

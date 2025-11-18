@@ -15,9 +15,10 @@ interface ArticleCardProps {
   article: ArticleWithFeed;
   variant?: "compact" | "expanded";
   onReadStatusChange?: (articleId: string, isRead: boolean) => void;
+  onArticleClick?: (articleId: string) => void;
 }
 
-export function ArticleCard({ article, variant = "compact", onReadStatusChange }: ArticleCardProps) {
+export function ArticleCard({ article, variant = "compact", onReadStatusChange, onArticleClick }: ArticleCardProps) {
   const [isRead, setIsRead] = useState(article.isRead || false);
   const [isTogglingRead, setIsTogglingRead] = useState(false);
 
@@ -64,6 +65,24 @@ export function ArticleCard({ article, variant = "compact", onReadStatusChange }
     } finally {
       setIsTogglingRead(false);
     }
+  };
+
+  const handleArticleClick = (e: React.MouseEvent) => {
+    // Allow Ctrl/Cmd+click to open in new tab
+    if (e.ctrlKey || e.metaKey) {
+      console.log("[ArticleCard] Ctrl/Cmd+click detected, allowing default behavior");
+      return;
+    }
+
+    // If onArticleClick is provided (reading panel mode), use it
+    if (onArticleClick) {
+      console.log("[ArticleCard] Opening in reading panel:", article.id);
+      e.preventDefault();
+      onArticleClick(article.id);
+    } else {
+      console.log("[ArticleCard] No onArticleClick handler, navigating normally");
+    }
+    // Otherwise, let the Link handle navigation normally
   };
 
   return (
@@ -113,6 +132,7 @@ export function ArticleCard({ article, variant = "compact", onReadStatusChange }
           <Link
             href={`/articles/${article.id}`}
             className="group-hover:text-primary transition-colors"
+            onClick={handleArticleClick}
           >
             <h3 className="mb-2 text-lg font-semibold leading-tight line-clamp-2">
               {article.title}

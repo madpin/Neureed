@@ -42,6 +42,10 @@ const preferencesSchema = z.object({
   llmModel: z.string().nullable().optional(),
   llmApiKey: z.string().nullable().optional(),
   llmBaseUrl: z.string().url().nullable().optional(),
+  // Reading Panel Settings
+  readingPanelEnabled: z.boolean().optional(),
+  readingPanelPosition: z.enum(["right", "left", "top", "bottom"]).optional(),
+  readingPanelSize: z.number().int().min(30).max(70).optional(),
 });
 
 /**

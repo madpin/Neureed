@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { ArticleCard } from "@/app/components/articles/ArticleCard";
+import { ReadingPanelLayout } from "@/app/components/layout/ReadingPanelLayout";
 
 interface SearchResult {
   id: string;
@@ -80,20 +81,22 @@ export default function SearchPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="mx-auto max-w-7xl px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-            Semantic Search
-          </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Search articles using AI-powered semantic understanding
-          </p>
-        </div>
+    <ReadingPanelLayout>
+      {({ onArticleSelect }: { onArticleSelect?: (articleId: string) => void }) => (
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+          <div className="mx-auto max-w-7xl px-4 py-8">
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                Semantic Search
+              </h1>
+              <p className="mt-2 text-gray-600 dark:text-gray-400">
+                Search articles using AI-powered semantic understanding
+              </p>
+            </div>
 
-        {/* Search Form */}
-        <form onSubmit={handleSubmit} className="mb-8">
+            {/* Search Form */}
+            <form onSubmit={handleSubmit} className="mb-8">
           <div className="flex gap-4">
             <div className="flex-1">
               <input
@@ -187,7 +190,10 @@ export default function SearchPage() {
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {results.map((article) => (
                 <div key={article.id} className="relative">
-                  <ArticleCard article={article as any} />
+                  <ArticleCard 
+                    article={article as any}
+                    onArticleClick={onArticleSelect}
+                  />
                   {article.similarity !== undefined && (
                     <div className="absolute right-2 top-2">
                       <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-medium text-white shadow-lg">
@@ -251,8 +257,10 @@ export default function SearchPage() {
             </p>
           </div>
         )}
-      </div>
-    </div>
+          </div>
+        </div>
+      )}
+    </ReadingPanelLayout>
   );
 }
 

@@ -15,12 +15,14 @@ interface ArticleListProps {
   articles: ArticleWithFeed[];
   isLoading?: boolean;
   variant?: "compact" | "expanded";
+  onArticleSelect?: (articleId: string) => void;
 }
 
 export function ArticleList({
   articles,
   isLoading = false,
   variant = "compact",
+  onArticleSelect,
 }: ArticleListProps) {
   const { data: session } = useSession();
   const [scores, setScores] = useState<Map<string, ArticleScore>>(new Map());
@@ -120,7 +122,11 @@ export function ArticleList({
                 <RelevanceScore score={score} />
               </div>
             )}
-            <ArticleCard article={article} variant={variant} />
+            <ArticleCard 
+              article={article} 
+              variant={variant} 
+              onArticleClick={onArticleSelect}
+            />
           </div>
         );
       })}

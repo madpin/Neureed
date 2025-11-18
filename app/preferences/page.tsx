@@ -19,6 +19,9 @@ interface UserPreferences {
     llmModel: string | null;
     llmApiKey: string | null;
     llmBaseUrl: string | null;
+    readingPanelEnabled: boolean;
+    readingPanelPosition: string;
+    readingPanelSize: number;
 }
 
 type TabId = "profile" | "appearance" | "reading" | "learning" | "llm";
@@ -127,6 +130,9 @@ export default function PreferencesPage() {
         llmModel: null,
         llmApiKey: null,
         llmBaseUrl: null,
+        readingPanelEnabled: false,
+        readingPanelPosition: "right",
+        readingPanelSize: 50,
     });
 
     const handleSave = async (closeAfter = false) => {
@@ -523,6 +529,91 @@ function ReadingTab({ preferences, updatePreference }: {
                                 }`}
                         />
                     </button>
+                </div>
+
+                {/* Reading Panel Section */}
+                <div className="border-t border-gray-200 pt-6 mt-6 dark:border-gray-700">
+                    <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                        Reading Panel
+                    </h3>
+
+                    {/* Enable Reading Panel */}
+                    <div className="flex items-center justify-between mb-6">
+                        <div>
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Enable Split-Pane Reading
+                            </label>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                View articles alongside the article list in a resizable panel
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => updatePreference("readingPanelEnabled", !preferences.readingPanelEnabled)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${preferences.readingPanelEnabled ? "bg-blue-600" : "bg-gray-300 dark:bg-gray-600"
+                                }`}
+                        >
+                            <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${preferences.readingPanelEnabled ? "translate-x-6" : "translate-x-1"
+                                    }`}
+                            />
+                        </button>
+                    </div>
+
+                    {preferences.readingPanelEnabled && (
+                        <>
+                            {/* Panel Position */}
+                            <div className="mb-6">
+                                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Panel Position
+                                </label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {[
+                                        { value: "right", label: "Right", icon: "→" },
+                                        { value: "left", label: "Left", icon: "←" },
+                                        { value: "top", label: "Top", icon: "↑" },
+                                        { value: "bottom", label: "Bottom", icon: "↓" },
+                                    ].map((pos) => (
+                                        <button
+                                            key={pos.value}
+                                            onClick={() => updatePreference("readingPanelPosition", pos.value)}
+                                            className={`flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-colors ${
+                                                preferences.readingPanelPosition === pos.value
+                                                    ? "border-blue-600 bg-blue-50 text-blue-600 dark:border-blue-500 dark:bg-blue-900/20 dark:text-blue-400"
+                                                    : "border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700"
+                                            }`}
+                                        >
+                                            <span className="text-lg">{pos.icon}</span>
+                                            {pos.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Panel Size */}
+                            <div>
+                                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Panel Size: {preferences.readingPanelSize}%
+                                </label>
+                                <input
+                                    type="range"
+                                    min="30"
+                                    max="70"
+                                    step="5"
+                                    value={preferences.readingPanelSize}
+                                    onChange={(e) => updatePreference("readingPanelSize", parseInt(e.target.value))}
+                                    className="w-full"
+                                />
+                                <div className="mt-1 flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                                    <span>30%</span>
+                                    <span>50%</span>
+                                    <span>70%</span>
+                                </div>
+                                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                    Adjust how much screen space the reading panel takes up
+                                </p>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
         </div>
