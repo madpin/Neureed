@@ -63,6 +63,26 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    if (validated.key === "default_search_recency_weight") {
+      if (typeof validated.value !== "number" || validated.value < 0 || validated.value > 1) {
+        return apiError(
+          "Invalid value",
+          "default_search_recency_weight must be a number between 0 and 1",
+          { status: 400 }
+        );
+      }
+    }
+
+    if (validated.key === "default_search_recency_decay_days") {
+      if (typeof validated.value !== "number" || validated.value < 1 || validated.value > 365) {
+        return apiError(
+          "Invalid value",
+          "default_search_recency_decay_days must be a number between 1 and 365",
+          { status: 400 }
+        );
+      }
+    }
+
     const setting = await updateAdminSetting(
       validated.key,
       validated.value,

@@ -12,6 +12,8 @@
 @variant purple-dark (&:where(.purple-dark, .purple-dark *));
 @variant orange-light (&:where(.orange-light, .orange-light *));
 @variant orange-dark (&:where(.orange-dark, .orange-dark *));
+@variant rainbow-light (&:where(.rainbow-light, .rainbow-light *));
+@variant rainbow-dark (&:where(.rainbow-dark, .rainbow-dark *));
 
 @theme {
   --color-background: var(--background);
@@ -173,9 +175,44 @@
   --border: #c2410c; /* Orange-700 border */
 }
 
+/* Rainbow Light Theme - Purple to Pink Gradient */
+:root.rainbow-light {
+  --background: #faf5ff; /* Fallback light purple */
+  --foreground: #1a1a1a; /* Almost black text for readability */
+  --primary: #a855f7; /* Purple */
+  --primary-foreground: #ffffff;
+  --secondary: #ec4899; /* Pink */
+  --accent: #f0abfc; /* Light purple-pink */
+  --muted: #fae8ff; /* Very light purple */
+  --border: #e879f9; /* Magenta border */
+}
+
+/* Rainbow Dark Theme - Purple to Pink Gradient on Dark */
+:root.rainbow-dark {
+  --background: #1a0a2e; /* Fallback dark purple */
+  --foreground: #ffffff; /* Pure white text */
+  --primary: #c084fc; /* Bright purple */
+  --primary-foreground: #1a0a2e;
+  --secondary: #f472b6; /* Bright pink */
+  --accent: #e879f9; /* Magenta */
+  --muted: #2d1b4e; /* Dark purple */
+  --border: #a855f7; /* Purple border */
+}
+
+/* Apply gradient backgrounds */
+body.rainbow-light {
+  background: linear-gradient(135deg, #faf5ff 0%, #fce7f3 50%, #ffe4e6 100%);
+  background-attachment: fixed;
+}
+
+body.rainbow-dark {
+  background: linear-gradient(135deg, #1a0a2e 0%, #2d1440 25%, #3d0a45 50%, #4a0e4e 75%, #500724 100%);
+  background-attachment: fixed;
+}
+
 /* System preference fallback */
 @media (prefers-color-scheme: dark) {
-  :root:not(.light):not(.dark):not(.nord-light):not(.nord-dark):not(.solarized-light):not(.solarized-dark):not(.barbie-light):not(.barbie-dark):not(.purple-light):not(.purple-dark):not(.orange-light):not(.orange-dark) {
+  :root:not(.light):not(.dark):not(.nord-light):not(.nord-dark):not(.solarized-light):not(.solarized-dark):not(.barbie-light):not(.barbie-dark):not(.purple-light):not(.purple-dark):not(.orange-light):not(.orange-dark):not(.rainbow-light):not(.rainbow-dark) {
     --background: #0a0a0a;
     --foreground: #ededed;
     --primary: #3b82f6;

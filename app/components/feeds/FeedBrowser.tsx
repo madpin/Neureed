@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import type { Feed } from "@prisma/client";
 
 interface FeedWithSubscription extends Feed {
@@ -51,11 +52,11 @@ export function FeedBrowser({ onClose }: FeedBrowserProps) {
         );
       } else {
         const error = await response.json();
-        alert(error.error || "Failed to subscribe");
+        toast.error(error.error || "Failed to subscribe");
       }
     } catch (error) {
       console.error("Failed to subscribe:", error);
-      alert("Failed to subscribe to feed");
+      toast.error("Failed to subscribe to feed");
     } finally {
       setSubscribingIds((prev) => {
         const next = new Set(prev);
@@ -82,11 +83,11 @@ export function FeedBrowser({ onClose }: FeedBrowserProps) {
         );
       } else {
         const error = await response.json();
-        alert(error.error || "Failed to unsubscribe");
+        toast.error(error.error || "Failed to unsubscribe");
       }
     } catch (error) {
       console.error("Failed to unsubscribe:", error);
-      alert("Failed to unsubscribe from feed");
+      toast.error("Failed to unsubscribe from feed");
     } finally {
       setSubscribingIds((prev) => {
         const next = new Set(prev);

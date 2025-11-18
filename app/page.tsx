@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import { MainLayout } from "./components/layout/MainLayout";
 import { ReadingPanelLayout } from "./components/layout/ReadingPanelLayout";
 import { CategoryList } from "./components/feeds/CategoryList";
@@ -12,6 +13,7 @@ import { FeedBrowser } from "./components/feeds/FeedBrowser";
 import { ArticleList } from "./components/articles/ArticleList";
 import { SignInWithGoogleButton, SignInWithGitHubButton } from "./components/auth/SignInButton";
 import { Tooltip } from "./components/layout/Tooltip";
+import { useInfiniteScroll } from "@/src/hooks/useInfiniteScroll";
 import type { Feed, Article } from "@prisma/client";
 import type { ArticleSortOrder, ArticleSortDirection } from "@/src/lib/validations/article-validation";
 
@@ -23,6 +25,7 @@ interface ArticleWithFeed extends Article {
   feed: Feed;
   isRead?: boolean;
   readAt?: Date;
+  similarity?: number;
 }
 
 export default function Home() {
@@ -41,17 +44,45 @@ export default function Home() {
   const [sortOrder, setSortOrder] = useState<ArticleSortOrder>("publishedAt");
   const [sortDirection, setSortDirection] = useState<ArticleSortDirection>("desc");
   const [categoryListRefreshTrigger, setCategoryListRefreshTrigger] = useState(0);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchMode, setSearchMode] = useState<"semantic" | "hybrid">("semantic");
+  const [searchMinScore, setSearchMinScore] = useState(0.7);
+  const [showSearchFilters, setShowSearchFilters] = useState(false);
+  const [infiniteScrollMode, setInfiniteScrollMode] = useState<"auto" | "button" | "both">("both");
+  const [searchRecencyWeight, setSearchRecencyWeight] = useState(0.3);
+  const [searchRecencyDecayDays, setSearchRecencyDecayDays] = useState(30);
+  const isInitialMount = useRef(true);
+  const loadArticlesRef = useRef<((pageNum: number, append: boolean) => Promise<void>) | null>(null);
+  
+  // Infinite scroll hook
+  const {
+    page,
+    isLoading: isLoadingMore,
+    hasMore,
+    loadMoreRef,
+    loadMore,
+    reset: resetInfiniteScroll,
+    setHasMore,
+    setIsLoading: setIsLoadingMore,
+  } = useInfiniteScroll({
+    enabled: infiniteScrollMode === "auto" || infiniteScrollMode === "both",
+    threshold: 500,
+  });
 
-  // Sync selectedFeedId and selectedCategoryId with URL params
+  // Sync selectedFeedId, selectedCategoryId, and searchQuery with URL params
   useEffect(() => {
     const feedIdFromUrl = searchParams.get('feed');
     const categoryIdFromUrl = searchParams.get('categoryId');
+    const searchFromUrl = searchParams.get('search');
     
     if (feedIdFromUrl !== selectedFeedId) {
       setSelectedFeedId(feedIdFromUrl);
     }
     if (categoryIdFromUrl !== selectedCategoryId) {
       setSelectedCategoryId(categoryIdFromUrl);
+    }
+    if (searchFromUrl !== searchQuery) {
+      setSearchQuery(searchFromUrl || "");
     }
   }, [searchParams]);
 
@@ -69,10 +100,7 @@ export default function Home() {
     }
   }, [session, status]);
 
-  // Load articles when feed, category, or sort changes
-  useEffect(() => {
-    loadArticles();
-  }, [selectedFeedId, selectedCategoryId, sortOrder, sortDirection]);
+  // These effects will be defined after loadArticles is declared
 
   // Reload articles when user returns to the page (to update read status)
   useEffect(() => {
@@ -96,6 +124,9 @@ export default function Home() {
         const prefs = data.data.preferences;
         setSortOrder(prefs.articleSortOrder || "publishedAt");
         setSortDirection(prefs.articleSortDirection || "desc");
+        setInfiniteScrollMode(prefs.infiniteScrollMode || "both");
+        setSearchRecencyWeight(prefs.searchRecencyWeight ?? 0.3);
+        setSearchRecencyDecayDays(prefs.searchRecencyDecayDays ?? 30);
       }
     } catch (error) {
       console.error("Failed to load user preferences:", error);
@@ -104,8 +135,12 @@ export default function Home() {
 
   // Callback to refresh sidebar counts when article read status changes
   const handleArticleReadStatusChange = useCallback(() => {
+    console.log('[Home] Article read status changed, triggering sidebar refresh');
     // Trigger a refresh of the CategoryList by incrementing the trigger
-    setCategoryListRefreshTrigger(prev => prev + 1);
+    setCategoryListRefreshTrigger(prev => {
+      console.log('[Home] Incrementing refresh trigger from', prev, 'to', prev + 1);
+      return prev + 1;
+    });
   }, []);
 
   const loadFeeds = async () => {
@@ -138,43 +173,122 @@ export default function Home() {
     }
   };
 
-  const loadArticles = async () => {
-    setIsLoadingArticles(true);
+  const loadArticles = useCallback(async (pageNum: number = 1, append: boolean = false) => {
+    console.log('[loadArticles] Starting load:', { pageNum, append });
+    
+    if (append) {
+      setIsLoadingMore(true);
+    } else {
+      setIsLoadingArticles(true);
+    }
+    
     try {
-      // Build URL with optional feed, category, and sort filters
-      const params = new URLSearchParams();
-      if (selectedFeedId) {
-        params.append('feedId', selectedFeedId);
-      }
-      if (selectedCategoryId) {
-        params.append('categoryId', selectedCategoryId);
-      }
-      // Add sort parameters
-      if (sortOrder) {
-        params.append('sortBy', sortOrder);
-      }
-      if (sortDirection) {
-        params.append('sortDirection', sortDirection);
-      }
-      
-      const url = params.toString() 
-        ? `/api/articles?${params.toString()}`
-        : "/api/articles";
+      // If search query exists, use semantic search
+      if (searchQuery && searchQuery.length >= 2) {
+        const response = await fetch("/api/articles/semantic-search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: searchQuery,
+            limit: 20,
+            minScore: searchMinScore,
+            mode: searchMode,
+            page: pageNum,
+            recencyWeight: searchRecencyWeight,
+            recencyDecayDays: searchRecencyDecayDays,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const newArticles = data.data.results || [];
+          const pagination = data.data.pagination;
+          
+          if (append) {
+            setArticles(prev => [...prev, ...newArticles]);
+          } else {
+            setArticles(newArticles);
+          }
+          
+          setHasMore(pagination?.hasMore ?? false);
+        }
+      } else {
+        // Build URL with optional feed, category, and sort filters
+        const params = new URLSearchParams();
+        params.append('page', pageNum.toString());
+        params.append('limit', '20');
         
-      const response = await fetch(url);
-      const data = await response.json();
-      // Handle wrapped response
-      const responseData = data.data || data;
-      setArticles(responseData.articles || []);
+        if (selectedFeedId) {
+          params.append('feedId', selectedFeedId);
+        }
+        if (selectedCategoryId) {
+          params.append('categoryId', selectedCategoryId);
+        }
+        // Add sort parameters
+        if (sortOrder) {
+          params.append('sortBy', sortOrder);
+        }
+        if (sortDirection) {
+          params.append('sortDirection', sortDirection);
+        }
+        
+        const url = `/api/articles?${params.toString()}`;
+          
+        const response = await fetch(url);
+        const data = await response.json();
+        // Handle wrapped response
+        const responseData = data.data || data;
+        const newArticles = responseData.articles || [];
+        const pagination = responseData.pagination;
+        
+        if (append) {
+          setArticles(prev => [...prev, ...newArticles]);
+        } else {
+          setArticles(newArticles);
+        }
+        
+        const hasMoreArticles = pagination?.hasMore ?? (pagination?.page < pagination?.totalPages);
+        console.log('[loadArticles] Pagination info:', { 
+          page: pagination?.page, 
+          totalPages: pagination?.totalPages, 
+          hasMore: hasMoreArticles,
+          articlesLoaded: newArticles.length 
+        });
+        setHasMore(hasMoreArticles);
+      }
     } catch (error) {
       console.error("Failed to load articles:", error);
     } finally {
-      setIsLoadingArticles(false);
+      if (append) {
+        setIsLoadingMore(false);
+      } else {
+        setIsLoadingArticles(false);
+      }
     }
-  };
+  }, [searchQuery, searchMinScore, searchMode, selectedFeedId, selectedCategoryId, sortOrder, sortDirection, setIsLoadingMore, setHasMore]);
+
+  // Keep ref in sync
+  loadArticlesRef.current = loadArticles;
+
+  // Load articles when feed, category, search, or sort changes (reset pagination)
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+    }
+    resetInfiniteScroll();
+    setArticles([]);
+    loadArticlesRef.current?.(1, false);
+  }, [selectedFeedId, selectedCategoryId, searchQuery, sortOrder, sortDirection, resetInfiniteScroll]);
+
+  // Load more articles when page changes
+  useEffect(() => {
+    if (page > 1) {
+      loadArticlesRef.current?.(page, true);
+    }
+  }, [page]);
 
   const handleSelectFeed = (feedId: string | null) => {
-    // Update URL to reflect feed filter and clear category
+    // Update URL to reflect feed filter and clear category and search
     if (feedId) {
       router.push(`/?feed=${feedId}`);
     } else {
@@ -184,8 +298,20 @@ export default function Home() {
   };
 
   const handleSelectCategory = (categoryId: string) => {
-    // Update URL to reflect category filter and clear feed
+    // Update URL to reflect category filter and clear feed and search
     router.push(`/?categoryId=${categoryId}`);
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery && searchQuery.length >= 2) {
+      router.push(`/?search=${encodeURIComponent(searchQuery)}`);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery("");
+    router.push("/");
   };
 
   const handleSortChange = async (newSortOrder: ArticleSortOrder, newSortDirection: ArticleSortDirection) => {
@@ -241,7 +367,7 @@ export default function Home() {
       // No need to change URL since we're on the "all articles" page
     } catch (error) {
       console.error("Failed to unsubscribe from feed:", error);
-      alert("Failed to unsubscribe from feed");
+      toast.error("Failed to unsubscribe from feed");
     }
   };
 
@@ -262,10 +388,10 @@ export default function Home() {
         router.push("/");
       }
 
-      alert("Feed deleted successfully");
+      toast.success("Feed deleted successfully");
     } catch (error) {
       console.error("Failed to delete feed:", error);
-      alert(error instanceof Error ? error.message : "Failed to delete feed");
+      toast.error(error instanceof Error ? error.message : "Failed to delete feed");
     }
   };
 
@@ -282,7 +408,7 @@ export default function Home() {
       await loadArticles();
     } catch (error) {
       console.error("Failed to refresh feed:", error);
-      alert("Failed to refresh feed");
+      toast.error("Failed to refresh feed");
     }
   };
 
@@ -489,13 +615,160 @@ export default function Home() {
     >
       <ReadingPanelLayout onArticleReadStatusChange={handleArticleReadStatusChange}>
         {({ onArticleSelect }: { onArticleSelect?: (articleId: string) => void }) => (
-          <ArticleList
-            articles={articles}
-            isLoading={isLoadingArticles}
-            variant="expanded"
-            onArticleSelect={onArticleSelect}
-            onReadStatusChange={handleArticleReadStatusChange}
-          />
+          <div className="space-y-6">
+            {/* Search Form - Show when search param is present */}
+            {searchQuery && (
+              <div className="space-y-4">
+                <form onSubmit={handleSearchSubmit} className="space-y-4">
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <input
+                        type="search"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="What are you looking for?"
+                        className="w-full rounded-lg border border-border bg-muted px-4 py-3 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={isLoadingArticles || searchQuery.length < 2}
+                      className="rounded-lg bg-blue-600 px-8 py-3 font-medium text-white hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+                    >
+                      {isLoadingArticles ? "Searching..." : "Search"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleClearSearch}
+                      className="rounded-lg border border-border px-4 py-3 hover:bg-muted"
+                      title="Clear search"
+                    >
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowSearchFilters(!showSearchFilters)}
+                      className="rounded-lg border border-border px-4 py-3 hover:bg-muted"
+                    >
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Filters */}
+                  {showSearchFilters && (
+                    <div className="rounded-lg border border-border bg-background p-4">
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-foreground/70">
+                            Search Mode
+                          </label>
+                          <select
+                            value={searchMode}
+                            onChange={(e) =>
+                              setSearchMode(e.target.value as "semantic" | "hybrid")
+                            }
+                            className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                          >
+                            <option value="semantic">Semantic Only</option>
+                            <option value="hybrid">Hybrid (Semantic + Keyword)</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-foreground/70">
+                            Minimum Similarity: {Math.round(searchMinScore * 100)}%
+                          </label>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={searchMinScore}
+                            onChange={(e) => setSearchMinScore(parseFloat(e.target.value))}
+                            className="w-full"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </form>
+
+                {/* Search Results Header */}
+                {articles.length > 0 && (
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold text-foreground">
+                      {articles.length} {articles.length === 1 ? "result" : "results"} found
+                    </h2>
+                    <div className="text-sm text-foreground/70">
+                      Mode: {searchMode === "semantic" ? "Semantic" : "Hybrid"}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Article List */}
+            {!isLoadingArticles && searchQuery && articles.length === 0 ? (
+              <div className="rounded-lg border border-border bg-background p-12 text-center">
+                <svg
+                  className="mx-auto h-12 w-12 text-foreground/50"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <h3 className="mt-4 text-lg font-medium text-foreground">
+                  No results found
+                </h3>
+                <p className="mt-2 text-foreground/70">
+                  Try adjusting your search query or lowering the similarity threshold
+                </p>
+              </div>
+            ) : (
+              <ArticleList
+                articles={articles}
+                isLoading={isLoadingArticles}
+                variant="expanded"
+                onArticleSelect={onArticleSelect}
+                onReadStatusChange={handleArticleReadStatusChange}
+                hasMore={hasMore}
+                isLoadingMore={isLoadingMore}
+                onLoadMore={loadMore}
+                loadMoreRef={loadMoreRef}
+                infiniteScrollMode={infiniteScrollMode}
+              />
+            )}
+          </div>
         )}
       </ReadingPanelLayout>
 

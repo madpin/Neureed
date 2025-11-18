@@ -279,6 +279,13 @@ model UserPreferences {
   articleSortOrder         String   @default("publishedAt") // "publishedAt", "relevance", "title", "feed", "updatedAt"
   articleSortDirection     String   @default("desc") // "asc", "desc"
   
+  // Infinite Scroll Settings
+  infiniteScrollMode       String   @default("both") // "auto", "button", "both"
+  
+  // Semantic Search Recency Settings
+  searchRecencyWeight      Float    @default(0.3) // 0-1, how much to weight recency vs semantic similarity
+  searchRecencyDecayDays   Int      @default(30) // Number of days for recency to decay to ~37%
+  
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
 

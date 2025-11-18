@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 import { OpmlExportModal } from "@/app/components/feeds/OpmlExportModal";
 import { OpmlImportModal } from "@/app/components/feeds/OpmlImportModal";
 
@@ -38,6 +39,9 @@ interface UserPreferences {
   defaultRefreshInterval?: number;
   defaultMaxArticlesPerFeed?: number;
   defaultMaxArticleAge?: number;
+  infiniteScrollMode?: string;
+  searchRecencyWeight?: number;
+  searchRecencyDecayDays?: number;
 }
 
 export function PreferencesModal({
@@ -52,6 +56,7 @@ export function PreferencesModal({
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+  const isNavigatingRef = useRef(false);
 
   useEffect(() => {
     loadPreferences();
@@ -95,7 +100,10 @@ export function PreferencesModal({
     autoMarkAsRead: false,
     showRelatedExcerpts: false,
     bounceThreshold: 0.25,
+    searchRecencyWeight: 0.3,
+    searchRecencyDecayDays: 30,
     showLowRelevanceArticles: true,
+    infiniteScrollMode: "both",
     llmProvider: null,
     llmModel: null,
     llmApiKey: null,
@@ -134,6 +142,24 @@ export function PreferencesModal({
         detail: { fontSize: originalPreferences.fontSize } 
       }));
     }
+  };
+
+  const handleCloseWithHistory = () => {
+    if (hasUnsavedChanges()) {
+      const confirmed = window.confirm(
+        "You have unsaved changes. Are you sure you want to close without saving?"
+      );
+      if (!confirmed) return;
+      
+      // Revert any immediately-applied changes
+      revertChanges();
+    }
+    
+    // Go back through history to remove modal states
+    if (window.history.state?.modal === 'preferences') {
+      window.history.back();
+    }
+    onClose();
   };
 
   const handleClose = () => {
@@ -189,11 +215,48 @@ export function PreferencesModal({
     setPreferences((prev) => (prev ? { ...prev, [key]: value } : null));
   };
 
+  // Navigate to a different view
+  const navigateToView = (view: ViewType) => {
+    setCurrentView(view);
+    
+    // Push to browser history
+    const state = { 
+      modal: 'preferences',
+      view
+    };
+    window.history.pushState(state, '', window.location.href);
+  };
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state?.modal === 'preferences') {
+        // Navigate to the state from history
+        setCurrentView(event.state.view || 'profile');
+      } else {
+        // If we're going back beyond the modal, close it
+        handleCloseWithHistory();
+      }
+    };
+
+    // Push initial state
+    const initialState = { 
+      modal: 'preferences',
+      view: initialView
+    };
+    window.history.pushState(initialState, '', window.location.href);
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [initialView]);
+
   // Handle click outside modal
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        handleClose();
+        handleCloseWithHistory();
       }
     };
 
@@ -226,7 +289,7 @@ export function PreferencesModal({
             </div>
             <nav className="flex-1 space-y-1 overflow-y-auto p-2">
               <button
-                onClick={() => setCurrentView('profile')}
+                onClick={() => navigateToView('profile')}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                   currentView === 'profile'
                     ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
@@ -240,7 +303,7 @@ export function PreferencesModal({
               </button>
 
               <button
-                onClick={() => setCurrentView('appearance')}
+                onClick={() => navigateToView('appearance')}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                   currentView === 'appearance'
                     ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
@@ -254,7 +317,7 @@ export function PreferencesModal({
               </button>
 
               <button
-                onClick={() => setCurrentView('reading')}
+                onClick={() => navigateToView('reading')}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                   currentView === 'reading'
                     ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
@@ -268,7 +331,7 @@ export function PreferencesModal({
               </button>
 
               <button
-                onClick={() => setCurrentView('learning')}
+                onClick={() => navigateToView('learning')}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                   currentView === 'learning'
                     ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
@@ -282,7 +345,7 @@ export function PreferencesModal({
               </button>
 
               <button
-                onClick={() => setCurrentView('llm')}
+                onClick={() => navigateToView('llm')}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                   currentView === 'llm'
                     ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
@@ -296,7 +359,7 @@ export function PreferencesModal({
               </button>
 
               <button
-                onClick={() => setCurrentView('feeds')}
+                onClick={() => navigateToView('feeds')}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                   currentView === 'feeds'
                     ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
@@ -311,7 +374,7 @@ export function PreferencesModal({
             </nav>
             <div className="border-t border-border p-2">
               <button
-                onClick={handleClose}
+                onClick={handleCloseWithHistory}
                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-muted"
               >
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -445,6 +508,8 @@ function AppearanceView({
             <option value="purple-dark">Purple Dark</option>
             <option value="orange-light">Orange Light</option>
             <option value="orange-dark">Orange Dark</option>
+            <option value="rainbow-light">🌈 Rainbow Light</option>
+            <option value="rainbow-dark">🌈 Rainbow Dark</option>
             <option value="system">System (Auto)</option>
           </select>
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
@@ -524,6 +589,23 @@ function ReadingView({
           />
         </div>
 
+        {/* Infinite Scroll Mode */}
+        <div>
+          <label className="mb-2 block text-sm font-medium">Infinite Scroll Mode</label>
+          <select
+            value={preferences.infiniteScrollMode || "both"}
+            onChange={(e) => updatePreference("infiniteScrollMode", e.target.value)}
+            className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="auto">Auto-load (scroll to load more)</option>
+            <option value="button">Button only (manual load)</option>
+            <option value="both">Both (auto-load + button)</option>
+          </select>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Choose how to load more articles: automatically when scrolling, with a button, or both
+          </p>
+        </div>
+
         {/* Toggle Switches */}
         <ToggleSwitch
           label="Show Read Articles"
@@ -589,6 +671,45 @@ function LearningView({
           onChange={(checked) => updatePreference("showLowRelevanceArticles", checked)}
         />
 
+        {/* Search Recency Weight */}
+        <div>
+          <label className="mb-2 block text-sm font-medium">
+            Search Recency Weight: {Math.round((preferences.searchRecencyWeight || 0.3) * 100)}%
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="5"
+            value={(preferences.searchRecencyWeight || 0.3) * 100}
+            onChange={(e) => updatePreference("searchRecencyWeight", parseInt(e.target.value) / 100)}
+            className="w-full"
+          />
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            How much to prioritize recent articles in semantic search results. 
+            0% = pure semantic similarity, 100% = only recency matters
+          </p>
+        </div>
+
+        {/* Search Recency Decay Days */}
+        <div>
+          <label className="mb-2 block text-sm font-medium">
+            Recency Decay Period: {preferences.searchRecencyDecayDays || 30} days
+          </label>
+          <input
+            type="range"
+            min="7"
+            max="180"
+            step="7"
+            value={preferences.searchRecencyDecayDays || 30}
+            onChange={(e) => updatePreference("searchRecencyDecayDays", parseInt(e.target.value))}
+            className="w-full"
+          />
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            How quickly article recency importance fades. Shorter periods favor very recent articles.
+          </p>
+        </div>
+
         {/* Reset Button */}
         <div className="rounded-lg border border-border bg-muted p-4">
           <h3 className="mb-2 text-sm font-semibold">Learned Patterns</h3>
@@ -603,11 +724,11 @@ function LearningView({
                     method: "POST",
                   });
                   if (response.ok) {
-                    alert("Patterns reset successfully!");
+                    toast.success("Patterns reset successfully!");
                   }
                 } catch (error) {
                   console.error("Failed to reset patterns:", error);
-                  alert("Failed to reset patterns. Please try again.");
+                  toast.error("Failed to reset patterns. Please try again.");
                 }
               }
             }}

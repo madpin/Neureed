@@ -58,6 +58,7 @@ export function ArticleCard({ article, variant = "compact", onReadStatusChange, 
       if (response.ok) {
         const newReadStatus = !isRead;
         setIsRead(newReadStatus);
+        console.log('[ArticleCard] Calling onReadStatusChange callback');
         onReadStatusChange?.(article.id, newReadStatus);
       }
     } catch (error) {

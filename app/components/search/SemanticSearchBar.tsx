@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 interface SearchResult {
   id: string;
@@ -11,12 +12,36 @@ interface SearchResult {
 }
 
 export function SemanticSearchBar() {
+  const { data: session } = useSession();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [searchRecencyWeight, setSearchRecencyWeight] = useState(0.3);
+  const [searchRecencyDecayDays, setSearchRecencyDecayDays] = useState(30);
   const searchRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  // Load user preferences
+  useEffect(() => {
+    if (session?.user) {
+      loadUserPreferences();
+    }
+  }, [session]);
+
+  const loadUserPreferences = async () => {
+    try {
+      const response = await fetch("/api/user/preferences");
+      const data = await response.json();
+      if (data.data?.preferences) {
+        const prefs = data.data.preferences;
+        setSearchRecencyWeight(prefs.searchRecencyWeight ?? 0.3);
+        setSearchRecencyDecayDays(prefs.searchRecencyDecayDays ?? 30);
+      }
+    } catch (error) {
+      console.error("Failed to load user preferences:", error);
+    }
+  };
 
   // Debounced search
   useEffect(() => {
@@ -37,6 +62,8 @@ export function SemanticSearchBar() {
             limit: 5,
             minScore: 0.6,
             mode: "semantic",
+            recencyWeight: searchRecencyWeight,
+            recencyDecayDays: searchRecencyDecayDays,
           }),
         });
 
@@ -71,13 +98,13 @@ export function SemanticSearchBar() {
   }, []);
 
   const handleResultClick = (articleId: string) => {
-    router.push(`/articles/${articleId}`);
+    router.push(`/?article=${articleId}`);
     setShowResults(false);
     setQuery("");
   };
 
   const handleAdvancedSearch = () => {
-    router.push(`/search?q=${encodeURIComponent(query)}`);
+    router.push(`/?search=${encodeURIComponent(query)}`);
     setShowResults(false);
   };
 

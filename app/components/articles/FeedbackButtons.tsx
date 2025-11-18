@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 interface FeedbackButtonsProps {
   articleId: string;
@@ -42,7 +43,7 @@ export function FeedbackButtons({
 
   const handleFeedback = async (value: number) => {
     if (!session?.user) {
-      alert("Please sign in to provide feedback");
+      toast.error("Please sign in to provide feedback");
       return;
     }
 
@@ -76,7 +77,7 @@ export function FeedbackButtons({
       }
     } catch (error) {
       console.error("Error submitting feedback:", error);
-      alert("Failed to submit feedback");
+      toast.error("Failed to submit feedback");
     } finally {
       setIsLoading(false);
     }

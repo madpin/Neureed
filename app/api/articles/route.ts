@@ -146,6 +146,7 @@ export const GET = createHandler(
           limit,
           total,
           totalPages: Math.ceil(total / limit),
+          hasMore: page < Math.ceil(total / limit),
         },
       };
     } else {
@@ -171,6 +172,7 @@ export const GET = createHandler(
           limit,
           total,
           totalPages: Math.ceil(total / limit),
+          hasMore: page < Math.ceil(total / limit),
         },
       };
     }

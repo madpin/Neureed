@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
   experimental: {
     instrumentationHook: true,
   },
+  // Disable Turbopack due to compatibility issues with Tailwind CSS v4
+  turbo: undefined,
 };
 
 export default nextConfig;

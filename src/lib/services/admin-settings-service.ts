@@ -134,3 +134,62 @@ export async function getEmbeddingConfiguration(): Promise<{
   };
 }
 
+/**
+ * Get default search recency weight
+ * Used as system-wide default for new users
+ */
+export async function getDefaultSearchRecencyWeight(): Promise<number> {
+  const dbSetting = await getAdminSetting<number>(
+    "default_search_recency_weight",
+    0.3
+  );
+  return dbSetting ?? 0.3;
+}
+
+/**
+ * Get default search recency decay days
+ * Used as system-wide default for new users
+ */
+export async function getDefaultSearchRecencyDecayDays(): Promise<number> {
+  const dbSetting = await getAdminSetting<number>(
+    "default_search_recency_decay_days",
+    30
+  );
+  return dbSetting ?? 30;
+}
+
+/**
+ * Get search recency configuration
+ */
+export async function getSearchRecencyConfiguration(): Promise<{
+  defaultRecencyWeight: number;
+  defaultRecencyWeightSource: "database" | "default";
+  defaultRecencyDecayDays: number;
+  defaultRecencyDecayDaysSource: "database" | "default";
+}> {
+  const weightSetting = await prisma.adminSettings.findUnique({
+    where: { key: "default_search_recency_weight" },
+  });
+
+  const decayDaysSetting = await prisma.adminSettings.findUnique({
+    where: { key: "default_search_recency_decay_days" },
+  });
+
+  const defaultRecencyWeight = weightSetting
+    ? (weightSetting.value as number)
+    : 0.3;
+  const defaultRecencyWeightSource = weightSetting ? "database" : "default";
+
+  const defaultRecencyDecayDays = decayDaysSetting
+    ? (decayDaysSetting.value as number)
+    : 30;
+  const defaultRecencyDecayDaysSource = decayDaysSetting ? "database" : "default";
+
+  return {
+    defaultRecencyWeight,
+    defaultRecencyWeightSource,
+    defaultRecencyDecayDays,
+    defaultRecencyDecayDaysSource,
+  };
+}
+

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import type { Feed } from "@prisma/client";
 import { FeedManagementModal } from "./FeedManagementModal";
 import { Tooltip } from "../layout/Tooltip";
@@ -110,6 +111,7 @@ export function CategoryList({
   };
 
   useEffect(() => {
+    console.log('[CategoryList] Refresh triggered, refreshTrigger:', refreshTrigger);
     loadFeedsGroupedByCategory();
   }, [isCollapsed, refreshTrigger]); // Reload when collapsed state or refresh trigger changes
 
@@ -246,7 +248,7 @@ export function CategoryList({
         await loadFeedsGroupedByCategory();
       } catch (error) {
         console.error("Failed to assign feed to category:", error);
-        alert(error instanceof Error ? error.message : "Failed to assign feed to category");
+        toast.error(error instanceof Error ? error.message : "Failed to assign feed to category");
       }
 
       setDraggedFeedId(null);
@@ -329,7 +331,7 @@ export function CategoryList({
       await loadFeedsGroupedByCategory();
     } catch (error) {
       console.error("Failed to rename category:", error);
-      alert(error instanceof Error ? error.message : "Failed to rename category");
+      toast.error(error instanceof Error ? error.message : "Failed to rename category");
     }
   };
 
@@ -350,7 +352,7 @@ export function CategoryList({
       await loadFeedsGroupedByCategory();
     } catch (error) {
       console.error("Failed to update category icon:", error);
-      alert(error instanceof Error ? error.message : "Failed to update category icon");
+      toast.error(error instanceof Error ? error.message : "Failed to update category icon");
     }
   };
 
@@ -369,7 +371,7 @@ export function CategoryList({
       await loadFeedsGroupedByCategory();
     } catch (error) {
       console.error("Failed to delete category:", error);
-      alert(error instanceof Error ? error.message : "Failed to delete category");
+      toast.error(error instanceof Error ? error.message : "Failed to delete category");
     }
   };
 
@@ -830,7 +832,7 @@ export function CategoryList({
                     await loadFeedsGroupedByCategory();
                   } catch (error) {
                     console.error("Failed to remove feed from categories:", error);
-                    alert("Failed to remove feed from categories");
+                    toast.error("Failed to remove feed from categories");
                   }
 
                   setDraggedFeedId(null);

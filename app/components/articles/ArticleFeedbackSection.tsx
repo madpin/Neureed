@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 interface ArticleFeedbackSectionProps {
   articleId: string;
@@ -50,7 +51,7 @@ export function ArticleFeedbackSection({
 
   const handleFeedback = async (value: number) => {
     if (!session?.user) {
-      alert("Please sign in to provide feedback");
+      toast.error("Please sign in to provide feedback");
       return;
     }
 
@@ -88,7 +89,7 @@ export function ArticleFeedbackSection({
       }
     } catch (error) {
       console.error("Error submitting feedback:", error);
-      alert("Failed to submit feedback");
+      toast.error("Failed to submit feedback");
     } finally {
       setIsSubmitting(false);
     }

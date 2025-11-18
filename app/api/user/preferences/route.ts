@@ -54,6 +54,11 @@ const preferencesSchema = z.object({
   // Article Sorting Settings
   articleSortOrder: articleSortOrderSchema.optional(),
   articleSortDirection: articleSortDirectionSchema.optional(),
+  // Infinite Scroll Settings
+  infiniteScrollMode: z.enum(["auto", "button", "both"]).optional(),
+  // Semantic Search Recency Settings
+  searchRecencyWeight: z.number().min(0).max(1).optional(),
+  searchRecencyDecayDays: z.number().int().min(1).max(365).optional(),
 });
 
 /**

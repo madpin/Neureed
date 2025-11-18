@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { CookieGuide } from "./CookieGuide";
 import { IconPicker } from "./IconPicker";
 import { formatSmartDate, formatLocalizedDateTime } from "@/src/lib/date-utils";
@@ -73,25 +74,74 @@ export function FeedManagementModal({
   const [feedId, setFeedId] = useState<string | undefined>(initialFeedId);
   const [categoryId, setCategoryId] = useState<string | undefined>(initialCategoryId);
   const modalRef = useRef<HTMLDivElement>(null);
+  const isNavigatingRef = useRef(false);
 
   // Navigate to a different view
   const navigateToView = (view: ViewType, newFeedId?: string, newCategoryId?: string) => {
+    // Update state
     setCurrentView(view);
     if (newFeedId !== undefined) setFeedId(newFeedId);
     if (newCategoryId !== undefined) setCategoryId(newCategoryId);
+
+    // Push to browser history
+    const state = { 
+      modal: 'feedManagement',
+      view, 
+      feedId: newFeedId, 
+      categoryId: newCategoryId 
+    };
+    window.history.pushState(state, '', window.location.href);
+  };
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state?.modal === 'feedManagement') {
+        // Navigate to the state from history
+        setCurrentView(event.state.view || 'overview');
+        setFeedId(event.state.feedId);
+        setCategoryId(event.state.categoryId);
+      } else {
+        // If we're going back beyond the modal, close it
+        onClose();
+      }
+    };
+
+    // Push initial state
+    const initialState = { 
+      modal: 'feedManagement',
+      view: initialView, 
+      feedId: initialFeedId, 
+      categoryId: initialCategoryId 
+    };
+    window.history.pushState(initialState, '', window.location.href);
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [onClose, initialView, initialFeedId, initialCategoryId]);
+
+  // Handle modal close - clean up history
+  const handleClose = () => {
+    // Go back through history to remove modal states
+    if (window.history.state?.modal === 'feedManagement') {
+      window.history.back();
+    }
+    onClose();
   };
 
   // Handle click outside modal
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        onClose();
+        handleClose();
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [onClose]);
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -153,7 +203,7 @@ export function FeedManagementModal({
           </nav>
             <div className="border-t border-border p-2 border-border">
             <button
-              onClick={onClose}
+              onClick={handleClose}
                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-muted hover:bg-muted"
             >
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -330,7 +380,7 @@ function ManagementOverview({
       await loadData();
       onRefreshData?.();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to delete category");
+      toast.error(err instanceof Error ? err.message : "Failed to delete category");
     }
   };
 
@@ -732,7 +782,7 @@ function CategorySettingsView({
       await loadAllFeeds();
       onRefreshData?.();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to remove feed");
+      toast.error(err instanceof Error ? err.message : "Failed to remove feed");
     }
   };
 
@@ -757,7 +807,7 @@ function CategorySettingsView({
       await loadAllFeeds();
       onRefreshData?.();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to add feed");
+      toast.error(err instanceof Error ? err.message : "Failed to add feed");
     } finally {
       setIsAddingFeed(false);
     }
@@ -805,7 +855,7 @@ function CategorySettingsView({
       await loadAllFeeds();
       onRefreshData?.();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to add new feed");
+      toast.error(err instanceof Error ? err.message : "Failed to add new feed");
     } finally {
       setIsAddingFeed(false);
     }
@@ -835,7 +885,7 @@ function CategorySettingsView({
       }
 
       // TODO: If autoApplyToExisting, update all feeds in this category
-      alert("Default settings saved successfully!");
+      toast.success("Default settings saved successfully!");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save settings");
     } finally {
@@ -868,7 +918,7 @@ function CategorySettingsView({
       onRefreshData?.();
       onNavigateToOverview();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to delete category");
+      toast.error(err instanceof Error ? err.message : "Failed to delete category");
     }
   };
 
@@ -1337,7 +1387,7 @@ function FeedSettingsView({
 
       await loadFeed();
       onRefreshData?.();
-      alert("Settings saved successfully!");
+      toast.success("Settings saved successfully!");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save settings");
     } finally {
@@ -1391,7 +1441,7 @@ function FeedSettingsView({
       }
 
       const data = await response.json();
-      alert(`Feed refreshed! ${data.data.newArticles} new articles, ${data.data.updatedArticles} updated`);
+      toast.success(`Feed refreshed! ${data.data.newArticles} new articles, ${data.data.updatedArticles} updated`);
       onRefreshData?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to refresh feed");
@@ -1418,7 +1468,7 @@ function FeedSettingsView({
       }
 
       const data = await response.json();
-      alert(`Deleted ${data.data.count} articles`);
+      toast.success(`Deleted ${data.data.count} articles`);
       onRefreshData?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete articles");
@@ -1446,7 +1496,7 @@ function FeedSettingsView({
       onRefreshData?.();
       onClose();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to unsubscribe");
+      toast.error(err instanceof Error ? err.message : "Failed to unsubscribe");
     }
   };
 
@@ -1471,9 +1521,9 @@ function FeedSettingsView({
 
       onRefreshData?.();
       onClose();
-      alert("Feed deleted successfully");
+      toast.success("Feed deleted successfully");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to delete feed");
+      toast.error(err instanceof Error ? err.message : "Failed to delete feed");
     }
   };
 

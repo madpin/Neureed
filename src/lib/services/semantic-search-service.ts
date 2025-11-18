@@ -20,6 +20,10 @@ export interface SemanticSearchOptions {
   feedIds?: string[];
   since?: Date;
   until?: Date;
+  offset?: number;
+  page?: number;
+  recencyWeight?: number; // 0-1, how much to weight recency vs semantic similarity
+  recencyDecayDays?: number; // Number of days for recency to decay to ~37% (e^-1)
 }
 
 /**
@@ -37,6 +41,10 @@ export async function searchSimilarArticles(
     feedIds,
     since,
     until,
+    offset,
+    page,
+    recencyWeight,
+    recencyDecayDays,
   } = options;
 
   try {
@@ -50,6 +58,10 @@ export async function searchSimilarArticles(
       feedIds,
       since,
       until,
+      offset,
+      page,
+      recencyWeight,
+      recencyDecayDays,
     });
   } catch (error) {
     logger.error("Semantic search failed", { error, query });
@@ -71,18 +83,44 @@ export async function searchByEmbedding(
     feedIds,
     since,
     until,
+    offset,
+    page,
+    recencyWeight = 0,
+    recencyDecayDays = 30,
   } = options;
 
   try {
+    // Calculate offset from page if provided
+    const calculatedOffset = page ? (page - 1) * limit : (offset || 0);
+    
     // Build WHERE clause with parameterized conditions
     const embeddingStr = JSON.stringify(embedding);
     
+    // Calculate semantic weight (inverse of recency weight)
+    const semanticWeight = 1 - recencyWeight;
+    
+    // Calculate decay rate (seconds for one time constant)
+    const decaySeconds = recencyDecayDays * 24 * 60 * 60;
+    
     // Base query - exclude embedding column to avoid deserialization issues
+    // If recencyWeight > 0, we calculate a combined score
     let query = `
       SELECT 
         id, "feedId", title, content, url, guid, author, excerpt, 
         "imageUrl", "contentHash", "publishedAt", "createdAt", "updatedAt",
         1 - (embedding <=> $1::vector) / 2 AS similarity
+    `;
+    
+    // Add recency scoring if enabled
+    if (recencyWeight > 0) {
+      query += `,
+        EXP(-EXTRACT(EPOCH FROM (NOW() - "publishedAt")) / ${decaySeconds}) AS recency_score,
+        (${semanticWeight} * (1 - (embedding <=> $1::vector) / 2) + 
+         ${recencyWeight} * EXP(-EXTRACT(EPOCH FROM (NOW() - "publishedAt")) / ${decaySeconds})) AS final_score
+      `;
+    }
+    
+    query += `
       FROM articles
       WHERE embedding IS NOT NULL
     `;
@@ -108,8 +146,19 @@ export async function searchByEmbedding(
       paramIndex++;
     }
 
-    query += ` ORDER BY embedding <=> $1::vector LIMIT $${paramIndex}`;
+    // Order by final_score if recency is enabled, otherwise by similarity
+    if (recencyWeight > 0) {
+      query += ` ORDER BY final_score DESC LIMIT $${paramIndex}`;
+    } else {
+      query += ` ORDER BY embedding <=> $1::vector LIMIT $${paramIndex}`;
+    }
     params.push(limit);
+    paramIndex++;
+    
+    if (calculatedOffset > 0) {
+      query += ` OFFSET $${paramIndex}`;
+      params.push(calculatedOffset);
+    }
 
     // Execute query
     const results = await prisma.$queryRawUnsafe<Array<Article & { similarity: number }>>(
@@ -140,6 +189,8 @@ export async function searchByEmbedding(
       totalResults: results.length,
       filteredResults: filtered.length,
       minScore,
+      recencyWeight,
+      recencyDecayDays,
     });
 
     return resultsWithFeeds;
@@ -274,13 +325,13 @@ export async function hybridSearch(
   keyword: Article[];
   combined: SearchResult[];
 }> {
-  const { limit = 10, feedIds, since, until } = options;
+  const { limit = 10, feedIds, since, until, recencyWeight, recencyDecayDays } = options;
 
   try {
     // Perform semantic search
     const semanticResults = await searchSimilarArticles(
       query,
-      { limit, feedIds, since, until },
+      { limit, feedIds, since, until, recencyWeight, recencyDecayDays },
       provider
     );
 
