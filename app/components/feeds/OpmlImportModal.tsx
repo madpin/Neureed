@@ -186,7 +186,7 @@ export function OpmlImportModal({ onClose, onSuccess }: OpmlImportModalProps) {
               {/* Summary Stats */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-lg border border-border p-4 border-border">
-                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  <div className="text-2xl font-bold text-primary dark:text-primary">
                     {summary.subscriptionsAdded}
                   </div>
                   <div className="text-sm text-foreground/70">
@@ -246,7 +246,7 @@ export function OpmlImportModal({ onClose, onSuccess }: OpmlImportModalProps) {
                 onDrop={handleDrop}
                 className={`relative rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
                   dragActive
-                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                    ? "border-primary bg-primary/10 dark:bg-primary/20"
                     : "border-border hover:border-primary border-border"
                 }`}
               >
@@ -293,7 +293,7 @@ export function OpmlImportModal({ onClose, onSuccess }: OpmlImportModalProps) {
                         Drag and drop your OPML file here, or{" "}
                         <button
                           onClick={() => fileInputRef.current?.click()}
-                          className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                          className="text-primary hover:text-primary/90 dark:text-primary"
                         >
                           browse
                         </button>
@@ -314,11 +314,11 @@ export function OpmlImportModal({ onClose, onSuccess }: OpmlImportModalProps) {
               )}
 
               {/* Info */}
-              <div className="rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
-                <h3 className="mb-2 font-semibold text-blue-800 dark:text-blue-200">
+              <div className="rounded-lg bg-primary/10 p-4 dark:bg-primary/20">
+                <h3 className="mb-2 font-semibold text-primary dark:text-primary">
                   What happens when you import?
                 </h3>
-                <ul className="space-y-1 text-sm text-blue-700 dark:text-blue-300">
+                <ul className="space-y-1 text-sm text-primary/80 dark:text-primary/90">
                   <li>• New feeds will be created automatically</li>
                   <li>• Missing categories will be created</li>
                   <li>• You will be subscribed to all imported feeds</li>
@@ -343,7 +343,7 @@ export function OpmlImportModal({ onClose, onSuccess }: OpmlImportModalProps) {
             <button
               onClick={handleImport}
               disabled={!file || importing}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
               {importing ? (
                 <span className="flex items-center gap-2">

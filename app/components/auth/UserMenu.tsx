@@ -92,7 +92,7 @@ export function UserMenu() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 z-50 mt-2 w-64 rounded-lg border border-border bg-background shadow-lg">
+        <div className="absolute right-0 z-50 mt-2 w-64 rounded-lg border border-border bg-background shadow-lg max-h-[80vh] overflow-y-auto custom-scrollbar">
           {/* User Info */}
           <div className="border-b border-border p-4">
             <p className="font-medium text-foreground">

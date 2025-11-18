@@ -146,13 +146,27 @@ export function PreferencesModal({
 
   const handleCloseWithHistory = () => {
     if (hasUnsavedChanges()) {
-      const confirmed = window.confirm(
-        "You have unsaved changes. Are you sure you want to close without saving?"
-      );
-      if (!confirmed) return;
-      
-      // Revert any immediately-applied changes
-      revertChanges();
+      toast.warning("You have unsaved changes", {
+        description: "Are you sure you want to close without saving?",
+        action: {
+          label: "Close anyway",
+          onClick: () => {
+            // Revert any immediately-applied changes
+            revertChanges();
+            
+            // Go back through history to remove modal states
+            if (window.history.state?.modal === 'preferences') {
+              window.history.back();
+            }
+            onClose();
+          },
+        },
+        cancel: {
+          label: "Keep editing",
+          onClick: () => {},
+        },
+      });
+      return;
     }
     
     // Go back through history to remove modal states
@@ -164,13 +178,22 @@ export function PreferencesModal({
 
   const handleClose = () => {
     if (hasUnsavedChanges()) {
-      const confirmed = window.confirm(
-        "You have unsaved changes. Are you sure you want to close without saving?"
-      );
-      if (!confirmed) return;
-      
-      // Revert any immediately-applied changes
-      revertChanges();
+      toast.warning("You have unsaved changes", {
+        description: "Are you sure you want to close without saving?",
+        action: {
+          label: "Close anyway",
+          onClick: () => {
+            // Revert any immediately-applied changes
+            revertChanges();
+            onClose();
+          },
+        },
+        cancel: {
+          label: "Keep editing",
+          onClick: () => {},
+        },
+      });
+      return;
     }
     onClose();
   };
@@ -292,7 +315,7 @@ export function PreferencesModal({
                 onClick={() => navigateToView('profile')}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                   currentView === 'profile'
-                    ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
+                    ? "bg-primary/10 text-primary dark:bg-primary/20"
                     : "hover:bg-muted"
                 }`}
               >
@@ -306,7 +329,7 @@ export function PreferencesModal({
                 onClick={() => navigateToView('appearance')}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                   currentView === 'appearance'
-                    ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
+                    ? "bg-primary/10 text-primary dark:bg-primary/20"
                     : "hover:bg-muted"
                 }`}
               >
@@ -320,7 +343,7 @@ export function PreferencesModal({
                 onClick={() => navigateToView('reading')}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                   currentView === 'reading'
-                    ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
+                    ? "bg-primary/10 text-primary dark:bg-primary/20"
                     : "hover:bg-muted"
                 }`}
               >
@@ -334,7 +357,7 @@ export function PreferencesModal({
                 onClick={() => navigateToView('learning')}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                   currentView === 'learning'
-                    ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
+                    ? "bg-primary/10 text-primary dark:bg-primary/20"
                     : "hover:bg-muted"
                 }`}
               >
@@ -348,7 +371,7 @@ export function PreferencesModal({
                 onClick={() => navigateToView('llm')}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                   currentView === 'llm'
-                    ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
+                    ? "bg-primary/10 text-primary dark:bg-primary/20"
                     : "hover:bg-muted"
                 }`}
               >
@@ -362,7 +385,7 @@ export function PreferencesModal({
                 onClick={() => navigateToView('feeds')}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                   currentView === 'feeds'
-                    ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
+                    ? "bg-primary/10 text-primary dark:bg-primary/20"
                     : "hover:bg-muted"
                 }`}
               >
@@ -433,7 +456,7 @@ export function PreferencesModal({
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="rounded-lg bg-blue-600 px-6 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                className="rounded-lg bg-primary px-6 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               >
                 {isSaving ? "Saving..." : "Save Preferences"}
               </button>
@@ -458,7 +481,7 @@ function ProfileView({ session }: { session: any }) {
             className="h-20 w-20 rounded-full"
           />
         ) : (
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-blue-600 text-3xl font-medium text-white">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary text-3xl font-medium text-primary-foreground">
             {session.user.name?.[0]?.toUpperCase() || session.user.email?.[0]?.toUpperCase() || "U"}
           </div>
         )}
@@ -494,7 +517,7 @@ function AppearanceView({
                 detail: { theme: e.target.value }
               }));
             }}
-            className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           >
             <option value="light">Light</option>
             <option value="dark">Dark</option>
@@ -541,7 +564,7 @@ function AppearanceView({
                 value={preferences.fontSize}
                 onChange={(e) => updatePreference("fontSize", e.target.value)}
                 placeholder="e.g., 20px"
-                className="w-32 rounded-lg border border-border bg-muted px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-32 rounded-lg border border-border bg-muted px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             )}
           </div>
@@ -553,7 +576,7 @@ function AppearanceView({
           <select
             value={preferences.defaultView}
             onChange={(e) => updatePreference("defaultView", e.target.value)}
-            className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           >
             <option value="compact">Compact</option>
             <option value="expanded">Expanded</option>
@@ -576,6 +599,81 @@ function ReadingView({
     <div>
       <h2 className="mb-6 text-2xl font-bold">Reading Preferences</h2>
       <div className="space-y-6">
+        {/* Reading Panel Section */}
+        <div className="rounded-lg border border-border bg-muted p-6">
+          <h3 className="mb-4 text-lg font-semibold">Reading Panel</h3>
+          <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+            Enable a split-pane reading panel to read articles without leaving the feed view.
+            When disabled, articles will open in their own dedicated page.
+          </p>
+          
+          <div className="space-y-4">
+            <ToggleSwitch
+              label="Enable Reading Panel"
+              description="Show articles in a resizable side panel instead of a separate page"
+              checked={preferences.readingPanelEnabled}
+              onChange={(checked) => updatePreference("readingPanelEnabled", checked)}
+            />
+
+            {preferences.readingPanelEnabled && (
+              <>
+                {/* Panel Position */}
+                <div>
+                  <label className="mb-2 block text-sm font-medium">Panel Position</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { value: "right", label: "Right", icon: "→" },
+                      { value: "left", label: "Left", icon: "←" },
+                      { value: "top", label: "Top", icon: "↑" },
+                      { value: "bottom", label: "Bottom", icon: "↓" },
+                    ].map((pos) => (
+                      <button
+                        key={pos.value}
+                        onClick={() => updatePreference("readingPanelPosition", pos.value)}
+                        className={`flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-colors ${
+                          preferences.readingPanelPosition === pos.value
+                            ? "border-primary bg-primary/10 text-primary dark:bg-primary/20"
+                            : "border-border bg-background hover:bg-muted"
+                        }`}
+                      >
+                        <span className="text-lg">{pos.icon}</span>
+                        <span>{pos.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    Choose where the reading panel appears on your screen
+                  </p>
+                </div>
+
+                {/* Panel Size */}
+                <div>
+                  <label className="mb-2 block text-sm font-medium">
+                    Default Panel Size: {preferences.readingPanelSize}%
+                  </label>
+                  <input
+                    type="range"
+                    min="30"
+                    max="70"
+                    step="5"
+                    value={preferences.readingPanelSize}
+                    onChange={(e) => updatePreference("readingPanelSize", parseInt(e.target.value))}
+                    className="w-full"
+                  />
+                  <div className="mt-1 flex justify-between text-xs text-gray-500">
+                    <span>30%</span>
+                    <span>50%</span>
+                    <span>70%</span>
+                  </div>
+                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    Adjust the default size of the reading panel (can be resized while reading)
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
         {/* Articles Per Page */}
         <div>
           <label className="mb-2 block text-sm font-medium">Articles Per Page</label>
@@ -585,7 +683,7 @@ function ReadingView({
             max="100"
             value={preferences.articlesPerPage}
             onChange={(e) => updatePreference("articlesPerPage", parseInt(e.target.value))}
-            className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
 
@@ -595,7 +693,7 @@ function ReadingView({
           <select
             value={preferences.infiniteScrollMode || "both"}
             onChange={(e) => updatePreference("infiniteScrollMode", e.target.value)}
-            className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           >
             <option value="auto">Auto-load (scroll to load more)</option>
             <option value="button">Button only (manual load)</option>
@@ -755,8 +853,8 @@ function LLMView({
   return (
     <div>
       <h2 className="mb-6 text-2xl font-bold">LLM Settings</h2>
-      <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-700 dark:bg-blue-900/20">
-        <p className="text-sm text-blue-700 dark:text-blue-300">
+      <div className="mb-4 rounded-lg border border-primary/20 bg-primary/10 p-4 dark:border-primary/30 dark:bg-primary/20">
+        <p className="text-sm text-primary dark:text-primary">
           Configure your personal LLM settings for article summarization and key points extraction.
           Leave blank to use system defaults.
         </p>
@@ -768,7 +866,7 @@ function LLMView({
           <select
             value={preferences.llmProvider || ""}
             onChange={(e) => updatePreference("llmProvider", e.target.value || null)}
-            className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           >
             <option value="">System Default</option>
             <option value="openai">OpenAI</option>
@@ -784,7 +882,7 @@ function LLMView({
             value={preferences.llmModel || ""}
             onChange={(e) => updatePreference("llmModel", e.target.value || null)}
             placeholder={preferences.llmProvider === "openai" ? "e.g., gpt-4o-mini" : preferences.llmProvider === "ollama" ? "e.g., llama2" : "Use system default"}
-            className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             {preferences.llmProvider === "openai" && "OpenAI models: gpt-4o-mini, gpt-4o, gpt-3.5-turbo"}
@@ -803,7 +901,7 @@ function LLMView({
                 value={preferences.llmApiKey || ""}
                 onChange={(e) => updatePreference("llmApiKey", e.target.value || null)}
                 placeholder="sk-..."
-                className="w-full rounded-lg border border-border bg-muted px-4 py-2 pr-20 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-lg border border-border bg-muted px-4 py-2 pr-20 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
               <button
                 type="button"
@@ -830,7 +928,7 @@ function LLMView({
               value={preferences.llmBaseUrl || ""}
               onChange={(e) => updatePreference("llmBaseUrl", e.target.value || null)}
               placeholder={preferences.llmProvider === "openai" ? "https://api.openai.com/v1" : "http://localhost:11434"}
-              className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               {preferences.llmProvider === "openai"
@@ -983,11 +1081,11 @@ function FeedsView({
       <h2 className="mb-6 text-2xl font-bold">Feeds & OPML Management</h2>
       <div className="space-y-6">
         {/* Info Section */}
-        <div className="rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
-          <h3 className="mb-2 font-semibold text-blue-800 dark:text-blue-200">
+        <div className="rounded-lg bg-primary/10 p-4 dark:bg-primary/20">
+          <h3 className="mb-2 font-semibold text-primary dark:text-primary">
             What is OPML?
           </h3>
-          <p className="text-sm text-blue-700 dark:text-blue-300">
+          <p className="text-sm text-primary/80 dark:text-primary/90">
             OPML (Outline Processor Markup Language) is a standard format for exchanging lists of RSS feeds.
             Use it to backup your feeds or transfer them between applications.
           </p>
@@ -996,12 +1094,12 @@ function FeedsView({
         {/* Stats */}
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
           </div>
         ) : stats ? (
           <div className="grid grid-cols-2 gap-4">
             <div className="rounded-lg border border-border bg-muted p-4">
-              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+              <div className="text-3xl font-bold text-primary dark:text-primary">
                 {stats.totalFeeds}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -1032,7 +1130,7 @@ function FeedsView({
             <button
               onClick={() => setShowExportModal(true)}
               disabled={loading || !stats || stats.totalFeeds === 0}
-              className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
@@ -1055,7 +1153,7 @@ function FeedsView({
             <button
               onClick={() => setShowImportModal(true)}
               disabled={loading}
-              className="flex items-center gap-2 rounded-lg border border-blue-600 bg-background px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 disabled:opacity-50 dark:border-blue-500 dark:text-blue-400"
+              className="flex items-center gap-2 rounded-lg border border-primary bg-background px-4 py-2 text-sm font-medium text-primary hover:bg-primary/10 disabled:opacity-50 dark:border-primary dark:text-primary"
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -1356,7 +1454,7 @@ function FeedsView({
                       updatePreference("defaultRefreshInterval", val);
                     }
                   }}
-                  className="w-20 rounded-lg border border-border bg-muted px-3 py-2 text-center focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-20 rounded-lg border border-border bg-muted px-3 py-2 text-center focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
                 <span className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">minutes</span>
               </div>
@@ -1399,7 +1497,7 @@ function FeedsView({
                       updatePreference("defaultMaxArticlesPerFeed", val);
                     }
                   }}
-                  className="w-24 rounded-lg border border-border bg-muted px-3 py-2 text-center focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-24 rounded-lg border border-border bg-muted px-3 py-2 text-center focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
                 <span className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">articles</span>
               </div>
@@ -1442,7 +1540,7 @@ function FeedsView({
                       updatePreference("defaultMaxArticleAge", val);
                     }
                   }}
-                  className="w-20 rounded-lg border border-border bg-muted px-3 py-2 text-center focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-20 rounded-lg border border-border bg-muted px-3 py-2 text-center focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
                 <span className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">days</span>
               </div>

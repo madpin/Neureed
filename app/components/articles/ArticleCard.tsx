@@ -32,13 +32,16 @@ export function ArticleCard({ article, variant = "compact", onReadStatusChange, 
 
   // Determine the article link based on current context
   const getArticleLink = () => {
-    // Get current query params to preserve context
-    if (typeof window !== 'undefined') {
-      const currentParams = new URLSearchParams(window.location.search);
-      currentParams.set('article', article.id);
-      return `/?${currentParams.toString()}`;
+    // If onArticleClick is provided (reading panel mode), use query param
+    if (onArticleClick) {
+      // Get current query params to preserve context
+      if (typeof window !== 'undefined') {
+        const currentParams = new URLSearchParams(window.location.search);
+        currentParams.set('article', article.id);
+        return `/?${currentParams.toString()}`;
+      }
     }
-    // Fallback for SSR
+    // Otherwise, link to standalone article page
     return `/articles/${article.id}`;
   };
 

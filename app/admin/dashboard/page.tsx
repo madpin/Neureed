@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { formatLocalizedDate } from "@/src/lib/date-utils";
+import { Tooltip } from "@/app/components/admin/Tooltip";
 
 type TabId = "overview" | "search" | "users" | "jobs" | "storage";
 
@@ -330,12 +331,14 @@ export default function AdminDashboardPage() {
               System management and monitoring
             </p>
           </div>
-          <Link
-            href="/"
-            className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
-          >
-            Back to Home
-          </Link>
+          <Tooltip content="Return to the main application">
+            <Link
+              href="/"
+              className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
+            >
+              Back to Home
+            </Link>
+          </Tooltip>
         </div>
 
         {isLoading ? (
@@ -984,13 +987,15 @@ function SearchTab({
             </div>
           </div>
           <div className="mt-4">
-            <button
-              onClick={onGenerateEmbeddings}
-              disabled={embeddingStats.withoutEmbeddings === 0}
-              className="w-full rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
-            >
-              Generate Embeddings ({embeddingStats.withoutEmbeddings} remaining)
-            </button>
+            <Tooltip content="Generate vector embeddings for articles that don't have them yet. This enables semantic search functionality.">
+              <button
+                onClick={onGenerateEmbeddings}
+                disabled={embeddingStats.withoutEmbeddings === 0}
+                className="w-full rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+              >
+                Generate Embeddings ({embeddingStats.withoutEmbeddings} remaining)
+              </button>
+            </Tooltip>
           </div>
         </div>
       )}
@@ -1305,12 +1310,14 @@ function JobsTab({
                 Fetch new articles from all subscribed feeds
               </p>
             </div>
-            <button
-              onClick={onRefreshFeeds}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              Run Now
-            </button>
+            <Tooltip content="Manually trigger feed refresh to fetch the latest articles from all RSS/Atom feeds">
+              <button
+                onClick={onRefreshFeeds}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                Run Now
+              </button>
+            </Tooltip>
           </div>
 
           <div className="flex items-center justify-between rounded-lg border border-border p-4 border-border">
@@ -1322,12 +1329,14 @@ function JobsTab({
                 Generate vector embeddings for articles without them
               </p>
             </div>
-            <button
-              onClick={onGenerateEmbeddings}
-              className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
-            >
-              Run Now
-            </button>
+            <Tooltip content="Process up to 250 articles (5 batches of 50) to generate AI embeddings for semantic search">
+              <button
+                onClick={onGenerateEmbeddings}
+                className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+              >
+                Run Now
+              </button>
+            </Tooltip>
           </div>
 
           <div className="flex items-center justify-between rounded-lg border border-border p-4 border-border">
@@ -1339,12 +1348,14 @@ function JobsTab({
                 Remove articles older than 90 days
               </p>
             </div>
-            <button
-              onClick={onCleanup}
-              className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700"
-            >
-              Run Now
-            </button>
+            <Tooltip content="Delete articles older than 90 days to free up database space. Click twice to confirm.">
+              <button
+                onClick={onCleanup}
+                className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700"
+              >
+                Run Now
+              </button>
+            </Tooltip>
           </div>
         </div>
       </div>
@@ -1478,12 +1489,14 @@ function StorageTab({
       <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-foreground">PostgreSQL Storage</h2>
-          <button
-            onClick={() => loadStorageStats()}
-            className="rounded-lg border border-border px-3 py-1 text-sm hover:bg-muted"
-          >
-            Refresh
-          </button>
+          <Tooltip content="Reload storage statistics from PostgreSQL and Redis">
+            <button
+              onClick={() => loadStorageStats()}
+              className="rounded-lg border border-border px-3 py-1 text-sm hover:bg-muted"
+            >
+              Refresh
+            </button>
+          </Tooltip>
         </div>
 
         {postgresStats && (
@@ -1518,34 +1531,42 @@ function StorageTab({
             <div className="mb-6">
               <h3 className="mb-3 text-lg font-semibold text-foreground">Maintenance Operations</h3>
               <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-                <button
-                  onClick={() => handlePostgresMaintenance("vacuum")}
-                  disabled={isPerformingMaintenance}
-                  className="rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
-                >
-                  VACUUM
-                </button>
-                <button
-                  onClick={() => handlePostgresMaintenance("analyze")}
-                  disabled={isPerformingMaintenance}
-                  className="rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
-                >
-                  ANALYZE
-                </button>
-                <button
-                  onClick={() => handlePostgresMaintenance("vacuum_analyze")}
-                  disabled={isPerformingMaintenance}
-                  className="rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
-                >
-                  VACUUM ANALYZE
-                </button>
-                <button
-                  onClick={() => handlePostgresMaintenance("reindex")}
-                  disabled={isPerformingMaintenance}
-                  className="rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
-                >
-                  REINDEX
-                </button>
+                <Tooltip content="Reclaim storage from deleted rows and prevent transaction ID wraparound">
+                  <button
+                    onClick={() => handlePostgresMaintenance("vacuum")}
+                    disabled={isPerformingMaintenance}
+                    className="w-full rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+                  >
+                    VACUUM
+                  </button>
+                </Tooltip>
+                <Tooltip content="Update query planner statistics for better query performance">
+                  <button
+                    onClick={() => handlePostgresMaintenance("analyze")}
+                    disabled={isPerformingMaintenance}
+                    className="w-full rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+                  >
+                    ANALYZE
+                  </button>
+                </Tooltip>
+                <Tooltip content="Combine VACUUM and ANALYZE in one operation (recommended for regular maintenance)">
+                  <button
+                    onClick={() => handlePostgresMaintenance("vacuum_analyze")}
+                    disabled={isPerformingMaintenance}
+                    className="w-full rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+                  >
+                    VACUUM ANALYZE
+                  </button>
+                </Tooltip>
+                <Tooltip content="Rebuild all indexes to remove bloat and improve performance (can be slow)">
+                  <button
+                    onClick={() => handlePostgresMaintenance("reindex")}
+                    disabled={isPerformingMaintenance}
+                    className="w-full rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+                  >
+                    REINDEX
+                  </button>
+                </Tooltip>
               </div>
               <p className="mt-2 text-xs text-foreground/60">
                 These operations help optimize database performance and reclaim storage space.
@@ -1628,41 +1649,51 @@ function StorageTab({
             <div className="mb-6">
               <h3 className="mb-3 text-lg font-semibold text-foreground">Maintenance Operations</h3>
               <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
-                <button
-                  onClick={() => handleRedisMaintenance("save")}
-                  disabled={isPerformingMaintenance}
-                  className="rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
-                >
-                  SAVE
-                </button>
-                <button
-                  onClick={() => handleRedisMaintenance("bgsave")}
-                  disabled={isPerformingMaintenance}
-                  className="rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
-                >
-                  BGSAVE
-                </button>
-                <button
-                  onClick={() => handleRedisMaintenance("bgrewriteaof")}
-                  disabled={isPerformingMaintenance}
-                  className="rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
-                >
-                  BGREWRITEAOF
-                </button>
-                <button
-                  onClick={() => handleRedisMaintenance("flushdb")}
-                  disabled={isPerformingMaintenance}
-                  className="rounded-lg border border-red-300 bg-background px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
-                >
-                  FLUSHDB
-                </button>
-                <button
-                  onClick={() => handleRedisMaintenance("flushall")}
-                  disabled={isPerformingMaintenance}
-                  className="rounded-lg border border-red-300 bg-background px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
-                >
-                  FLUSHALL
-                </button>
+                <Tooltip content="Synchronously save dataset to disk (blocks all clients until complete)">
+                  <button
+                    onClick={() => handleRedisMaintenance("save")}
+                    disabled={isPerformingMaintenance}
+                    className="w-full rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+                  >
+                    SAVE
+                  </button>
+                </Tooltip>
+                <Tooltip content="Save dataset to disk in the background (non-blocking, recommended)">
+                  <button
+                    onClick={() => handleRedisMaintenance("bgsave")}
+                    disabled={isPerformingMaintenance}
+                    className="w-full rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+                  >
+                    BGSAVE
+                  </button>
+                </Tooltip>
+                <Tooltip content="Rewrite and optimize the Append-Only File to reduce its size">
+                  <button
+                    onClick={() => handleRedisMaintenance("bgrewriteaof")}
+                    disabled={isPerformingMaintenance}
+                    className="w-full rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+                  >
+                    BGREWRITEAOF
+                  </button>
+                </Tooltip>
+                <Tooltip content="Delete all keys in the current database (DESTRUCTIVE - click twice to confirm)">
+                  <button
+                    onClick={() => handleRedisMaintenance("flushdb")}
+                    disabled={isPerformingMaintenance}
+                    className="w-full rounded-lg border border-red-300 bg-background px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                  >
+                    FLUSHDB
+                  </button>
+                </Tooltip>
+                <Tooltip content="Delete ALL keys in ALL databases (VERY DESTRUCTIVE - click twice to confirm)">
+                  <button
+                    onClick={() => handleRedisMaintenance("flushall")}
+                    disabled={isPerformingMaintenance}
+                    className="w-full rounded-lg border border-red-300 bg-background px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                  >
+                    FLUSHALL
+                  </button>
+                </Tooltip>
               </div>
               <p className="mt-2 text-xs text-foreground/60">
                 SAVE: Synchronous save. BGSAVE: Background save. BGREWRITEAOF: Rewrite AOF file. FLUSHDB/FLUSHALL: Delete data (dangerous).
@@ -1727,12 +1758,14 @@ function StorageTab({
         <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xl font-semibold text-foreground">Application Cache</h2>
-            <button
-              onClick={onClearCache}
-              className="rounded-lg border border-red-300 bg-background px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
-            >
-              Clear Cache
-            </button>
+            <Tooltip content="Clear all application-level cache (Redis will be flushed). Click twice to confirm.">
+              <button
+                onClick={onClearCache}
+                className="rounded-lg border border-red-300 bg-background px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+              >
+                Clear Cache
+              </button>
+            </Tooltip>
           </div>
 
           <p className="mb-4 text-sm text-foreground/70">
@@ -1830,12 +1863,14 @@ function StorageTab({
         </div>
 
         <div className="mt-6 flex justify-end">
-          <button
-            onClick={onDatabaseReset}
-            className="rounded-lg border-2 border-red-600 bg-red-600 px-6 py-2 text-sm font-medium text-white hover:bg-red-700 hover:border-red-700 dark:border-red-500 dark:bg-red-500 dark:hover:bg-red-600 dark:hover:border-red-600"
-          >
-            Reset Database
-          </button>
+          <Tooltip content="DANGER: Permanently delete all feeds, articles, categories, and embeddings. User accounts will be preserved. Click twice within 10 seconds to confirm.">
+            <button
+              onClick={onDatabaseReset}
+              className="rounded-lg border-2 border-red-600 bg-red-600 px-6 py-2 text-sm font-medium text-white hover:bg-red-700 hover:border-red-700 dark:border-red-500 dark:bg-red-500 dark:hover:bg-red-600 dark:hover:border-red-600"
+            >
+              Reset Database
+            </button>
+          </Tooltip>
         </div>
       </div>
     </div>

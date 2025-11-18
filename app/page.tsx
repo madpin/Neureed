@@ -461,7 +461,7 @@ export default function Home() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setIsAddFeedOpen(true)}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                 >
                   <svg
                     className="h-4 w-4"
@@ -525,7 +525,7 @@ export default function Home() {
               <Tooltip content="Add Feed">
                 <button
                   onClick={() => setIsAddFeedOpen(true)}
-                  className="flex items-center justify-center rounded-lg bg-blue-600 p-3 text-white hover:bg-blue-700"
+                  className="flex items-center justify-center rounded-lg bg-primary p-3 text-primary-foreground hover:bg-primary/90"
                   title="Add Feed"
                 >
                   <svg
@@ -633,7 +633,7 @@ export default function Home() {
                     <button
                       type="submit"
                       disabled={isLoadingArticles || searchQuery.length < 2}
-                      className="rounded-lg bg-blue-600 px-8 py-3 font-medium text-white hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+                      className="rounded-lg bg-primary px-8 py-3 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                     >
                       {isLoadingArticles ? "Searching..." : "Search"}
                     </button>

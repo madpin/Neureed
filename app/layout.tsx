@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./components/auth/AuthProvider";
 import { ThemeProvider } from "./components/theme/ThemeProvider";
-import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,14 +25,54 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  // Try to get theme from localStorage (set by ThemeProvider)
+                  const savedTheme = localStorage.getItem('neureed-theme');
+                  const savedFontSize = localStorage.getItem('neureed-fontSize');
+                  
+                  if (savedTheme && savedTheme !== 'system') {
+                    const allThemes = ['light', 'dark', 'nord-light', 'nord-dark', 'solarized-light', 'solarized-dark', 'barbie-light', 'barbie-dark', 'purple-light', 'purple-dark', 'orange-light', 'orange-dark', 'rainbow-light', 'rainbow-dark'];
+                    document.documentElement.classList.remove(...allThemes);
+                    document.documentElement.classList.add(savedTheme);
+                    
+                    // Add dark class for dark variants
+                    if (savedTheme.includes('-dark') || savedTheme === 'dark') {
+                      document.documentElement.classList.add('dark');
+                    }
+                  } else if (savedTheme === 'system') {
+                    // Apply system preference
+                    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    if (isDark) {
+                      document.documentElement.classList.add('dark');
+                    }
+                  }
+                  
+                  // Apply font size
+                  if (savedFontSize) {
+                    const sizeMap = { small: '14px', medium: '16px', large: '18px' };
+                    document.documentElement.style.fontSize = sizeMap[savedFontSize] || savedFontSize || '16px';
+                  }
+                } catch (e) {
+                  // Ignore errors
+                }
+              })();
+            `,
+          }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning
       >
         <AuthProvider>
           <ThemeProvider>{children}</ThemeProvider>
         </AuthProvider>
-        <Toaster position="top-right" />
       </body>
     </html>
   );

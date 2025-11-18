@@ -152,12 +152,12 @@ export function FeedManagementModal({
             <div className="border-b border-border p-4 border-border">
               <h2 className="text-lg font-semibold">Feed Management</h2>
           </div>
-            <nav className="flex-1 space-y-1 overflow-y-auto p-2">
+            <nav className="flex-1 space-y-1 overflow-y-auto p-2 custom-scrollbar">
               <button
                 onClick={() => navigateToView('overview')}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                   currentView === 'overview'
-                    ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
+                    ? "bg-primary/10 text-primary dark:bg-primary/20"
                     : "hover:bg-muted hover:bg-muted"
                 }`}
               >
@@ -172,7 +172,7 @@ export function FeedManagementModal({
                 disabled={!feedId}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                   currentView === 'feed'
-                    ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
+                    ? "bg-primary/10 text-primary dark:bg-primary/20"
                     : feedId
                     ? "hover:bg-muted hover:bg-muted"
                     : "cursor-not-allowed opacity-50"
@@ -189,7 +189,7 @@ export function FeedManagementModal({
                 disabled={!categoryId}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                   currentView === 'category'
-                    ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
+                    ? "bg-primary/10 text-primary dark:bg-primary/20"
                     : categoryId
                     ? "hover:bg-muted hover:bg-muted"
                     : "cursor-not-allowed opacity-50"
@@ -216,7 +216,7 @@ export function FeedManagementModal({
         </aside>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto custom-scrollbar">
           {currentView === 'overview' && (
               <ManagementOverview
               onNavigateToCategory={(catId) => navigateToView('category', undefined, catId)}
@@ -398,7 +398,7 @@ function ManagementOverview({
         <h1 className="text-2xl font-bold">Feed & Category Management</h1>
           <button
             onClick={() => setIsCreating(true)}
-          className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -446,7 +446,7 @@ function ManagementOverview({
                 placeholder="e.g., Technology, News, Entertainment"
               required
               maxLength={100}
-                className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border-border dark:bg-muted"
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
             />
           </div>
           <div>
@@ -457,14 +457,14 @@ function ManagementOverview({
                 placeholder="Brief description of this category"
               maxLength={500}
               rows={2}
-                className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border-border dark:bg-muted"
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
             />
           </div>
           <div className="flex gap-2">
             <button
               type="submit"
               disabled={!newCategoryName.trim()}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
               Create
             </button>
@@ -503,11 +503,11 @@ function ManagementOverview({
             {/* Categorized Feeds */}
             {allFeedsGrouped.categories.map((category) => (
               <div key={category.id} className="rounded-lg border border-border bg-background">
-                <button
-                  onClick={() => toggleCategory(category.id)}
-                  className="flex w-full items-center justify-between p-4 text-left hover:bg-muted"
-                >
-                  <div className="flex items-center gap-3">
+                <div className="flex w-full items-center justify-between p-4 hover:bg-muted">
+                  <button
+                    onClick={() => toggleCategory(category.id)}
+                    className="flex items-center gap-3 flex-1 text-left"
+                  >
                     <svg className={`h-4 w-4 transition-transform ${expandedCategories.has(category.id) ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
@@ -518,7 +518,7 @@ function ManagementOverview({
                       <span className="font-medium">{category.name}</span>
                       <span className="ml-2 text-sm text-gray-500">({category.feedCount} feeds)</span>
                     </div>
-                  </div>
+                  </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -532,7 +532,7 @@ function ManagementOverview({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                   </button>
-                </button>
+                </div>
 
                 {expandedCategories.has(category.id) && category.feeds && (
                   <div className="border-t border-border p-2 space-y-1">
@@ -947,7 +947,7 @@ function CategorySettingsView({
     <div className="p-6">
       {/* Header with Category Badge */}
       <div className="mb-6">
-        <div className="mb-4 inline-flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+        <div className="mb-4 inline-flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary dark:bg-primary/20">
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
           </svg>
@@ -967,7 +967,7 @@ function CategorySettingsView({
                 type="text"
                 value={editedName}
                 onChange={(e) => setEditedName(e.target.value)}
-                className="w-full rounded-lg border border-border px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border-border dark:bg-muted"
+                className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
               />
             </div>
             <div>
@@ -976,7 +976,7 @@ function CategorySettingsView({
                 value={editedDescription}
                 onChange={(e) => setEditedDescription(e.target.value)}
                 rows={2}
-                className="w-full rounded-lg border border-border px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border-border dark:bg-muted"
+                className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
               />
             </div>
             <div className="flex gap-2">
@@ -1044,7 +1044,7 @@ function CategorySettingsView({
               onClick={() => setAddTab('existing')}
               className={`pb-2 px-4 text-sm font-medium transition-colors ${
                 addTab === 'existing'
-                  ? "border-b-2 border-blue-600 text-blue-600"
+                  ? "border-b-2 border-primary text-primary"
                   : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
             }`}
           >
@@ -1054,7 +1054,7 @@ function CategorySettingsView({
               onClick={() => setAddTab('new')}
               className={`pb-2 px-4 text-sm font-medium transition-colors ${
                 addTab === 'new'
-                  ? "border-b-2 border-blue-600 text-blue-600"
+                  ? "border-b-2 border-primary text-primary"
                   : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
             }`}
           >
@@ -1070,7 +1070,7 @@ function CategorySettingsView({
             <select
               value={selectedFeedToAdd}
               onChange={(e) => setSelectedFeedToAdd(e.target.value)}
-                  className="w-full rounded-lg border border-border px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border-border dark:bg-muted"
+                  className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
                 >
                   <option value="">Choose a feed...</option>
                   {feedsNotInCategory.map((feed) => (
@@ -1083,7 +1083,7 @@ function CategorySettingsView({
             <button
                 onClick={handleAddExistingFeed}
                 disabled={!selectedFeedToAdd || isAddingFeed}
-              className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
                 {isAddingFeed ? "Adding..." : "Add to Category"}
             </button>
@@ -1097,13 +1097,13 @@ function CategorySettingsView({
               value={newFeedUrl}
               onChange={(e) => setNewFeedUrl(e.target.value)}
               placeholder="https://example.com/feed.xml"
-                  className="w-full rounded-lg border border-border px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border-border dark:bg-muted"
+                  className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
             />
               </div>
             <button
                 onClick={handleAddNewFeed}
                 disabled={!newFeedUrl.trim() || isAddingFeed}
-              className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
                 {isAddingFeed ? "Adding..." : "Subscribe & Add to Category"}
             </button>
@@ -1126,7 +1126,7 @@ function CategorySettingsView({
           <select
                 value={defaultExtractionMethod}
                 onChange={(e) => setDefaultExtractionMethod(e.target.value)}
-                className="w-full rounded-lg border border-border px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border-border dark:bg-muted"
+                className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
               >
                 <option value="rss">RSS Only (Default)</option>
                 <option value="readability">Readability (Clean extraction)</option>
@@ -1141,7 +1141,7 @@ function CategorySettingsView({
             max="1440"
                 value={defaultFetchInterval}
                 onChange={(e) => setDefaultFetchInterval(parseInt(e.target.value, 10))}
-                className="w-full rounded-lg border border-border px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border-border dark:bg-muted"
+                className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
           />
         </div>
         <div className="flex items-center gap-2">
@@ -1159,7 +1159,7 @@ function CategorySettingsView({
         <button
               onClick={handleSaveDefaultSettings}
               disabled={isSavingSettings}
-          className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
         >
               {isSavingSettings ? "Saving..." : "Save Default Settings"}
         </button>
@@ -1577,7 +1577,7 @@ function FeedSettingsView({
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full rounded-lg border border-border px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border-border dark:bg-muted"
+            className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
           >
             <option value="">Uncategorized</option>
             {categories.map((cat) => (
@@ -1593,7 +1593,7 @@ function FeedSettingsView({
           <select
             value={extractionMethod}
             onChange={(e) => setExtractionMethod(e.target.value as any)}
-            className="w-full rounded-lg border border-border px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border-border dark:bg-muted"
+            className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
           >
             <option value="rss">RSS Only (Default)</option>
             <option value="readability">Readability (Clean extraction)</option>
@@ -1611,7 +1611,7 @@ function FeedSettingsView({
             value={customName}
             onChange={(e) => setCustomName(e.target.value)}
             placeholder={feed.name}
-            className="w-full rounded-lg border border-border px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border-border dark:bg-muted"
+            className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
           />
         </div>
 
@@ -1623,7 +1623,7 @@ function FeedSettingsView({
             max="1440"
             value={fetchInterval}
             onChange={(e) => setFetchInterval(parseInt(e.target.value, 10))}
-            className="w-full rounded-lg border border-border px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border-border dark:bg-muted"
+            className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
           />
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             How often to check for new articles (5-1440 minutes)
@@ -1669,7 +1669,7 @@ function FeedSettingsView({
                 <select
                   value={contentMergeStrategy}
                   onChange={(e) => setContentMergeStrategy(e.target.value as any)}
-                  className="w-full rounded-lg border border-border px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border-border dark:bg-muted"
+                  className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
                 >
                   <option value="replace">Replace - Use only extracted content</option>
                   <option value="prepend">Prepend - Extracted content first, then RSS</option>
@@ -1727,7 +1727,7 @@ function FeedSettingsView({
                 value={customSelector}
                 onChange={(e) => setCustomSelector(e.target.value)}
                 placeholder="article.main-content"
-                className="w-full rounded-lg border border-border px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border-border dark:bg-muted"
+                className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
               />
             </div>
 
@@ -1740,7 +1740,7 @@ function FeedSettingsView({
                 value={timeout || ""}
                 onChange={(e) => setTimeout(e.target.value ? parseInt(e.target.value, 10) : undefined)}
                 placeholder="30"
-                className="w-full rounded-lg border border-border px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border-border dark:bg-muted"
+                className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
               />
             </div>
           </div>
@@ -1781,7 +1781,7 @@ function FeedSettingsView({
           <button
             onClick={handleRefreshFeed}
             disabled={isRefreshing}
-            className="flex-1 rounded-lg border border-blue-300 px-4 py-2 font-medium text-blue-600 hover:bg-blue-50 disabled:opacity-50 dark:border-blue-600 dark:text-blue-400 dark:hover:bg-blue-900/20"
+            className="flex-1 rounded-lg border border-primary/30 px-4 py-2 font-medium text-primary hover:bg-primary/10 disabled:opacity-50 dark:border-primary/60 dark:text-primary dark:hover:bg-primary/20"
           >
             {isRefreshing ? "Refreshing..." : "Refresh Feed"}
           </button>
@@ -1796,7 +1796,7 @@ function FeedSettingsView({
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="w-full rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="w-full rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
         >
           {isSaving ? "Saving..." : "Save Settings"}
         </button>

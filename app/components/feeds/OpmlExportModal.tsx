@@ -187,7 +187,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
         <div className="overflow-y-auto p-6" style={{ maxHeight: "calc(90vh - 180px)" }}>
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
             </div>
           ) : error ? (
             <div className="rounded-lg bg-red-50 p-4 text-red-800 dark:bg-red-900/20 dark:text-red-200">
@@ -208,7 +208,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
                       value="all"
                       checked={exportMode === "all"}
                       onChange={(e) => setExportMode(e.target.value as any)}
-                      className="h-4 w-4 text-blue-600"
+                      className="h-4 w-4 text-primary"
                     />
                     <span className="text-sm text-foreground/70">
                       All feeds ({feeds.length})
@@ -221,7 +221,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
                       value="categories"
                       checked={exportMode === "categories"}
                       onChange={(e) => setExportMode(e.target.value as any)}
-                      className="h-4 w-4 text-blue-600"
+                      className="h-4 w-4 text-primary"
                     />
                     <span className="text-sm text-foreground/70">
                       Select by categories
@@ -234,7 +234,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
                       value="feeds"
                       checked={exportMode === "feeds"}
                       onChange={(e) => setExportMode(e.target.value as any)}
-                      className="h-4 w-4 text-blue-600"
+                      className="h-4 w-4 text-primary"
                     />
                     <span className="text-sm text-foreground/70">
                       Select individual feeds
@@ -253,14 +253,14 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
                     <div className="flex gap-2">
                       <button
                         onClick={selectAllCategories}
-                        className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                        className="text-xs text-primary hover:text-primary/90 dark:text-primary"
                       >
                         Select All
                       </button>
                       <span className="text-xs text-foreground/50">|</span>
                       <button
                         onClick={deselectAllCategories}
-                        className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                        className="text-xs text-primary hover:text-primary/90 dark:text-primary"
                       >
                         Deselect All
                       </button>
@@ -276,7 +276,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
                             type="checkbox"
                             checked={selectedCategoryIds.has(category.id)}
                             onChange={() => toggleCategory(category.id)}
-                            className="h-4 w-4 rounded text-blue-600"
+                            className="h-4 w-4 rounded text-primary"
                           />
                           <span className="text-sm text-foreground/70">
                             {category.name}
@@ -298,14 +298,14 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
                     <div className="flex gap-2">
                       <button
                         onClick={selectAllFeeds}
-                        className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                        className="text-xs text-primary hover:text-primary/90 dark:text-primary"
                       >
                         Select All
                       </button>
                       <span className="text-xs text-foreground/50">|</span>
                       <button
                         onClick={deselectAllFeeds}
-                        className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                        className="text-xs text-primary hover:text-primary/90 dark:text-primary"
                       >
                         Deselect All
                       </button>
@@ -330,8 +330,8 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
               )}
 
               {/* Export Info */}
-              <div className="rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
-                <p className="text-sm text-blue-800 dark:text-blue-200">
+              <div className="rounded-lg bg-primary/10 p-4 dark:bg-primary/20">
+                <p className="text-sm text-primary dark:text-primary">
                   {getExportCount()} feed(s) will be exported
                 </p>
               </div>
@@ -351,7 +351,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
           <button
             onClick={handleExport}
             disabled={exporting || loading || getExportCount() === 0}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
             {exporting ? "Exporting..." : "Export OPML"}
           </button>

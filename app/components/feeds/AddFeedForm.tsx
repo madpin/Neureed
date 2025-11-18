@@ -192,7 +192,7 @@ export function AddFeedForm({ onAdd, onClose }: AddFeedFormProps) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Auto-detected from feed"
-              className="w-full rounded-lg border border-border px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border-border bg-background"
+              className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border bg-background"
             />
           </div>
 
@@ -207,7 +207,7 @@ export function AddFeedForm({ onAdd, onClose }: AddFeedFormProps) {
             <button
               type="submit"
               disabled={isLoading || !url}
-              className="flex-1 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="flex-1 rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
               {isLoading ? "Adding..." : "Add Feed"}
             </button>

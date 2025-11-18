@@ -139,7 +139,7 @@ export function FeedBrowser({ onClose }: FeedBrowserProps) {
             placeholder="Search feeds..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-lg border border-border px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border-border bg-background dark:text-gray-100"
+            className="w-full rounded-lg border border-border px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border bg-background dark:text-gray-100"
           />
         </div>
 
@@ -197,7 +197,7 @@ export function FeedBrowser({ onClose }: FeedBrowserProps) {
                     className={`flex-shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                       feed.isSubscribed
                         ? "border border-border text-foreground/80 hover:bg-muted border-border"
-                        : "bg-blue-600 text-white hover:bg-blue-700"
+                        : "bg-primary text-primary-foreground hover:bg-primary/90"
                     } disabled:opacity-50`}
                   >
                     {subscribingIds.has(feed.id)

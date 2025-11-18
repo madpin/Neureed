@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, createContext, useContext } from "react";
 import { useSession } from "next-auth/react";
+import { Toaster } from "sonner";
 
 type ThemeMode = "light" | "dark" | "nord-light" | "nord-dark" | "solarized-light" | "solarized-dark" | "barbie-light" | "barbie-dark" | "purple-light" | "purple-dark" | "orange-light" | "orange-dark" | "rainbow-light" | "rainbow-dark" | "system";
 
@@ -27,6 +28,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<ThemeMode>("system");
   const [fontSize, setFontSizeState] = useState<string>("medium");
   const [mounted, setMounted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Apply font size to document
   const applyFontSize = useCallback((size: string) => {
@@ -37,6 +39,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       large: "18px",
     };
     root.style.fontSize = sizeMap[size] || size || "16px";
+    // Save to localStorage for blocking script
+    localStorage.setItem('neureed-fontSize', size);
   }, []);
 
   // Apply theme logic
@@ -60,6 +64,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       root.classList.add(themeMode);
       body.classList.add(themeMode);
     }
+    
+    // Save to localStorage for blocking script
+    localStorage.setItem('neureed-theme', themeMode);
   }, []);
 
   // Public setters that update state and apply immediately
@@ -76,8 +83,23 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Load initial preferences
   useEffect(() => {
     async function loadUserPreferences() {
+      // First, try to load from localStorage immediately
+      const savedTheme = localStorage.getItem('neureed-theme');
+      const savedFontSize = localStorage.getItem('neureed-fontSize');
+      
+      if (savedTheme && ["light", "dark", "nord-light", "nord-dark", "solarized-light", "solarized-dark", "barbie-light", "barbie-dark", "purple-light", "purple-dark", "orange-light", "orange-dark", "rainbow-light", "rainbow-dark", "system"].includes(savedTheme)) {
+        setThemeState(savedTheme as ThemeMode);
+        applyTheme(savedTheme as ThemeMode);
+      }
+      
+      if (savedFontSize) {
+        setFontSizeState(savedFontSize);
+        applyFontSize(savedFontSize);
+      }
+      
       if (!session?.user) {
         setMounted(true);
+        setIsLoading(false);
         return;
       }
 
@@ -97,6 +119,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         console.error("Failed to load theme settings:", err);
       } finally {
         setMounted(true);
+        setIsLoading(false);
       }
     }
 
@@ -133,14 +156,46 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("preferencesUpdated" as any, handlePreferencesUpdate);
   }, []);
 
-  // Prevent hydration mismatch
-  if (!mounted) {
-    return <>{children}</>;
+  // Show loading state until theme is ready
+  if (isLoading) {
+    return (
+      <div style={{ 
+        position: 'fixed', 
+        inset: 0, 
+        background: 'var(--background)', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        opacity: 0,
+        animation: 'fadeIn 0.3s ease-in-out forwards',
+        animationDelay: '0.1s'
+      }}>
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes fadeIn {
+            to { opacity: 1; }
+          }
+        `}} />
+      </div>
+    );
   }
+
+  // Determine the Sonner theme based on current theme
+  const getSonnerTheme = (): "light" | "dark" | "system" => {
+    if (theme === "system") return "system";
+    
+    // Check if current theme is a dark variant (ends with "-dark" or is exactly "dark")
+    if (theme === "dark" || theme.endsWith("-dark")) {
+      return "dark";
+    }
+    
+    // All other themes are light variants
+    return "light";
+  };
 
   return (
     <ThemeContext.Provider value={{ theme, fontSize, setTheme, setFontSize }}>
       {children}
+      <Toaster position="top-right" theme={getSonnerTheme()} richColors />
     </ThemeContext.Provider>
   );
 }
