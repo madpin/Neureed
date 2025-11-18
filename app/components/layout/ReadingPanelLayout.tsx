@@ -85,24 +85,18 @@ export function ReadingPanelLayout({ children }: ReadingPanelLayoutProps) {
       console.log("[ReadingPanelLayout] Article selected:", articleId);
       setSelectedArticleId(articleId);
 
-      // Get current path to determine context
-      const currentPath = window.location.pathname;
+      // Get current query params to preserve feed/category filters
+      const currentParams = new URLSearchParams(window.location.search);
       
       if (articleId) {
-        // Extract feedId from path if we're on a feed page
-        const feedMatch = currentPath.match(/^\/feeds\/([^\/]+)/);
-        
-        if (feedMatch) {
-          const feedId = feedMatch[1];
-          // Navigate to nested article route which redirects with query param
-          router.push(`/feeds/${feedId}/articles/${articleId}`);
-        } else {
-          // Navigate to article route which redirects with query param
-          router.push(`/articles/${articleId}`);
-        }
+        // Add article param while preserving other filters
+        currentParams.set('article', articleId);
+        router.push(`/?${currentParams.toString()}`);
       } else {
-        // Closing the article, navigate back to current feed or home
-        router.push(currentPath);
+        // Remove article param but keep other filters
+        currentParams.delete('article');
+        const paramsString = currentParams.toString();
+        router.push(paramsString ? `/?${paramsString}` : '/');
       }
     },
     [router]

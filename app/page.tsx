@@ -29,6 +29,7 @@ export default function Home() {
   const searchParams = useSearchParams();
   const [feeds, setFeeds] = useState<FeedWithStats[]>([]);
   const [articles, setArticles] = useState<ArticleWithFeed[]>([]);
+  const [selectedFeedId, setSelectedFeedId] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [isAddFeedOpen, setIsAddFeedOpen] = useState(false);
   const [isFeedBrowserOpen, setIsFeedBrowserOpen] = useState(false);
@@ -36,9 +37,14 @@ export default function Home() {
   const [isLoadingFeeds, setIsLoadingFeeds] = useState(true);
   const [isLoadingArticles, setIsLoadingArticles] = useState(true);
 
-  // Sync selectedCategoryId with URL params
+  // Sync selectedFeedId and selectedCategoryId with URL params
   useEffect(() => {
+    const feedIdFromUrl = searchParams.get('feed');
     const categoryIdFromUrl = searchParams.get('categoryId');
+    
+    if (feedIdFromUrl !== selectedFeedId) {
+      setSelectedFeedId(feedIdFromUrl);
+    }
     if (categoryIdFromUrl !== selectedCategoryId) {
       setSelectedCategoryId(categoryIdFromUrl);
     }
@@ -51,10 +57,10 @@ export default function Home() {
     }
   }, [session, status]);
 
-  // Load articles when category selection changes
+  // Load articles when feed or category selection changes
   useEffect(() => {
     loadArticles();
-  }, [selectedCategoryId]);
+  }, [selectedFeedId, selectedCategoryId]);
 
   // Reload articles when user returns to the page (to update read status)
   useEffect(() => {
@@ -103,11 +109,19 @@ export default function Home() {
   const loadArticles = async () => {
     setIsLoadingArticles(true);
     try {
-      // Build URL with optional category filter
-      let url = "/api/articles";
-      if (selectedCategoryId) {
-        url = `/api/articles?categoryId=${selectedCategoryId}`;
+      // Build URL with optional feed and/or category filter
+      const params = new URLSearchParams();
+      if (selectedFeedId) {
+        params.append('feedId', selectedFeedId);
       }
+      if (selectedCategoryId) {
+        params.append('categoryId', selectedCategoryId);
+      }
+      
+      const url = params.toString() 
+        ? `/api/articles?${params.toString()}`
+        : "/api/articles";
+        
       const response = await fetch(url);
       const data = await response.json();
       // Handle wrapped response
@@ -117,6 +131,15 @@ export default function Home() {
       console.error("Failed to load articles:", error);
     } finally {
       setIsLoadingArticles(false);
+    }
+  };
+
+  const handleSelectFeed = (feedId: string | null) => {
+    // Update URL to reflect feed filter
+    if (feedId) {
+      router.push(`/?feed=${feedId}`);
+    } else {
+      router.push("/");
     }
   };
 
@@ -171,21 +194,16 @@ export default function Home() {
         throw new Error(error.error || "Failed to delete feed");
       }
 
-      // Reload feeds
+      // Reload feeds and clear selection if we deleted the current feed
       await loadFeeds();
+      if (selectedFeedId === feedId) {
+        router.push("/");
+      }
 
       alert("Feed deleted successfully");
     } catch (error) {
       console.error("Failed to delete feed:", error);
       alert(error instanceof Error ? error.message : "Failed to delete feed");
-    }
-  };
-
-  const handleSelectFeed = (feedId: string | null) => {
-    if (feedId) {
-      router.push(`/feeds/${feedId}`);
-    } else {
-      router.push("/");
     }
   };
 
@@ -383,7 +401,7 @@ export default function Home() {
             </div>
           ) : (
             <CategoryList
-              selectedFeedId={undefined}
+              selectedFeedId={selectedFeedId || undefined}
               selectedCategoryId={selectedCategoryId || undefined}
               onSelectFeed={handleSelectFeed}
               onSelectCategory={handleSelectCategory}

@@ -11,15 +11,13 @@ A news cluster could be a big event happening, and I want you to use LLM, to gen
 Improve reading format, the user have ADHD, and therefore big blocks of text are difficult to read.
 (remember to make it configurable)
 
----
-
-The UI need to improve, the user should be able to have a reading panel at the same time as the news list.
-They should be able to position that on the right (default), left, botton or top.
 
 ---
 
-The article menu, need to be shrinkable, showing only the icons.
+The sidebar menu, need to be shrinkable, showing only the feed icons.
 Also implement better feed categories. (and feed configurations should be possible to set per category)
+The each category should be expandable/shrinkable, and it should be persistent
+the user should be able to add new categories and rename them.
 
 ---
 
@@ -52,7 +50,7 @@ In the configurations:
 
 ---
 
-Maintenance:
+Maintenance information:
 - where the user can see how much storage is being used, and apply methods to clean/compress them up
 - Installation check, with all the stats on the instalation, versions and all.
 - Application logs

@@ -60,12 +60,12 @@ export function CategoryList({
 
   const handleSelectFeed = (feedId: string | null) => {
     if (onSelectFeed) {
-      // Use callback if provided (for backwards compatibility)
+      // Use callback if provided
       onSelectFeed(feedId);
     } else {
-      // Use router navigation
+      // Use router navigation with query params
       if (feedId) {
-        router.push(`/feeds/${feedId}`);
+        router.push(`/?feed=${feedId}`);
       } else {
         router.push("/");
       }

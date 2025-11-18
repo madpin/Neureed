@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 /**
  * This route serves as a catch-all for article URLs without feed context.
@@ -10,12 +10,17 @@ import { useParams, useRouter } from "next/navigation";
 export default function ArticlePage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const articleId = params.id as string;
 
   useEffect(() => {
+    // Preserve any existing query params (like feed context)
+    const newParams = new URLSearchParams(searchParams.toString());
+    newParams.set('article', articleId);
+    
     // Redirect to the home page with the article in the reading panel
-    router.replace(`/?article=${articleId}`);
-  }, [articleId, router]);
+    router.replace(`/?${newParams.toString()}`);
+  }, [articleId, router, searchParams]);
 
   return (
     <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">

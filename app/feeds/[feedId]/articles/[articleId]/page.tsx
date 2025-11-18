@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 
 /**
  * This route serves as a catch-all for article URLs with feed context.
- * It redirects to the feed page, which will display the article in the reading panel.
+ * It redirects to the home page with both feed and article query params.
  */
 export default function FeedArticlePage() {
   const params = useParams();
@@ -14,8 +14,8 @@ export default function FeedArticlePage() {
   const articleId = params.articleId as string;
 
   useEffect(() => {
-    // Redirect to the feed page with the article in the reading panel
-    router.replace(`/feeds/${feedId}?article=${articleId}`);
+    // Redirect to the home page with feed and article query params
+    router.replace(`/?feed=${feedId}&article=${articleId}`);
   }, [feedId, articleId, router]);
 
   return (

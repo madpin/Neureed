@@ -31,15 +31,13 @@ export function ArticleCard({ article, variant = "compact", onReadStatusChange, 
 
   // Determine the article link based on current context
   const getArticleLink = () => {
-    // Extract feedId from current path if we're on a feed page
-    const feedMatch = pathname?.match(/^\/feeds\/([^\/]+)/);
-    
-    if (feedMatch) {
-      const feedId = feedMatch[1];
-      return `/feeds/${feedId}/articles/${article.id}`;
+    // Get current query params to preserve context
+    if (typeof window !== 'undefined') {
+      const currentParams = new URLSearchParams(window.location.search);
+      currentParams.set('article', article.id);
+      return `/?${currentParams.toString()}`;
     }
-    
-    // Default to article route (will redirect to home with query param)
+    // Fallback for SSR
     return `/articles/${article.id}`;
   };
 
