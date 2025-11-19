@@ -30,11 +30,16 @@ cmds = [
   "echo '✅ Prisma Client generated'",
   "echo '🏗️  Building Next.js application...'",
   "npm run build",
-  "echo '✅ Build completed'"
+  "echo '✅ Build completed'",
+  "echo '📁 Ensuring Prisma migrations are preserved...'",
+  "mkdir -p .next/standalone/prisma",
+  "cp -r prisma/migrations .next/standalone/prisma/",
+  "cp prisma/schema.prisma .next/standalone/prisma/",
+  "echo '✅ Prisma files copied'"
 ]
 
 [start]
-cmd = "ls -la prisma/ && npx prisma migrate deploy && npm run start"
+cmd = "pwd && ls -la && ls -la prisma/ 2>/dev/null || echo 'No prisma in current dir' && ls -la .next/standalone/prisma/ 2>/dev/null || echo 'No prisma in standalone' && npx prisma migrate deploy && npm run start"
 
 [variables]
 PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
