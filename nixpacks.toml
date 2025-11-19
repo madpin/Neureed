@@ -3,7 +3,7 @@ nixPkgs = ["nodejs_20", "openssl"]
 
 [phases.install]
 cmds = [
-  "npm ci --prefer-offline --no-audit --omit=optional --no-fund --loglevel=error"
+  "npm ci --no-audit --omit=optional --no-fund --fetch-timeout=300000 --fetch-retries=3"
 ]
 
 [variables]
@@ -11,7 +11,8 @@ PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
 PUPPETEER_SKIP_DOWNLOAD = "1"
 SKIP_ENV_VALIDATION = "1"
 NODE_OPTIONS = "--max-old-space-size=4096"
-NPM_CONFIG_LOGLEVEL = "error"
+NPM_CONFIG_FETCH_TIMEOUT = "300000"
+NPM_CONFIG_FETCH_RETRIES = "3"
 CI = "true"
 
 [phases.build]
