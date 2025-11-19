@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import { apiResponse, apiError } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/admin/users
  * Get list of all users with statistics

@@ -3,6 +3,8 @@ import { validateFeedSchema } from "@/lib/validations/feed-validation";
 import { createHandler } from "@/lib/api-handler";
 import { apiResponse } from "@/lib/api-response";
 
+export const dynamic = "force-dynamic";
+
 /**
  * POST /api/feeds/validate
  * Validate a feed URL before adding it

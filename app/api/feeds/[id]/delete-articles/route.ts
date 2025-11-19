@@ -2,6 +2,8 @@ import { deleteAllArticles } from "@/lib/services/feed-settings-service";
 import { createHandler } from "@/lib/api-handler";
 import { logger } from "@/lib/logger";
 
+export const dynamic = "force-dynamic";
+
 /**
  * DELETE /api/feeds/[id]/delete-articles
  * Delete all articles from a feed

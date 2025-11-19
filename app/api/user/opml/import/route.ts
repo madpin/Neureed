@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import { parseOPML, validateOPMLStructure } from "@/lib/services/opml-service";
 import { findOrCreateCategory } from "@/lib/services/category-service";
 import {
+
+
   validateAndCreateFeed,
   getFeedByUrl,
 } from "@/lib/services/feed-service";
@@ -15,6 +17,8 @@ import {
 } from "@/lib/validations/opml-validation";
 import { apiResponse, apiError } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/middleware/auth-middleware";
+
+export const dynamic = "force-dynamic";
 
 /**
  * POST /api/user/opml/import

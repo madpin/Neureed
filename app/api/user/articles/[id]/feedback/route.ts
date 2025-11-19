@@ -8,6 +8,8 @@ import { updateUserPatterns } from "@/lib/services/pattern-detection-service";
 import { createHandler } from "@/lib/api-handler";
 import { z } from "zod";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/user/articles/[id]/feedback
  * Get user's feedback for an article

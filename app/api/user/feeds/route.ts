@@ -8,6 +8,8 @@ import { getFeedsGroupedByCategory } from "@/lib/services/user-category-service"
 import { z } from "zod";
 import { createHandler } from "@/lib/api-handler";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/user/feeds
  * Get user's subscribed feeds or all feeds with subscription status

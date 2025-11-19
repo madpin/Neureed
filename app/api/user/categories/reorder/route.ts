@@ -2,6 +2,8 @@ import { createHandler } from "@/lib/api-handler";
 import { z } from "zod";
 import { reorderUserCategories } from "@/lib/services/user-category-service";
 
+export const dynamic = "force-dynamic";
+
 const reorderSchema = z.object({
   categoryIds: z.array(z.string()).min(1),
 });

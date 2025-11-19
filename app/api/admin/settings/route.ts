@@ -7,11 +7,15 @@ import { NextRequest } from "next/server";
 import { apiResponse, apiError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
 import {
+
+
   getAllAdminSettings,
   updateAdminSetting,
   getAdminSetting,
 } from "@/lib/services/admin-settings-service";
 import { z } from "zod";
+
+export const dynamic = "force-dynamic";
 
 /**
  * GET - Get all admin settings

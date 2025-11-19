@@ -7,6 +7,8 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { apiResponse, apiError } from "@/lib/api-response";
 
+export const dynamic = "force-dynamic";
+
 interface TableSize {
   tableName: string;
   totalSize: string;

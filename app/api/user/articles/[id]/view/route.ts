@@ -1,6 +1,8 @@
 import { recordArticleView } from "@/lib/services/feedback-service";
 import { createHandler } from "@/lib/api-handler";
 
+export const dynamic = "force-dynamic";
+
 /**
  * POST /api/user/articles/[id]/view
  * Track when user opens an article

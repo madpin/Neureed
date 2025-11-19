@@ -13,6 +13,8 @@ import { getCurrentUser } from "@/lib/middleware/auth-middleware";
 import { subscribeFeed } from "@/lib/services/user-feed-service";
 import { z } from "zod";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/feeds
  * List all feeds with pagination and filtering

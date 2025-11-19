@@ -7,6 +7,8 @@ import { extractKeyPoints } from "@/lib/services/summarization-service";
 import { getCurrentUser } from "@/lib/middleware/auth-middleware";
 import { createHandler } from "@/lib/api-handler";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/articles/[id]/keypoints
  * Get article key points

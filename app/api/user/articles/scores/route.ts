@@ -2,6 +2,8 @@ import { scoreArticleBatch } from "@/lib/services/article-scoring-service";
 import { createHandler } from "@/lib/api-handler";
 import { z } from "zod";
 
+export const dynamic = "force-dynamic";
+
 const scoresSchema = z.object({
   articleIds: z.array(z.string()),
 });

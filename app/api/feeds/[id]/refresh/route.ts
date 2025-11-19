@@ -2,6 +2,8 @@ import { getFeed } from "@/lib/services/feed-service";
 import { refreshFeed } from "@/lib/services/feed-refresh-service";
 import { createHandler } from "@/lib/api-handler";
 
+export const dynamic = "force-dynamic";
+
 /**
  * POST /api/feeds/:id/refresh
  * Manually refresh a feed

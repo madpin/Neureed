@@ -8,6 +8,8 @@ import { createHandler } from "@/lib/api-handler";
 import { logger } from "@/lib/logger";
 import type { ExtractionSettings } from "@/lib/extractors/types";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/feeds/[id]/settings
  * Get extraction settings for a feed

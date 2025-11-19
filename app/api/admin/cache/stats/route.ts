@@ -8,6 +8,8 @@ import { apiResponse, apiError } from "@/lib/api-response";
 import { getCacheStats, getCacheInfo } from "@/lib/cache/cache-service";
 import { getRedisStatus } from "@/lib/cache/redis-client";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/admin/cache/stats
  * Get cache statistics

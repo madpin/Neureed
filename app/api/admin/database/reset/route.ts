@@ -3,6 +3,8 @@ import { createHandler } from "@/lib/api-handler";
 import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
 
+export const dynamic = "force-dynamic";
+
 /**
  * POST /api/admin/database/reset
  * Reset database by clearing all feed, category, embedding, and article-related data

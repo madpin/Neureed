@@ -1,6 +1,8 @@
 import { createHandler } from "@/lib/api-handler";
 import { unassignFeedFromAllCategories } from "@/lib/services/user-category-service";
 
+export const dynamic = "force-dynamic";
+
 /**
  * DELETE /api/user/feeds/:feedId/categories
  * Remove a feed from all categories (make it uncategorized)

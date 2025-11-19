@@ -5,6 +5,8 @@ import { opmlExportQuerySchema } from "@/lib/validations/opml-validation";
 import { createHandler } from "@/lib/api-handler";
 import type { FeedWithCategories } from "@/lib/services/opml-service";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/user/opml/export
  * Export user's subscribed feeds as OPML file

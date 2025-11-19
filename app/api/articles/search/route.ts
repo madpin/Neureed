@@ -2,6 +2,8 @@ import { searchArticles } from "@/lib/services/article-service";
 import { searchArticlesSchema } from "@/lib/validations/article-validation";
 import { createHandler } from "@/lib/api-handler";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/articles/search
  * Search articles by query

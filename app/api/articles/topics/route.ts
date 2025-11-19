@@ -10,6 +10,8 @@ import {
 } from "@/lib/services/summarization-service";
 import { createHandler } from "@/lib/api-handler";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/articles/topics
  * Get topics or articles by topic

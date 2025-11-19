@@ -11,6 +11,8 @@ import {
 import { z } from "zod";
 import { createHandler } from "@/lib/api-handler";
 
+export const dynamic = "force-dynamic";
+
 const searchSchema = z.object({
   query: z.string().min(1, "Query is required"),
   limit: z.number().min(1).max(100).optional().default(20),

@@ -6,6 +6,8 @@ import { getUserFeedIds } from "@/lib/services/user-feed-service";
 import { getReadArticles } from "@/lib/services/read-status-service";
 import { prisma } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/articles
  * List articles with pagination and filtering

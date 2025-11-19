@@ -1,6 +1,8 @@
 import { getArticle, deleteArticle } from "@/lib/services/article-service";
 import { createHandler } from "@/lib/api-handler";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/articles/:id
  * Get a single article with feed information

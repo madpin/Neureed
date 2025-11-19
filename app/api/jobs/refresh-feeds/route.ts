@@ -2,6 +2,8 @@ import { z } from "zod";
 import { refreshFeeds, refreshAllDueFeeds, getRefreshStats } from "@/lib/services/feed-refresh-service";
 import { createHandler } from "@/lib/api-handler";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Request schema
  */

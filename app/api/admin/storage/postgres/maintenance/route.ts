@@ -8,6 +8,8 @@ import { prisma } from "@/lib/db";
 import { apiResponse, apiError } from "@/lib/api-response";
 import { z } from "zod";
 
+export const dynamic = "force-dynamic";
+
 const maintenanceSchema = z.object({
   operation: z.enum(["vacuum", "analyze", "vacuum_analyze", "reindex"]),
   table: z.string().optional(), // If not provided, runs on all tables

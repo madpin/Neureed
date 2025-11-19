@@ -2,6 +2,8 @@ import { getArticlesByDateRange } from "@/lib/services/article-service";
 import { recentArticlesSchema } from "@/lib/validations/article-validation";
 import { createHandler } from "@/lib/api-handler";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/articles/recent
  * Get recent articles within a time window

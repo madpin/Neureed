@@ -5,6 +5,8 @@ import {
   createUserCategory,
 } from "@/lib/services/user-category-service";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/user/categories
  * Get all user categories

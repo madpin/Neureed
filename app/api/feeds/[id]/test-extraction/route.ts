@@ -5,6 +5,8 @@ import { createHandler } from "@/lib/api-handler";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 /**
  * POST /api/feeds/[id]/test-extraction
  * Test extraction configuration for a feed

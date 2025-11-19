@@ -13,6 +13,8 @@ import {
   clearCostHistory,
 } from "@/lib/services/embedding-cost-tracker";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET - Get cost statistics
  */

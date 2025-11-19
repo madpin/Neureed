@@ -8,6 +8,8 @@ import { getRedisClient } from "@/lib/cache/redis-client";
 import { apiResponse, apiError } from "@/lib/api-response";
 import { z } from "zod";
 
+export const dynamic = "force-dynamic";
+
 const maintenanceSchema = z.object({
   operation: z.enum(["flushdb", "flushall", "save", "bgsave", "bgrewriteaof"]),
 });

@@ -12,6 +12,8 @@ import { getEmbeddingStats } from "@/lib/services/article-embedding-service";
 import { createHandler } from "@/lib/api-handler";
 import { apiResponse } from "@/lib/api-response";
 
+export const dynamic = "force-dynamic";
+
 /**
  * POST - Manually trigger embedding generation
  */

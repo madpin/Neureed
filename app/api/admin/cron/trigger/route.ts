@@ -3,6 +3,8 @@ import { executeFeedRefreshJob } from "@/lib/jobs/feed-refresh-job";
 import { executeCleanupJob } from "@/lib/jobs/cleanup-job";
 import { z } from "zod";
 
+export const dynamic = "force-dynamic";
+
 const triggerSchema = z.object({
   job: z.enum(["feed-refresh", "cleanup"]),
 });

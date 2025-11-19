@@ -3,6 +3,8 @@ import { updateUserPatterns } from "@/lib/services/pattern-detection-service";
 import { createHandler } from "@/lib/api-handler";
 import { z } from "zod";
 
+export const dynamic = "force-dynamic";
+
 const exitSchema = z.object({
   timeSpent: z.number().min(0),
   estimatedTime: z.number().positive(),

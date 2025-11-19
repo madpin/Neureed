@@ -1,10 +1,14 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import {
+
+
   cleanupOldArticles,
   getCleanupStats,
 } from "@/lib/services/article-cleanup-service";
 import { apiResponse, apiError } from "@/lib/api-response";
+
+export const dynamic = "force-dynamic";
 
 /**
  * Request schema

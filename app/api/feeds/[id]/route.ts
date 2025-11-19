@@ -8,6 +8,8 @@ import {
 import { updateFeedSchema } from "@/lib/validations/feed-validation";
 import { createHandler } from "@/lib/api-handler";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/feeds/:id
  * Get a single feed with statistics

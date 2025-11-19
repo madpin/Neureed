@@ -3,6 +3,8 @@ import { createHandler } from "@/lib/api-handler";
 import { prisma } from "@/lib/db";
 import { validateFeedSettings } from "@/lib/services/feed-settings-cascade";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Category settings schema (same as feed settings)
  */

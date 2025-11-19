@@ -1,6 +1,8 @@
 import { createHandler } from "@/lib/api-handler";
 import { refreshUserFeeds, getRefreshStats } from "@/lib/services/feed-refresh-service";
 
+export const dynamic = "force-dynamic";
+
 /**
  * POST /api/user/feeds/refresh
  * Refresh all due feeds for the authenticated user

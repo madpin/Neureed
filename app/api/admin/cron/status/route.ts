@@ -4,6 +4,8 @@ import { isSchedulerRunning as isFeedRefreshRunning } from "@/lib/jobs/feed-refr
 import { isSchedulerRunning as isCleanupRunning } from "@/lib/jobs/cleanup-job";
 import { env } from "@/env";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/admin/cron/status
  * Get cron job scheduler status

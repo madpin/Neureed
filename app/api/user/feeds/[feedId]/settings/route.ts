@@ -6,6 +6,8 @@ import {
   validateFeedSettings 
 } from "@/lib/services/feed-settings-cascade";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Feed settings schema
  */

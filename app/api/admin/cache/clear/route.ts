@@ -7,10 +7,14 @@
 import { NextRequest } from "next/server";
 import { apiResponse, apiError } from "@/lib/api-response";
 import {
+
+
   cacheClearAll,
   cacheDeletePattern,
 } from "@/lib/cache/cache-service";
 import { z } from "zod";
+
+export const dynamic = "force-dynamic";
 
 const clearPatternSchema = z.object({
   pattern: z.string(),

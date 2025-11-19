@@ -13,6 +13,8 @@ import {
   getArticlesWithoutEmbeddings,
 } from "@/lib/services/article-embedding-service";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET - Get embedding statistics
  */

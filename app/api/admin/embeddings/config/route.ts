@@ -7,11 +7,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiResponse, apiError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
 import {
+
+
   getEmbeddingConfig,
   testEmbeddingProvider,
 } from "@/lib/services/embedding-service";
 import { getEmbeddingConfiguration } from "@/lib/services/admin-settings-service";
 import { env } from "@/env";
+
+export const dynamic = "force-dynamic";
 
 /**
  * GET - Get current embedding configuration

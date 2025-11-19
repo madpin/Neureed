@@ -6,6 +6,8 @@ import {
   deleteUserCategory,
 } from "@/lib/services/user-category-service";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/user/categories/:categoryId
  * Get a specific category

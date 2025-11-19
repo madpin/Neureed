@@ -1,6 +1,8 @@
 import { runPatternDecayJob } from "@/lib/jobs/pattern-decay-job";
 import { createHandler } from "@/lib/api-handler";
 
+export const dynamic = "force-dynamic";
+
 /**
  * POST /api/jobs/pattern-decay
  * Run the pattern decay job

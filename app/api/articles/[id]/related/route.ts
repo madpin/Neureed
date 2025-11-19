@@ -8,6 +8,8 @@ import { findRelatedArticles } from "@/lib/services/semantic-search-service";
 import { createHandler } from "@/lib/api-handler";
 import { apiResponse } from "@/lib/api-response";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET - Find related articles
  */

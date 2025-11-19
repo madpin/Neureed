@@ -1,6 +1,8 @@
 import { markAsRead, markAsUnread } from "@/lib/services/read-status-service";
 import { createHandler } from "@/lib/api-handler";
 
+export const dynamic = "force-dynamic";
+
 /**
  * POST /api/user/articles/:id/read
  * Mark an article as read

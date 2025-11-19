@@ -7,6 +7,8 @@ import { NextRequest } from "next/server";
 import { getRedisClient, getRedisStatus } from "@/lib/cache/redis-client";
 import { apiResponse, apiError } from "@/lib/api-response";
 
+export const dynamic = "force-dynamic";
+
 interface RedisStats {
   connected: boolean;
   enabled: boolean;

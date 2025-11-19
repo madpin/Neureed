@@ -6,6 +6,8 @@ import { z } from "zod";
 import { createHandler } from "@/lib/api-handler";
 import { articleSortOrderSchema, articleSortDirectionSchema } from "@/lib/validations/article-validation";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/user/preferences
  * Get user preferences
