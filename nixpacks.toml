@@ -30,6 +30,16 @@ cmds = [
   "echo '✅ Build completed'"
 ]
 
+[phases.setup-runtime]
+dependsOn = ["build"]
+cmds = [
+  "echo '📁 Copying Prisma migrations to standalone output...'",
+  "mkdir -p .next/standalone/prisma",
+  "cp -r prisma/migrations .next/standalone/prisma/ || echo 'No migrations to copy'",
+  "cp prisma/schema.prisma .next/standalone/prisma/",
+  "echo '✅ Prisma files copied to standalone'"
+]
+
 [start]
 cmd = "npm run start"
 
