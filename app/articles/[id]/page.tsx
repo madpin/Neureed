@@ -6,7 +6,7 @@ import { ArticlePageClient } from "@/app/components/articles/ArticlePageClient";
 import { ArticleFeedbackSection } from "@/app/components/articles/ArticleFeedbackSection";
 import { RelatedArticles } from "@/app/components/articles/RelatedArticles";
 import { processArticleContent, estimateReadingTime } from "@/lib/content-processor";
-import { formatLocalizedDateTime } from "@/lib/date-utils";
+import { formatLocalizedDateTime, toISOString } from "@/lib/date-utils";
 import type { Article, Feed } from "@prisma/client";
 
 type ArticleWithFeed = Article & { feed: Feed };
@@ -126,7 +126,7 @@ export default function ArticlePage() {
             {publishedDate && <span>•</span>}
           </>
         )}
-        {publishedDate && <time dateTime={article.publishedAt?.toISOString()}>{publishedDate}</time>}
+        {publishedDate && <time dateTime={toISOString(article.publishedAt)}>{publishedDate}</time>}
       </div>
 
       {/* Title */}

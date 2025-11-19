@@ -25,8 +25,10 @@ export function getRedisClient(): Redis | null {
 
   try {
     const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+    const redisPassword = process.env.REDIS_PASSWORD;
 
     redisClient = new Redis(redisUrl, {
+      password: redisPassword,
       maxRetriesPerRequest: 3,
       retryStrategy(times) {
         const delay = Math.min(times * 50, 2000);
