@@ -32,8 +32,9 @@ cmds = [
   "npm run build",
   "echo '✅ Build completed'",
   "echo '📁 Ensuring Prisma migrations are preserved...'",
+  "ls -la prisma/",
   "mkdir -p .next/standalone/prisma",
-  "cp -r prisma/migrations .next/standalone/prisma/",
+  "if [ -d prisma/migrations ]; then cp -r prisma/migrations .next/standalone/prisma/; else echo 'Warning: No migrations folder found'; fi",
   "cp prisma/schema.prisma .next/standalone/prisma/",
   "echo '✅ Prisma files copied'"
 ]
