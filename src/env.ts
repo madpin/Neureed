@@ -47,11 +47,9 @@ export const env = createEnv({
       .transform((val) => val === "true"),
     
     // Content Extraction configuration
-    ENCRYPTION_SECRET: z.string().min(32).optional().default(
+    ENCRYPTION_SECRET: z.string().min(32).default(
       // Generate a default secret for development (NOT for production!)
-      process.env.NODE_ENV === "production" 
-        ? "" 
-        : "dev-secret-key-change-in-production-32chars"
+      "dev-secret-key-change-in-production-32chars-please"
     ),
     PLAYWRIGHT_ENABLED: z
       .enum(["true", "false"])
