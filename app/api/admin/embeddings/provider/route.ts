@@ -24,22 +24,32 @@ export async function GET() {
     const config = await getEmbeddingConfiguration();
     const activeProvider = await getActiveEmbeddingProvider();
 
-    // Test both providers to show their status
-    const openaiTest = await testEmbeddingProvider("openai").catch((error) => ({
-      success: false,
-      provider: "openai",
-      dimensions: 0,
-      testTime: 0,
-      error: error instanceof Error ? error.message : "Not configured or failed",
-    }));
+    // Test both providers to show their status (with graceful error handling)
+    const openaiTest = await testEmbeddingProvider("openai").catch((error) => {
+      logger.debug("OpenAI provider test failed (expected if not configured)", { 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+      return {
+        success: false,
+        provider: "openai",
+        dimensions: 0,
+        testTime: 0,
+        error: error instanceof Error ? error.message : "Not configured or failed",
+      };
+    });
 
-    const localTest = await testEmbeddingProvider("local").catch((error) => ({
-      success: false,
-      provider: "local",
-      dimensions: 0,
-      testTime: 0,
-      error: error instanceof Error ? error.message : "Not available",
-    }));
+    const localTest = await testEmbeddingProvider("local").catch((error) => {
+      logger.debug("Local provider test failed (expected if dependencies missing)", { 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+      return {
+        success: false,
+        provider: "local",
+        dimensions: 0,
+        testTime: 0,
+        error: error instanceof Error ? error.message : "Not available or missing dependencies",
+      };
+    });
 
     return apiResponse({
       activeProvider,

@@ -63,7 +63,17 @@ export class OpenAIEmbeddingProvider implements EmbeddingProviderInterface {
         model: this.model,
       };
     } catch (error) {
-      logger.error("OpenAI embedding generation failed", { error, text });
+      // Log at debug level if it's a configuration issue (missing API key)
+      const isConfigError = error instanceof Error && 
+        (error.message.includes("API key") || error.message.includes("401"));
+      
+      if (isConfigError) {
+        logger.debug("OpenAI embedding failed (configuration issue)", { 
+          error: error instanceof Error ? error.message : String(error)
+        });
+      } else {
+        logger.error("OpenAI embedding generation failed", { error, text });
+      }
       throw error;
     }
   }

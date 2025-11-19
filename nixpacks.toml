@@ -1,8 +1,8 @@
 [phases.setup]
 # nodejs_20 provides Node.js runtime
 # openssl for SSL/TLS support
-# Additional packages for @xenova/transformers ONNX Runtime support
-nixPkgs = ["nodejs_20", "openssl"]
+# onnxruntime for @xenova/transformers native backend support
+nixPkgs = ["nodejs_20", "openssl", "onnxruntime"]
 
 [staticAssets]
 "prisma" = "prisma"
@@ -59,4 +59,8 @@ NPM_CONFIG_MAXSOCKETS = "5"
 NPM_CONFIG_LEGACY_PEER_DEPS = "true"
 NPM_CONFIG_PROGRESS = "false"
 CI = "true"
+# Transformers.js configuration for WASM backend
+TRANSFORMERS_CACHE = "./.cache/transformers"
+# Force WASM backend for @xenova/transformers
+USE_ONNX_WASM = "1"
 

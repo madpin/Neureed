@@ -32,30 +32,64 @@ export class LocalEmbeddingProvider implements EmbeddingProviderInterface {
       // Dynamic import to avoid loading if not needed
       const { pipeline, env: transformersEnv } = await import("@xenova/transformers");
 
-      // Use WASM backend to avoid native library dependencies
-      // This works on any platform without requiring ONNX Runtime
+      // CRITICAL: Force WASM backend ONLY to avoid native library dependencies
+      // This MUST be set before loading any models
       transformersEnv.backends.onnx.wasm.numThreads = 1;
+      transformersEnv.backends.onnx.wasm.wasmPaths = undefined; // Use default CDN paths
+      
+      // Disable native ONNX backend completely
+      if (transformersEnv.backends.onnx) {
+        // @ts-ignore - Force disable native backend
+        transformersEnv.backends.onnx.executionProviders = ['wasm'];
+      }
+      
       transformersEnv.allowLocalModels = false;
       transformersEnv.allowRemoteModels = true;
+      transformersEnv.useBrowserCache = true;
+      
+      // Set cache directory for model downloads
+      if (typeof process !== 'undefined' && process.env) {
+        transformersEnv.cacheDir = process.env.TRANSFORMERS_CACHE || './.cache/transformers';
+      }
 
       logger.info("Loading local embedding model (this may take a few minutes on first use)", { 
-        model: this.model 
+        model: this.model,
+        backend: 'wasm-only'
       });
 
       this.pipeline = await pipeline("feature-extraction", this.model, {
         quantized: true, // Use quantized model for better performance
+        device: 'wasm', // Explicitly request WASM device
       });
 
       logger.info("Local embedding model loaded successfully", {
         model: this.model,
-        dimensions: this.dimensions
+        dimensions: this.dimensions,
+        backend: 'wasm'
       });
     } catch (error) {
-      logger.error("Failed to load local embedding model", { 
-        error,
-        message: error instanceof Error ? error.message : String(error),
-        model: this.model
-      });
+      // Check if it's a dependency/library issue (expected in some environments)
+      const isDependencyError = error instanceof Error && 
+        (error.message.includes("libonnxruntime") || 
+         error.message.includes("ERR_DLOPEN_FAILED") ||
+         error.message.includes("cannot open shared object") ||
+         error.message.includes("Failed to load external module"));
+      
+      if (isDependencyError) {
+        logger.debug("Local embedding model unavailable (missing native dependencies)", { 
+          error: error instanceof Error ? error.message : String(error),
+          model: this.model,
+          hint: "Install ONNX Runtime or use OpenAI provider"
+        });
+      } else {
+        logger.error("Failed to load local embedding model", { 
+          error,
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          model: this.model
+        });
+      }
+      
       throw new Error(
         `Local embedding model not available: ${error instanceof Error ? error.message : String(error)}. Install @xenova/transformers or use OpenAI provider.`
       );
@@ -102,7 +136,19 @@ export class LocalEmbeddingProvider implements EmbeddingProviderInterface {
         model: this.model,
       };
     } catch (error) {
-      logger.error("Local embedding generation failed", { error, text });
+      // Check if it's a dependency error (from initialization)
+      const isDependencyError = error instanceof Error && 
+        (error.message.includes("Local embedding model not available") ||
+         error.message.includes("libonnxruntime") ||
+         error.message.includes("ERR_DLOPEN_FAILED"));
+      
+      if (isDependencyError) {
+        logger.debug("Local embedding generation failed (dependencies unavailable)", { 
+          error: error instanceof Error ? error.message : String(error)
+        });
+      } else {
+        logger.error("Local embedding generation failed", { error, text });
+      }
       throw error;
     }
   }
