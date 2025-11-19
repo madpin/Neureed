@@ -138,7 +138,6 @@ export async function POST(request: NextRequest) {
     const testResult = await testEmbeddingProvider(validated.provider);
 
     return apiResponse({
-      provider: validated.provider,
       ...testResult,
     });
   } catch (error) {

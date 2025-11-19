@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { formatLocalizedDate } from "@/lib/date-utils";
 import { Tooltip } from "@/app/components/admin/Tooltip";
 
-type TabId = "overview" | "search" | "users" | "jobs" | "storage";
+type TabId = "overview" | "search" | "users" | "jobs" | "storage" | "config";
 
 interface Tab {
   id: TabId;
@@ -120,6 +120,16 @@ export default function AdminDashboardPage() {
       icon: (
         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+        </svg>
+      ),
+    },
+    {
+      id: "config",
+      label: "Configuration",
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       ),
     },
@@ -406,6 +416,10 @@ export default function AdminDashboardPage() {
                   onClearCache={handleClearCache}
                   onDatabaseReset={handleDatabaseReset}
                 />
+              )}
+
+              {activeTab === "config" && (
+                <ConfigurationTab />
               )}
             </div>
           </div>
@@ -2067,6 +2081,757 @@ function StorageTab({
               Reset Database
             </button>
           </Tooltip>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Configuration Tab
+function ConfigurationTab() {
+  const [config, setConfig] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    loadConfiguration();
+  }, []);
+
+  const loadConfiguration = async () => {
+    try {
+      const response = await fetch("/api/admin/config");
+      if (response.ok) {
+        const data = await response.json();
+        setConfig(data.data);
+      } else {
+        toast.error("Failed to load configuration");
+      }
+    } catch (error) {
+      console.error("Failed to load configuration:", error);
+      toast.error("Failed to load configuration");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(section)) {
+        newSet.delete(section);
+      } else {
+        newSet.add(section);
+      }
+      return newSet;
+    });
+  };
+
+  const expandAll = () => {
+    setExpandedSections(new Set([
+      "auth", "embeddings", "llm", "cache", "extraction", 
+      "cron", "nextjs", "tailwind", "typescript", "envvars"
+    ]));
+  };
+
+  const collapseAll = () => {
+    setExpandedSections(new Set());
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (!config) {
+    return (
+      <div className="rounded-lg border border-border bg-background p-6 text-center">
+        <p className="text-foreground/70">Failed to load configuration</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Overview Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Environment Card */}
+        <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-blue-50 to-blue-100 p-6 shadow-sm dark:from-blue-950/30 dark:to-blue-900/20">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-medium text-blue-700 dark:text-blue-400">Environment</p>
+            <div className="rounded-lg bg-blue-600/10 p-2 dark:bg-blue-400/10">
+              <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+          </div>
+          <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">
+            {config.overview.environment}
+          </p>
+          <p className="mt-2 text-sm text-blue-700 dark:text-blue-400">
+            {config.overview.totalEnvVars} env variables
+          </p>
+        </div>
+
+        {/* Server Card */}
+        <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-green-50 to-green-100 p-6 shadow-sm dark:from-green-950/30 dark:to-green-900/20">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-medium text-green-700 dark:text-green-400">Server</p>
+            <div className="rounded-lg bg-green-600/10 p-2 dark:bg-green-400/10">
+              <svg className="h-5 w-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+              </svg>
+            </div>
+          </div>
+          <p className="text-3xl font-bold text-green-900 dark:text-green-100">
+            Node {config.server.nodeVersion}
+          </p>
+          <p className="mt-2 text-sm text-green-700 dark:text-green-400">
+            Next.js {config.server.nextVersion}
+          </p>
+        </div>
+
+        {/* Database Card */}
+        <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-purple-50 to-purple-100 p-6 shadow-sm dark:from-purple-950/30 dark:to-purple-900/20">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-medium text-purple-700 dark:text-purple-400">Database</p>
+            <div className="rounded-lg bg-purple-600/10 p-2 dark:bg-purple-400/10">
+              <svg className="h-5 w-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+              </svg>
+            </div>
+          </div>
+          <p className="text-3xl font-bold text-purple-900 dark:text-purple-100">
+            {config.database.type}
+          </p>
+          <p className="mt-2 text-sm text-purple-700 dark:text-purple-400">
+            Prisma {config.database.prismaVersion}
+          </p>
+        </div>
+
+        {/* Features Card */}
+        <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-orange-50 to-orange-100 p-6 shadow-sm dark:from-orange-950/30 dark:to-orange-900/20">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-medium text-orange-700 dark:text-orange-400">Features</p>
+            <div className="rounded-lg bg-orange-600/10 p-2 dark:bg-orange-400/10">
+              <svg className="h-5 w-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          <p className="text-3xl font-bold text-orange-900 dark:text-orange-100">
+            {config.overview.enabledFeatures}
+          </p>
+          <p className="mt-2 text-sm text-orange-700 dark:text-orange-400">
+            enabled features
+          </p>
+        </div>
+      </div>
+
+      {/* Enabled Features Summary */}
+      {config.overview.enabledFeaturesList && config.overview.enabledFeaturesList.length > 0 && (
+        <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
+          <h3 className="mb-4 text-lg font-semibold text-foreground">Enabled Features</h3>
+          <div className="flex flex-wrap gap-2">
+            {config.overview.enabledFeaturesList.map((feature: string) => (
+              <span
+                key={feature}
+                className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800 dark:bg-green-900/30 dark:text-green-300"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                {feature}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Expand/Collapse All Button */}
+      <div className="flex justify-end">
+        <div className="flex gap-2">
+          <button
+            onClick={expandAll}
+            className="rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+          >
+            Expand All
+          </button>
+          <button
+            onClick={collapseAll}
+            className="rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+          >
+            Collapse All
+          </button>
+        </div>
+      </div>
+
+      {/* Expandable Configuration Sections */}
+      <div className="space-y-4">
+        {/* Authentication Configuration */}
+        <div className="rounded-lg border border-border bg-background shadow-sm">
+          <button
+            onClick={() => toggleSection("auth")}
+            className="flex w-full items-center justify-between p-6 text-left transition-colors hover:bg-muted"
+          >
+            <div className="flex items-center gap-3">
+              <svg className="h-5 w-5 text-foreground/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <h3 className="text-lg font-semibold text-foreground">Authentication Configuration</h3>
+            </div>
+            <svg
+              className={`h-5 w-5 text-foreground/70 transition-transform ${expandedSections.has("auth") ? "rotate-180" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {expandedSections.has("auth") && (
+            <div className="border-t border-border p-6">
+              <dl className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">NextAuth URL</dt>
+                  <dd className="mt-1 text-sm text-foreground">{config.authentication.nextAuthUrl}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">NextAuth Secret</dt>
+                  <dd className="mt-1 text-sm text-foreground">{config.authentication.nextAuthSecret}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">Trust Host</dt>
+                  <dd className="mt-1 text-sm text-foreground">{config.authentication.authTrustHost ? "Enabled" : "Disabled"}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">Configured Providers</dt>
+                  <dd className="mt-1 text-sm text-foreground">{config.authentication.providers.join(", ") || "None"}</dd>
+                </div>
+              </dl>
+              
+              <div className="mt-6">
+                <h4 className="mb-3 text-sm font-semibold text-foreground">OAuth Providers</h4>
+                <div className="space-y-3">
+                  <div className="rounded-lg border border-border bg-muted/50 p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-foreground">Google</span>
+                      <span className={`text-xs ${config.authentication.google.configured ? "text-green-600 dark:text-green-400" : "text-foreground/60"}`}>
+                        {config.authentication.google.configured ? "✓ Configured" : "Not configured"}
+                      </span>
+                    </div>
+                    {config.authentication.google.configured && (
+                      <p className="mt-1 text-xs text-foreground/60">Client ID: {config.authentication.google.clientId}</p>
+                    )}
+                  </div>
+                  
+                  <div className="rounded-lg border border-border bg-muted/50 p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-foreground">GitHub</span>
+                      <span className={`text-xs ${config.authentication.github.configured ? "text-green-600 dark:text-green-400" : "text-foreground/60"}`}>
+                        {config.authentication.github.configured ? "✓ Configured" : "Not configured"}
+                      </span>
+                    </div>
+                    {config.authentication.github.configured && (
+                      <p className="mt-1 text-xs text-foreground/60">Client ID: {config.authentication.github.clientId}</p>
+                    )}
+                  </div>
+                  
+                  <div className="rounded-lg border border-border bg-muted/50 p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-foreground">{config.authentication.oauth.providerName}</span>
+                      <span className={`text-xs ${config.authentication.oauth.configured ? "text-green-600 dark:text-green-400" : "text-foreground/60"}`}>
+                        {config.authentication.oauth.configured ? "✓ Configured" : "Not configured"}
+                      </span>
+                    </div>
+                    {config.authentication.oauth.configured && (
+                      <>
+                        <p className="mt-1 text-xs text-foreground/60">Client ID: {config.authentication.oauth.clientId}</p>
+                        <p className="text-xs text-foreground/60">Issuer: {config.authentication.oauth.issuer}</p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Embedding & AI Configuration */}
+        <div className="rounded-lg border border-border bg-background shadow-sm">
+          <button
+            onClick={() => toggleSection("embeddings")}
+            className="flex w-full items-center justify-between p-6 text-left transition-colors hover:bg-muted"
+          >
+            <div className="flex items-center gap-3">
+              <svg className="h-5 w-5 text-foreground/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+              </svg>
+              <h3 className="text-lg font-semibold text-foreground">Embedding & AI Configuration</h3>
+            </div>
+            <svg
+              className={`h-5 w-5 text-foreground/70 transition-transform ${expandedSections.has("embeddings") ? "rotate-180" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {expandedSections.has("embeddings") && (
+            <div className="border-t border-border p-6">
+              <dl className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">Provider</dt>
+                  <dd className="mt-1 text-sm font-semibold text-foreground">{config.embeddings.provider}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">Model</dt>
+                  <dd className="mt-1 text-sm text-foreground">{config.embeddings.model}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">Batch Size</dt>
+                  <dd className="mt-1 text-sm text-foreground">{config.embeddings.batchSize}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">Auto Generate</dt>
+                  <dd className="mt-1 text-sm text-foreground">{config.embeddings.autoGenerate ? "Enabled" : "Disabled"}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">OpenAI API Key</dt>
+                  <dd className="mt-1 font-mono text-xs text-foreground/60">{config.embeddings.openaiApiKey}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">OpenAI Base URL</dt>
+                  <dd className="mt-1 text-sm text-foreground">{config.embeddings.openaiBaseUrl}</dd>
+                </div>
+              </dl>
+            </div>
+          )}
+        </div>
+
+        {/* LLM Configuration */}
+        <div className="rounded-lg border border-border bg-background shadow-sm">
+          <button
+            onClick={() => toggleSection("llm")}
+            className="flex w-full items-center justify-between p-6 text-left transition-colors hover:bg-muted"
+          >
+            <div className="flex items-center gap-3">
+              <svg className="h-5 w-5 text-foreground/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              <h3 className="text-lg font-semibold text-foreground">LLM Configuration</h3>
+            </div>
+            <svg
+              className={`h-5 w-5 text-foreground/70 transition-transform ${expandedSections.has("llm") ? "rotate-180" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {expandedSections.has("llm") && (
+            <div className="border-t border-border p-6">
+              <dl className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">Provider</dt>
+                  <dd className="mt-1 text-sm font-semibold text-foreground">{config.llm.provider}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">Model</dt>
+                  <dd className="mt-1 text-sm text-foreground">{config.llm.model}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">Ollama Base URL</dt>
+                  <dd className="mt-1 text-sm text-foreground">{config.llm.ollamaBaseUrl}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">OpenAI API Key</dt>
+                  <dd className="mt-1 font-mono text-xs text-foreground/60">{config.llm.openaiApiKey}</dd>
+                </div>
+              </dl>
+            </div>
+          )}
+        </div>
+
+        {/* Cache & Storage */}
+        <div className="rounded-lg border border-border bg-background shadow-sm">
+          <button
+            onClick={() => toggleSection("cache")}
+            className="flex w-full items-center justify-between p-6 text-left transition-colors hover:bg-muted"
+          >
+            <div className="flex items-center gap-3">
+              <svg className="h-5 w-5 text-foreground/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+              </svg>
+              <h3 className="text-lg font-semibold text-foreground">Cache & Storage</h3>
+            </div>
+            <svg
+              className={`h-5 w-5 text-foreground/70 transition-transform ${expandedSections.has("cache") ? "rotate-180" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {expandedSections.has("cache") && (
+            <div className="border-t border-border p-6">
+              <dl className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">Cache Enabled</dt>
+                  <dd className="mt-1 text-sm text-foreground">{config.cache.enabled ? "Yes" : "No"}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">Redis URL</dt>
+                  <dd className="mt-1 font-mono text-xs text-foreground/60">{config.cache.redisUrl}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">Redis Password</dt>
+                  <dd className="mt-1 text-sm text-foreground">{config.cache.redisPassword}</dd>
+                </div>
+              </dl>
+            </div>
+          )}
+        </div>
+
+        {/* Content Extraction */}
+        <div className="rounded-lg border border-border bg-background shadow-sm">
+          <button
+            onClick={() => toggleSection("extraction")}
+            className="flex w-full items-center justify-between p-6 text-left transition-colors hover:bg-muted"
+          >
+            <div className="flex items-center gap-3">
+              <svg className="h-5 w-5 text-foreground/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 className="text-lg font-semibold text-foreground">Content Extraction</h3>
+            </div>
+            <svg
+              className={`h-5 w-5 text-foreground/70 transition-transform ${expandedSections.has("extraction") ? "rotate-180" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {expandedSections.has("extraction") && (
+            <div className="border-t border-border p-6">
+              <dl className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">Playwright Enabled</dt>
+                  <dd className="mt-1 text-sm text-foreground">{config.contentExtraction.playwrightEnabled ? "Yes" : "No"}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">Extraction Timeout</dt>
+                  <dd className="mt-1 text-sm text-foreground">{config.contentExtraction.extractionTimeout}ms</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">Encryption</dt>
+                  <dd className="mt-1 text-sm text-foreground">{config.contentExtraction.encryptionConfigured ? "Configured" : "Not configured"}</dd>
+                </div>
+              </dl>
+            </div>
+          )}
+        </div>
+
+        {/* Cron Jobs */}
+        <div className="rounded-lg border border-border bg-background shadow-sm">
+          <button
+            onClick={() => toggleSection("cron")}
+            className="flex w-full items-center justify-between p-6 text-left transition-colors hover:bg-muted"
+          >
+            <div className="flex items-center gap-3">
+              <svg className="h-5 w-5 text-foreground/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 className="text-lg font-semibold text-foreground">Cron Jobs</h3>
+            </div>
+            <svg
+              className={`h-5 w-5 text-foreground/70 transition-transform ${expandedSections.has("cron") ? "rotate-180" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {expandedSections.has("cron") && (
+            <div className="border-t border-border p-6">
+              <dl className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">Cron Jobs Enabled</dt>
+                  <dd className="mt-1 text-sm text-foreground">{config.cronJobs.enabled ? "Yes" : "No"}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">Feed Refresh Schedule</dt>
+                  <dd className="mt-1 font-mono text-sm text-foreground">{config.cronJobs.feedRefreshSchedule}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">Cleanup Schedule</dt>
+                  <dd className="mt-1 font-mono text-sm text-foreground">{config.cronJobs.cleanupSchedule}</dd>
+                </div>
+              </dl>
+            </div>
+          )}
+        </div>
+
+        {/* Next.js Configuration */}
+        <div className="rounded-lg border border-border bg-background shadow-sm">
+          <button
+            onClick={() => toggleSection("nextjs")}
+            className="flex w-full items-center justify-between p-6 text-left transition-colors hover:bg-muted"
+          >
+            <div className="flex items-center gap-3">
+              <svg className="h-5 w-5 text-foreground/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              </svg>
+              <h3 className="text-lg font-semibold text-foreground">Next.js Configuration</h3>
+            </div>
+            <svg
+              className={`h-5 w-5 text-foreground/70 transition-transform ${expandedSections.has("nextjs") ? "rotate-180" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {expandedSections.has("nextjs") && (
+            <div className="border-t border-border p-6">
+              <dl className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">Output Mode</dt>
+                  <dd className="mt-1 text-sm text-foreground">{config.nextjs.output}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">Server Actions Body Size Limit</dt>
+                  <dd className="mt-1 text-sm text-foreground">{config.nextjs.serverActions.bodySizeLimit}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">Next.js Version</dt>
+                  <dd className="mt-1 text-sm text-foreground">{config.server.nextVersion}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">React Version</dt>
+                  <dd className="mt-1 text-sm text-foreground">{config.server.reactVersion}</dd>
+                </div>
+              </dl>
+            </div>
+          )}
+        </div>
+
+        {/* Tailwind Configuration */}
+        <div className="rounded-lg border border-border bg-background shadow-sm">
+          <button
+            onClick={() => toggleSection("tailwind")}
+            className="flex w-full items-center justify-between p-6 text-left transition-colors hover:bg-muted"
+          >
+            <div className="flex items-center gap-3">
+              <svg className="h-5 w-5 text-foreground/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+              </svg>
+              <h3 className="text-lg font-semibold text-foreground">Tailwind Configuration</h3>
+            </div>
+            <svg
+              className={`h-5 w-5 text-foreground/70 transition-transform ${expandedSections.has("tailwind") ? "rotate-180" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {expandedSections.has("tailwind") && (
+            <div className="border-t border-border p-6">
+              <div className="mb-4">
+                <dt className="text-sm font-medium text-foreground/70 mb-2">Available Themes ({config.tailwind.themesCount})</dt>
+                <dd className="flex flex-wrap gap-2">
+                  {config.tailwind.themes.map((theme: string) => (
+                    <span key={theme} className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                      {theme}
+                    </span>
+                  ))}
+                </dd>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Environment Variables */}
+        <div className="rounded-lg border border-border bg-background shadow-sm">
+          <button
+            onClick={() => toggleSection("envvars")}
+            className="flex w-full items-center justify-between p-6 text-left transition-colors hover:bg-muted"
+          >
+            <div className="flex items-center gap-3">
+              <svg className="h-5 w-5 text-foreground/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              </svg>
+              <h3 className="text-lg font-semibold text-foreground">Environment Variables</h3>
+            </div>
+            <svg
+              className={`h-5 w-5 text-foreground/70 transition-transform ${expandedSections.has("envvars") ? "rotate-180" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {expandedSections.has("envvars") && (
+            <div className="border-t border-border p-6">
+              {config.environmentVariables && (
+                <div className="space-y-6">
+                  {/* System Variables */}
+                  <div>
+                    <h4 className="mb-3 text-sm font-semibold text-foreground">System</h4>
+                    <dl className="grid gap-3 md:grid-cols-2">
+                      {Object.entries(config.environmentVariables.system).map(([key, value]) => (
+                        <div key={key} className="rounded-lg bg-muted/50 p-3">
+                          <dt className="text-xs font-medium text-foreground/70">{key}</dt>
+                          <dd className="mt-1 font-mono text-xs text-foreground">{value as string}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+
+                  {/* Authentication Variables */}
+                  <div>
+                    <h4 className="mb-3 text-sm font-semibold text-foreground">Authentication</h4>
+                    <dl className="grid gap-3 md:grid-cols-2">
+                      {Object.entries(config.environmentVariables.authentication).map(([key, value]) => (
+                        <div key={key} className="rounded-lg bg-muted/50 p-3">
+                          <dt className="text-xs font-medium text-foreground/70">{key}</dt>
+                          <dd className="mt-1 font-mono text-xs text-foreground">{value as string}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+
+                  {/* Embeddings Variables */}
+                  <div>
+                    <h4 className="mb-3 text-sm font-semibold text-foreground">Embeddings</h4>
+                    <dl className="grid gap-3 md:grid-cols-2">
+                      {Object.entries(config.environmentVariables.embeddings).map(([key, value]) => (
+                        <div key={key} className="rounded-lg bg-muted/50 p-3">
+                          <dt className="text-xs font-medium text-foreground/70">{key}</dt>
+                          <dd className="mt-1 font-mono text-xs text-foreground">{value as string}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+
+                  {/* LLM Variables */}
+                  <div>
+                    <h4 className="mb-3 text-sm font-semibold text-foreground">LLM</h4>
+                    <dl className="grid gap-3 md:grid-cols-2">
+                      {Object.entries(config.environmentVariables.llm).map(([key, value]) => (
+                        <div key={key} className="rounded-lg bg-muted/50 p-3">
+                          <dt className="text-xs font-medium text-foreground/70">{key}</dt>
+                          <dd className="mt-1 font-mono text-xs text-foreground">{value as string}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+
+                  {/* Cache Variables */}
+                  <div>
+                    <h4 className="mb-3 text-sm font-semibold text-foreground">Cache</h4>
+                    <dl className="grid gap-3 md:grid-cols-2">
+                      {Object.entries(config.environmentVariables.cache).map(([key, value]) => (
+                        <div key={key} className="rounded-lg bg-muted/50 p-3">
+                          <dt className="text-xs font-medium text-foreground/70">{key}</dt>
+                          <dd className="mt-1 font-mono text-xs text-foreground">{value as string}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+
+                  {/* Extraction Variables */}
+                  <div>
+                    <h4 className="mb-3 text-sm font-semibold text-foreground">Content Extraction</h4>
+                    <dl className="grid gap-3 md:grid-cols-2">
+                      {Object.entries(config.environmentVariables.extraction).map(([key, value]) => (
+                        <div key={key} className="rounded-lg bg-muted/50 p-3">
+                          <dt className="text-xs font-medium text-foreground/70">{key}</dt>
+                          <dd className="mt-1 font-mono text-xs text-foreground">{value as string}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+
+                  {/* Cron Variables */}
+                  <div>
+                    <h4 className="mb-3 text-sm font-semibold text-foreground">Cron Jobs</h4>
+                    <dl className="grid gap-3 md:grid-cols-2">
+                      {Object.entries(config.environmentVariables.cron).map(([key, value]) => (
+                        <div key={key} className="rounded-lg bg-muted/50 p-3">
+                          <dt className="text-xs font-medium text-foreground/70">{key}</dt>
+                          <dd className="mt-1 font-mono text-xs text-foreground">{value as string}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* TypeScript Configuration */}
+        <div className="rounded-lg border border-border bg-background shadow-sm">
+          <button
+            onClick={() => toggleSection("typescript")}
+            className="flex w-full items-center justify-between p-6 text-left transition-colors hover:bg-muted"
+          >
+            <div className="flex items-center gap-3">
+              <svg className="h-5 w-5 text-foreground/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              </svg>
+              <h3 className="text-lg font-semibold text-foreground">TypeScript Configuration</h3>
+            </div>
+            <svg
+              className={`h-5 w-5 text-foreground/70 transition-transform ${expandedSections.has("typescript") ? "rotate-180" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {expandedSections.has("typescript") && (
+            <div className="border-t border-border p-6">
+              <dl className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">Target</dt>
+                  <dd className="mt-1 text-sm text-foreground">{config.typescript.target}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">Module</dt>
+                  <dd className="mt-1 text-sm text-foreground">{config.typescript.module}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">Strict Mode</dt>
+                  <dd className="mt-1 text-sm text-foreground">{config.typescript.strict ? "Enabled" : "Disabled"}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-foreground/70">TypeScript Version</dt>
+                  <dd className="mt-1 text-sm text-foreground">{config.server.typeScriptVersion}</dd>
+                </div>
+              </dl>
+              <div className="mt-4">
+                <dt className="text-sm font-medium text-foreground/70 mb-2">Path Aliases</dt>
+                <dd className="rounded-lg bg-muted/50 p-3">
+                  <pre className="text-xs text-foreground/80">{JSON.stringify(config.typescript.paths, null, 2)}</pre>
+                </dd>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
