@@ -3,20 +3,10 @@ nixPkgs = ["nodejs_20", "openssl"]
 
 [phases.install]
 cmds = [
-  "echo '📦 Starting npm install...'",
-  "npm ci --no-audit --omit=optional --no-fund --fetch-timeout=300000 --fetch-retries=3 --loglevel=verbose",
+  "echo '📦 Starting npm install with extended timeout...'",
+  "npm ci --prefer-offline --no-audit --omit=optional --no-fund --fetch-timeout=600000 --fetch-retries=5 --maxsockets=5",
   "echo '✅ npm install completed'"
 ]
-
-[variables]
-PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
-PUPPETEER_SKIP_DOWNLOAD = "1"
-SKIP_ENV_VALIDATION = "1"
-NODE_OPTIONS = "--max-old-space-size=4096"
-NPM_CONFIG_FETCH_TIMEOUT = "300000"
-NPM_CONFIG_FETCH_RETRIES = "3"
-NPM_CONFIG_LOGLEVEL = "verbose"
-CI = "true"
 
 [phases.build]
 cmds = [
@@ -30,4 +20,14 @@ cmds = [
 
 [start]
 cmd = "npm run start"
+
+[variables]
+PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
+PUPPETEER_SKIP_DOWNLOAD = "1"
+SKIP_ENV_VALIDATION = "1"
+NODE_OPTIONS = "--max-old-space-size=4096"
+NPM_CONFIG_FETCH_TIMEOUT = "600000"
+NPM_CONFIG_FETCH_RETRIES = "5"
+NPM_CONFIG_MAXSOCKETS = "5"
+CI = "true"
 
