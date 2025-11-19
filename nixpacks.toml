@@ -4,7 +4,11 @@ nixPkgs = ["nodejs_20", "openssl"]
 [phases.install]
 cmds = [
   "echo '📦 Starting npm install with extended timeout...'",
-  "npm ci --prefer-offline --no-audit --omit=optional --no-fund --fetch-timeout=600000 --fetch-retries=5 --maxsockets=5",
+  "npm config set fetch-timeout 900000",
+  "npm config set fetch-retries 10",
+  "npm config set maxsockets 5",
+  "npm config set legacy-peer-deps true",
+  "npm ci --loglevel=error 2>&1 || npm install --loglevel=error",
   "echo '✅ npm install completed'"
 ]
 
@@ -26,8 +30,9 @@ PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
 PUPPETEER_SKIP_DOWNLOAD = "1"
 SKIP_ENV_VALIDATION = "1"
 NODE_OPTIONS = "--max-old-space-size=4096"
-NPM_CONFIG_FETCH_TIMEOUT = "600000"
-NPM_CONFIG_FETCH_RETRIES = "5"
+NPM_CONFIG_FETCH_TIMEOUT = "900000"
+NPM_CONFIG_FETCH_RETRIES = "10"
 NPM_CONFIG_MAXSOCKETS = "5"
+NPM_CONFIG_LEGACY_PEER_DEPS = "true"
 CI = "true"
 

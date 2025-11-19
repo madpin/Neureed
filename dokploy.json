@@ -1,0 +1,5 @@
+{
+  "buildType": "dockerfile",
+  "dockerfile": "Dockerfile"
+}
+

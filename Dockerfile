@@ -17,11 +17,13 @@ FROM base AS deps
 ENV NPM_CONFIG_FETCH_TIMEOUT=900000 \
     NPM_CONFIG_FETCH_RETRIES=10 \
     NPM_CONFIG_MAXSOCKETS=5 \
+    NPM_CONFIG_LEGACY_PEER_DEPS=true \
     PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
-    PUPPETEER_SKIP_DOWNLOAD=1
+    PUPPETEER_SKIP_DOWNLOAD=1 \
+    CI=true
 
-# Install dependencies with extended timeout
-RUN npm ci --prefer-offline --no-audit --omit=optional --no-fund
+# Install dependencies with extended timeout and fallback
+RUN npm ci --loglevel=error 2>&1 || npm install --loglevel=error
 
 # Build stage
 FROM base AS builder
