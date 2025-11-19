@@ -44,9 +44,11 @@ cmds = [
   "echo '📦 Copying Prisma Client to standalone...'",
   "mkdir -p .next/standalone/node_modules/.prisma",
   "cp -r node_modules/.prisma/client .next/standalone/node_modules/.prisma/",
-  "echo '📄 Verifying static assets are copied...'",
-  "ls -la .next/static/ || echo 'Warning: No static folder found'",
-  "echo '✅ Prisma files copied'"
+  "echo '📄 Copying static assets to standalone...'",
+  "cp -r .next/static .next/standalone/.next/",
+  "echo '📁 Copying public folder to standalone...'",
+  "cp -r public .next/standalone/",
+  "echo '✅ All files copied'"
 ]
 
 [start]

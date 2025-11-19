@@ -27,7 +27,7 @@ To:
 ```
 
 ### 2. Updated `nixpacks.toml`
-Added a clean step before building to remove stale build artifacts:
+Added clean step and proper static asset copying for Next.js standalone mode:
 ```toml
 [phases.build]
 cmds = [
@@ -37,8 +37,15 @@ cmds = [
   "echo '🏗️  Building Next.js application...'",
   "npm run build",
   ...
+  "echo '📄 Copying static assets to standalone...'",
+  "cp -r .next/static .next/standalone/.next/",
+  "echo '📁 Copying public folder to standalone...'",
+  "cp -r public .next/standalone/",
+  ...
 ]
 ```
+
+**Why this is crucial:** Next.js standalone mode expects static assets to be in `.next/standalone/.next/static/` and public files in `.next/standalone/public/`. Without these copies, CSS chunks and other static assets return 404 errors.
 
 ### 3. Added `.dockerignore`
 Created a `.dockerignore` file to prevent build artifacts and logs from being copied into the build context.
