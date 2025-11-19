@@ -41,7 +41,7 @@ cmds = [
 ]
 
 [start]
-cmd = "npm run start"
+cmd = "npx prisma migrate deploy && npm run start"
 
 [variables]
 PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
