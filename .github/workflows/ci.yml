@@ -35,26 +35,30 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-modules-
 
+      - name: Clean npm cache
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: npm cache clean --force
+
       - name: Install dependencies
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: |
           npm ci --prefer-offline --no-audit --no-fund --omit=optional
         env:
-          NODE_OPTIONS: --max-old-space-size=4096
+          NODE_OPTIONS: --max-old-space-size=8192
 
       - name: Cache Prisma
         uses: actions/cache@v4
         with:
           path: node_modules/.prisma
-          key: ${{ runner.os }}-prisma-${{ hashFiles('prisma/schema.prisma') }}
+          key: ${{ runner.os }}-prisma-${{ hashFiles('prisma/schema.prisma') }}-${{ hashFiles('package-lock.json') }}
 
       - name: Generate Prisma Client
         run: npm run db:generate
         env:
-          NODE_OPTIONS: --max-old-space-size=4096
+          NODE_OPTIONS: --max-old-space-size=8192
 
       - name: Validate Prisma schema
-        run: npx prisma validate
+        run: npm run db:generate -- --help > /dev/null 2>&1 && npx prisma validate
 
       - name: Run ESLint
         run: npm run lint
@@ -87,23 +91,27 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-modules-
 
+      - name: Clean npm cache
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: npm cache clean --force
+
       - name: Install dependencies
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: |
           npm ci --prefer-offline --no-audit --no-fund --omit=optional
         env:
-          NODE_OPTIONS: --max-old-space-size=4096
+          NODE_OPTIONS: --max-old-space-size=8192
 
       - name: Cache Prisma
         uses: actions/cache@v4
         with:
           path: node_modules/.prisma
-          key: ${{ runner.os }}-prisma-${{ hashFiles('prisma/schema.prisma') }}
+          key: ${{ runner.os }}-prisma-${{ hashFiles('prisma/schema.prisma') }}-${{ hashFiles('package-lock.json') }}
 
       - name: Generate Prisma Client
         run: npm run db:generate
         env:
-          NODE_OPTIONS: --max-old-space-size=4096
+          NODE_OPTIONS: --max-old-space-size=8192
 
       - name: Cache Next.js
         uses: actions/cache@v4
