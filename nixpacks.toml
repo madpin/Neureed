@@ -1,6 +1,9 @@
 [phases.setup]
 nixPkgs = ["nodejs_20", "openssl"]
 
+[staticAssets]
+"prisma" = "prisma"
+
 [phases.install]
 cmds = [
   "echo '📦 Starting npm install with extended timeout...'",
@@ -30,18 +33,8 @@ cmds = [
   "echo '✅ Build completed'"
 ]
 
-[phases.setup-runtime]
-dependsOn = ["build"]
-cmds = [
-  "echo '📁 Copying Prisma migrations to standalone output...'",
-  "mkdir -p .next/standalone/prisma",
-  "cp -r prisma/migrations .next/standalone/prisma/ || echo 'No migrations to copy'",
-  "cp prisma/schema.prisma .next/standalone/prisma/",
-  "echo '✅ Prisma files copied to standalone'"
-]
-
 [start]
-cmd = "npx prisma migrate deploy && npm run start"
+cmd = "ls -la prisma/ && npx prisma migrate deploy && npm run start"
 
 [variables]
 PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
