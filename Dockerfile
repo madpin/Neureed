@@ -1,8 +1,11 @@
 # Multi-stage build for optimal image size
-FROM node:20-alpine AS base
+FROM node:20-slim AS base
 
-# Install dependencies for native modules
-RUN apk add --no-cache libc6-compat openssl
+# Install dependencies for native modules and ONNX Runtime
+RUN apt-get update && apt-get install -y \
+    openssl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
@@ -53,8 +56,8 @@ ENV NODE_ENV=production \
     PORT=3000
 
 # Create non-root user
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+RUN groupadd --system --gid 1001 nodejs && \
+    useradd --system --uid 1001 --gid nodejs nextjs
 
 # Copy necessary files from builder
 COPY --from=builder /app/public ./public

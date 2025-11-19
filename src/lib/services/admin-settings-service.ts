@@ -113,25 +113,63 @@ export async function getEmbeddingConfiguration(): Promise<{
   autoGenerate: boolean;
   autoGenerateSource: "database" | "environment";
   provider: string;
+  providerSource: "database" | "environment";
   model: string;
   batchSize: number;
 }> {
-  const dbSetting = await prisma.adminSettings.findUnique({
+  const autoGenerateSetting = await prisma.adminSettings.findUnique({
     where: { key: "embedding_auto_generate" },
   });
 
-  const autoGenerate = dbSetting
-    ? (dbSetting.value as boolean)
+  const providerSetting = await prisma.adminSettings.findUnique({
+    where: { key: "embedding_provider" },
+  });
+
+  const autoGenerate = autoGenerateSetting
+    ? (autoGenerateSetting.value as boolean)
     : env.EMBEDDING_AUTO_GENERATE;
-  const autoGenerateSource = dbSetting ? "database" : "environment";
+  const autoGenerateSource = autoGenerateSetting ? "database" : "environment";
+
+  const provider = providerSetting
+    ? (providerSetting.value as string)
+    : env.EMBEDDING_PROVIDER;
+  const providerSource = providerSetting ? "database" : "environment";
 
   return {
     autoGenerate,
     autoGenerateSource,
-    provider: env.EMBEDDING_PROVIDER,
+    provider,
+    providerSource,
     model: env.EMBEDDING_MODEL,
     batchSize: env.EMBEDDING_BATCH_SIZE,
   };
+}
+
+/**
+ * Get the active embedding provider
+ * Checks database first, falls back to environment variable
+ */
+export async function getActiveEmbeddingProvider(): Promise<"openai" | "local"> {
+  const dbSetting = await getAdminSetting<string>(
+    "embedding_provider",
+    env.EMBEDDING_PROVIDER
+  );
+
+  return (dbSetting ?? env.EMBEDDING_PROVIDER) as "openai" | "local";
+}
+
+/**
+ * Update the active embedding provider
+ */
+export async function setActiveEmbeddingProvider(
+  provider: "openai" | "local"
+): Promise<void> {
+  await updateAdminSetting(
+    "embedding_provider",
+    provider,
+    "Active embedding provider (openai or local)"
+  );
+  logger.info("Embedding provider updated", { provider });
 }
 
 /**

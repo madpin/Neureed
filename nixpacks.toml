@@ -1,4 +1,7 @@
 [phases.setup]
+# nodejs_20 provides Node.js runtime
+# openssl for SSL/TLS support
+# Additional packages for @xenova/transformers ONNX Runtime support
 nixPkgs = ["nodejs_20", "openssl"]
 
 [staticAssets]

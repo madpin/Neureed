@@ -8,6 +8,7 @@ import { logger } from "@/lib/logger";
 import { OpenAIEmbeddingProvider } from "@/lib/embeddings/openai-provider";
 import { LocalEmbeddingProvider } from "@/lib/embeddings/local-provider";
 import { trackEmbeddingCost } from "./embedding-cost-tracker";
+import { getActiveEmbeddingProvider } from "./admin-settings-service";
 import type {
   EmbeddingProvider,
   EmbeddingProviderInterface,
@@ -17,16 +18,39 @@ import type {
 } from "@/lib/embeddings/types";
 
 /**
- * Get the configured embedding provider
+ * Get the configured embedding provider with fallback
+ * If providerType is specified, use that. Otherwise, check database then environment.
  */
-export function getEmbeddingProvider(
+export async function getEmbeddingProvider(
   providerType?: EmbeddingProvider
-): EmbeddingProviderInterface {
-  const provider = providerType || env.EMBEDDING_PROVIDER;
+): Promise<EmbeddingProviderInterface> {
+  let provider: EmbeddingProvider;
+  
+  if (providerType) {
+    provider = providerType;
+  } else {
+    // Check database first, fall back to environment
+    try {
+      provider = await getActiveEmbeddingProvider();
+    } catch (error) {
+      logger.warn("Failed to get provider from database, using environment", { error });
+      provider = env.EMBEDDING_PROVIDER;
+    }
+  }
 
   switch (provider) {
     case "openai":
-      return new OpenAIEmbeddingProvider();
+      try {
+        // Check if OpenAI API key is available
+        if (!env.OPENAI_API_KEY) {
+          logger.warn("OpenAI API key not configured, falling back to local provider");
+          return new LocalEmbeddingProvider();
+        }
+        return new OpenAIEmbeddingProvider();
+      } catch (error) {
+        logger.warn("Failed to initialize OpenAI provider, falling back to local", { error });
+        return new LocalEmbeddingProvider();
+      }
     case "local":
       return new LocalEmbeddingProvider();
     default:
@@ -42,7 +66,7 @@ export async function generateEmbedding(
   text: string,
   provider?: EmbeddingProvider
 ): Promise<EmbeddingResult> {
-  const embeddingProvider = getEmbeddingProvider(provider);
+  const embeddingProvider = await getEmbeddingProvider(provider);
 
   try {
     const result = await embeddingProvider.generateEmbedding(text);
@@ -77,7 +101,7 @@ export async function generateEmbeddings(
     };
   }
 
-  const embeddingProvider = getEmbeddingProvider(provider);
+  const embeddingProvider = await getEmbeddingProvider(provider);
   const batchSize = env.EMBEDDING_BATCH_SIZE;
 
   try {
@@ -152,7 +176,7 @@ export async function testEmbeddingProvider(
   error?: string;
 }> {
   const startTime = Date.now();
-  const embeddingProvider = getEmbeddingProvider(provider);
+  const embeddingProvider = await getEmbeddingProvider(provider);
 
   try {
     const testText = "This is a test sentence for embedding generation.";

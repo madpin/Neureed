@@ -68,8 +68,31 @@ AUTH_TRUST_HOST="true"
 
 ## Deployment Steps
 
-1. Add `AUTH_TRUST_HOST="true"` to your environment variables in Dokploy
-2. Redeploy the application
+### Quick Fix (Try This First)
+
+NextAuth.js v5 automatically recognizes the `AUTH_TRUST_HOST` environment variable. You may not need to redeploy the code:
+
+1. Go to your Dokploy dashboard
+2. Navigate to your NeuReed application → Environment Variables
+3. Add: `AUTH_TRUST_HOST` with value `true`
+4. **Restart** the application (not a full rebuild, just restart)
+5. Test if the authentication errors are resolved
+
+### If Quick Fix Doesn't Work
+
+If restarting doesn't work, you'll need to deploy the new code:
+
+1. Commit and push the changes:
+   ```bash
+   git add .
+   git commit -m "fix: add AUTH_TRUST_HOST configuration for NextAuth"
+   git push
+   ```
+
+2. In Dokploy:
+   - Ensure `AUTH_TRUST_HOST=true` is in environment variables
+   - Trigger a new deployment
+   
 3. The authentication errors should be resolved
 
 ## Security Note

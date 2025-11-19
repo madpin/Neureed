@@ -24,18 +24,18 @@ export class OpenAIEmbeddingProvider implements EmbeddingProviderInterface {
 
     // Construct the full API URL for embeddings
     this.apiUrl = `${this.baseUrl}/embeddings`;
-
-    if (!this.apiKey) {
-      throw new Error(
-        "OpenAI API key is required. Set OPENAI_API_KEY environment variable."
-      );
-    }
   }
 
   /**
    * Generate embedding for a single text
    */
   async generateEmbedding(text: string): Promise<EmbeddingResult> {
+    if (!this.apiKey) {
+      throw new Error(
+        "OpenAI API key is required. Set OPENAI_API_KEY environment variable."
+      );
+    }
+
     try {
       const response = await fetch(this.apiUrl, {
         method: "POST",
@@ -75,6 +75,12 @@ export class OpenAIEmbeddingProvider implements EmbeddingProviderInterface {
   async generateEmbeddings(texts: string[]): Promise<BatchEmbeddingResult> {
     if (texts.length === 0) {
       return { embeddings: [], totalTokens: 0, model: this.model };
+    }
+
+    if (!this.apiKey) {
+      throw new Error(
+        "OpenAI API key is required. Set OPENAI_API_KEY environment variable."
+      );
     }
 
     // OpenAI allows up to 100 inputs per request

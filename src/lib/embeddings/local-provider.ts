@@ -30,7 +30,13 @@ export class LocalEmbeddingProvider implements EmbeddingProviderInterface {
       logger.info("Initializing local embedding model", { model: this.model });
       
       // Dynamic import to avoid loading if not needed
-      const { pipeline } = await import("@xenova/transformers");
+      const { pipeline, env: transformersEnv } = await import("@xenova/transformers");
+
+      // Use WASM backend to avoid native library dependencies
+      // This works on any platform without requiring ONNX Runtime
+      transformersEnv.backends.onnx.wasm.numThreads = 1;
+      transformersEnv.allowLocalModels = false;
+      transformersEnv.allowRemoteModels = true;
 
       logger.info("Loading local embedding model (this may take a few minutes on first use)", { 
         model: this.model 

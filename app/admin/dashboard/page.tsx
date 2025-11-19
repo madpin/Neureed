@@ -790,6 +790,16 @@ function SearchTab({
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   
+  // Provider settings
+  const [activeProvider, setActiveProvider] = useState<"openai" | "local">(embeddingConfig?.provider as "openai" | "local" || "local");
+  const [providerStatus, setProviderStatus] = useState<{
+    openai: { available: boolean; error?: string };
+    local: { available: boolean; error?: string };
+  } | null>(null);
+  const [isLoadingProvider, setIsLoadingProvider] = useState(true);
+  const [isSwitchingProvider, setIsSwitchingProvider] = useState(false);
+  const [providerMessage, setProviderMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  
   // Search recency settings
   const [recencyWeight, setRecencyWeight] = useState(0.3);
   const [recencyDecayDays, setRecencyDecayDays] = useState(30);
@@ -800,13 +810,88 @@ function SearchTab({
   useEffect(() => {
     if (embeddingConfig) {
       setAutoGenerate(embeddingConfig.autoGenerate);
+      setActiveProvider(embeddingConfig.provider as "openai" | "local");
     }
   }, [embeddingConfig]);
+
+  // Load provider status
+  useEffect(() => {
+    loadProviderStatus();
+  }, []);
 
   // Load recency settings
   useEffect(() => {
     loadRecencySettings();
   }, []);
+
+  const loadProviderStatus = async () => {
+    setIsLoadingProvider(true);
+    try {
+      const response = await fetch("/api/admin/embeddings/provider");
+      
+      if (response.ok) {
+        const data = await response.json();
+        setActiveProvider(data.data.activeProvider);
+        setProviderStatus({
+          openai: {
+            available: data.data.providers.openai.available,
+            error: data.data.providers.openai.error,
+          },
+          local: {
+            available: data.data.providers.local.available,
+            error: data.data.providers.local.error,
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Failed to load provider status:", error);
+    } finally {
+      setIsLoadingProvider(false);
+    }
+  };
+
+  const handleSwitchProvider = async (provider: "openai" | "local") => {
+    if (provider === activeProvider) return;
+    
+    setIsSwitchingProvider(true);
+    setProviderMessage(null);
+
+    try {
+      const response = await fetch("/api/admin/embeddings/provider", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      setActiveProvider(provider);
+      setProviderMessage({ type: "success", text: result.data.message });
+      
+      // Reload provider status
+      await loadProviderStatus();
+      
+      // Notify parent to reload
+      setTimeout(() => {
+        onSettingsUpdate();
+      }, 100);
+
+      // Clear success message after 5 seconds
+      setTimeout(() => setProviderMessage(null), 5000);
+    } catch (error) {
+      console.error("Failed to switch provider:", error);
+      setProviderMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Failed to switch provider",
+      });
+    } finally {
+      setIsSwitchingProvider(false);
+    }
+  };
 
   const loadRecencySettings = async () => {
     setIsLoadingRecency(true);
@@ -1005,6 +1090,117 @@ function SearchTab({
           <h2 className="mb-4 text-xl font-semibold text-foreground">
             Configuration
           </h2>
+          
+          {/* Provider Selection */}
+          <div className="mb-6 rounded-lg border border-border bg-muted/50 p-4">
+            <h3 className="font-medium text-foreground mb-3">Embedding Provider</h3>
+            <p className="text-sm text-foreground/70 mb-4">
+              Choose between OpenAI (fast, paid) or Local WASM (free, slower) for generating embeddings
+            </p>
+            
+            {isLoadingProvider ? (
+              <div className="flex items-center justify-center py-4">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {/* OpenAI Provider Option */}
+                <button
+                  onClick={() => handleSwitchProvider("openai")}
+                  disabled={isSwitchingProvider || !providerStatus?.openai.available}
+                  className={`w-full text-left rounded-lg border-2 p-4 transition-all ${
+                    activeProvider === "openai"
+                      ? "border-blue-600 bg-blue-50 dark:bg-blue-900/20"
+                      : "border-border hover:border-blue-300 dark:hover:border-blue-700"
+                  } ${
+                    !providerStatus?.openai.available
+                      ? "opacity-50 cursor-not-allowed"
+                      : "cursor-pointer"
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-foreground">OpenAI</span>
+                        {activeProvider === "openai" && (
+                          <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs text-white">
+                            Active
+                          </span>
+                        )}
+                        {providerStatus?.openai.available ? (
+                          <span className="text-xs text-green-600 dark:text-green-400">✓ Available</span>
+                        ) : (
+                          <span className="text-xs text-red-600 dark:text-red-400">✗ Not Available</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-foreground/70 mt-1">
+                        Fast, high-quality embeddings. Costs ~$0.065 per 1,000 articles.
+                      </p>
+                      {!providerStatus?.openai.available && providerStatus?.openai.error && (
+                        <p className="text-xs text-red-600 dark:text-red-400 mt-2">
+                          {providerStatus.openai.error}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </button>
+
+                {/* Local Provider Option */}
+                <button
+                  onClick={() => handleSwitchProvider("local")}
+                  disabled={isSwitchingProvider || !providerStatus?.local.available}
+                  className={`w-full text-left rounded-lg border-2 p-4 transition-all ${
+                    activeProvider === "local"
+                      ? "border-blue-600 bg-blue-50 dark:bg-blue-900/20"
+                      : "border-border hover:border-blue-300 dark:hover:border-blue-700"
+                  } ${
+                    !providerStatus?.local.available
+                      ? "opacity-50 cursor-not-allowed"
+                      : "cursor-pointer"
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-foreground">Local (WASM)</span>
+                        {activeProvider === "local" && (
+                          <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs text-white">
+                            Active
+                          </span>
+                        )}
+                        {providerStatus?.local.available ? (
+                          <span className="text-xs text-green-600 dark:text-green-400">✓ Available</span>
+                        ) : (
+                          <span className="text-xs text-red-600 dark:text-red-400">✗ Not Available</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-foreground/70 mt-1">
+                        Free, runs locally using WebAssembly. Slower (~500ms per article).
+                      </p>
+                      {!providerStatus?.local.available && providerStatus?.local.error && (
+                        <p className="text-xs text-red-600 dark:text-red-400 mt-2">
+                          {providerStatus.local.error}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </button>
+
+                {/* Provider Message */}
+                {providerMessage && (
+                  <div
+                    className={`rounded-lg p-3 text-sm ${
+                      providerMessage.type === "success"
+                        ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
+                        : "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
+                    }`}
+                  >
+                    {providerMessage.text}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           
           {/* Auto-generate toggle */}
           <div className="mb-6 rounded-lg border border-border bg-muted/50 p-4">
