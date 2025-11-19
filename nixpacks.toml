@@ -3,13 +3,16 @@ nixPkgs = ["nodejs_20", "openssl"]
 
 [phases.install]
 cmds = [
-  "npm ci --prefer-offline --no-audit --omit=optional --no-fund"
+  "npm ci --prefer-offline --no-audit --omit=optional --no-fund --loglevel=error"
 ]
 
 [variables]
 PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
 PUPPETEER_SKIP_DOWNLOAD = "1"
 SKIP_ENV_VALIDATION = "1"
+NODE_OPTIONS = "--max-old-space-size=4096"
+NPM_CONFIG_LOGLEVEL = "error"
+CI = "true"
 
 [phases.build]
 cmds = [
