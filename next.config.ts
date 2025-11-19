@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '2mb',
     },
+    // Disable static generation for error pages
+    staticGenerationRetryCount: 0,
   },
   
   // Configure which pages should be statically generated

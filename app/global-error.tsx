@@ -3,6 +3,7 @@
 /**
  * Global error boundary for the application
  * This file must be a client component to handle errors during rendering
+ * Keep this component minimal and avoid any complex dependencies
  */
 export default function GlobalError({
   error,
@@ -13,29 +14,51 @@ export default function GlobalError({
 }) {
   return (
     <html lang="en">
-      <body>
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          padding: '20px',
+      <body
+        style={{
+          margin: 0,
+          padding: 0,
           fontFamily: 'system-ui, -apple-system, sans-serif',
-        }}>
-          <h2 style={{ fontSize: '24px', marginBottom: '16px' }}>Something went wrong!</h2>
-          <p style={{ marginBottom: '24px', color: '#666' }}>
-            {error.message || 'An unexpected error occurred'}
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '100vh',
+            padding: '20px',
+            backgroundColor: '#ffffff',
+          }}
+        >
+          <h2
+            style={{
+              fontSize: '24px',
+              marginBottom: '16px',
+              color: '#000000',
+            }}
+          >
+            Something went wrong!
+          </h2>
+          <p
+            style={{
+              marginBottom: '24px',
+              color: '#666666',
+            }}
+          >
+            {error?.message || 'An unexpected error occurred'}
           </p>
           <button
-            onClick={reset}
+            onClick={() => reset()}
             style={{
               padding: '10px 20px',
               backgroundColor: '#0070f3',
-              color: 'white',
+              color: '#ffffff',
               border: 'none',
               borderRadius: '5px',
               cursor: 'pointer',
+              fontSize: '14px',
             }}
           >
             Try again
