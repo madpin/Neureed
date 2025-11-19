@@ -3,12 +3,10 @@
  * GET/PATCH /api/admin/embeddings/config
  */
 
-import { NextRequest, NextResponse } from "next/server";
-import { apiResponse, apiError } from "@/lib/api-response";
+import { createHandler } from "@/lib/api-handler";
 import { logger } from "@/lib/logger";
+import { z } from "zod";
 import {
-
-
   getEmbeddingConfig,
   testEmbeddingProvider,
 } from "@/lib/services/embedding-service";
@@ -19,29 +17,43 @@ export const dynamic = "force-dynamic";
 
 /**
  * GET - Get current embedding configuration
+ * Tests providers using user's LLM preferences if system key is not available
  */
-export async function GET() {
-  try {
+export const GET = createHandler(
+  async ({ session }) => {
     const config = getEmbeddingConfig();
     const embeddingConfig = await getEmbeddingConfiguration();
+    const userId = session?.user?.id;
 
     // Test both providers (with graceful error handling)
-    const openaiTest = await testEmbeddingProvider("openai").catch((error) => {
-      logger.debug("OpenAI provider test failed (expected if not configured)", { 
-        error: error instanceof Error ? error.message : String(error) 
+    // OpenAI is always "available" - admin enables/disables it, users provide credentials
+    // Skip user enabled check for admin testing
+    const openaiTest = await testEmbeddingProvider("openai", userId, true).catch((error) => {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      const hasSystemKey = !!process.env.OPENAI_API_KEY;
+      
+      logger.debug("OpenAI provider test", { 
+        error: errorMsg,
+        userId,
+        hasSystemKey,
       });
+      
       return {
         success: false,
         provider: "openai",
         dimensions: 0,
         testTime: 0,
-        error: "Not configured or failed",
+        error: hasSystemKey 
+          ? "Invalid system API key - users can provide their own" 
+          : "No system API key configured - users can provide their own",
+        available: true, // Always available for user credentials
       };
     });
 
-    const localTest = await testEmbeddingProvider("local").catch((error) => {
-      logger.debug("Local provider test failed (expected if dependencies missing)", { 
-        error: error instanceof Error ? error.message : String(error) 
+    const localTest = await testEmbeddingProvider("local", userId, true).catch((error) => {
+      logger.debug("Local provider test failed", { 
+        error: error instanceof Error ? error.message : String(error),
+        userId,
       });
       return {
         success: false,
@@ -49,49 +61,57 @@ export async function GET() {
         dimensions: 0,
         testTime: 0,
         error: "Not available or missing dependencies",
+        available: false,
       };
     });
 
-    return apiResponse({
+    return {
       config,
       providers: {
-        openai: openaiTest,
-        local: localTest,
+        openai: {
+          ...openaiTest,
+          available: openaiTest.available !== false,
+          canUseUserCredentials: true,
+        },
+        local: {
+          ...localTest,
+          available: localTest.success,
+          canUseUserCredentials: false,
+        },
       },
       autoGenerate: embeddingConfig.autoGenerate,
       autoGenerateSource: embeddingConfig.autoGenerateSource,
       envDefault: env.EMBEDDING_AUTO_GENERATE,
-    });
-  } catch (error) {
-    logger.error("Failed to get embedding config", { error });
-    return apiError(
-      "Failed to get config",
-      error instanceof Error ? error.message : String(error),
-      { status: 500 }
-    );
-  }
-}
+      usingUserConfig: userId ? openaiTest.success : false,
+      message: "OpenAI always available - admin controls enable/disable, users provide credentials",
+    };
+  },
+  { requireAuth: true }
+);
+
+const testProviderSchema = z.object({
+  provider: z.enum(["openai", "local"]).optional(),
+});
 
 /**
  * POST - Test embedding provider
+ * Uses user's LLM preferences if system key is not available
  */
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const provider = body.provider as "openai" | "local" | undefined;
+export const POST = createHandler(
+  async ({ body, session }) => {
+    const { provider } = body;
+    const userId = session?.user?.id;
 
-    logger.info("Testing embedding provider", { provider });
+    logger.info("Testing embedding provider", { provider, userId });
 
-    const result = await testEmbeddingProvider(provider);
+    // Skip user enabled check for admin testing
+    const result = await testEmbeddingProvider(provider, userId, true);
 
-    return apiResponse(result);
-  } catch (error) {
-    logger.error("Failed to test provider", { error });
-    return apiError(
-      "Failed to test provider",
-      error instanceof Error ? error.message : String(error),
-      { status: 500 }
-    );
-  }
-}
+    return {
+      ...result,
+      usingUserConfig: userId && result.success,
+    };
+  },
+  { bodySchema: testProviderSchema, requireAuth: true }
+);
 

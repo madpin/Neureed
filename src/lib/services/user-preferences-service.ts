@@ -1,6 +1,12 @@
 import { prisma } from "../db";
 import type { UserPreferences } from "@prisma/client";
 import { encrypt, decrypt, maskApiKey } from "../crypto";
+import { logger } from "../logger";
+import {
+  validateUserPreferenceValue,
+  getDefaultUserPreferences as getAdminDefaults,
+  getSystemLLMCredentials,
+} from "./admin-settings-service";
 
 /**
  * Get user preferences (with decrypted API key masked for security)
@@ -14,11 +20,25 @@ export async function getUserPreferences(userId: string): Promise<UserPreference
 
   // Decrypt and mask API key for display
   if (prefs.llmApiKey) {
-    const decryptedKey = decrypt(prefs.llmApiKey);
-    return {
-      ...prefs,
-      llmApiKey: decryptedKey ? maskApiKey(decryptedKey) : null,
-    };
+    try {
+      const decryptedKey = decrypt(prefs.llmApiKey);
+      return {
+        ...prefs,
+        llmApiKey: decryptedKey ? maskApiKey(decryptedKey) : null,
+      };
+    } catch (error) {
+      // If decryption fails (e.g., encryption key changed), clear the invalid key
+      // User will need to re-enter their API key
+      logger.warn("Failed to decrypt API key, clearing invalid value", { userId, error });
+      await prisma.userPreferences.update({
+        where: { userId },
+        data: { llmApiKey: null },
+      });
+      return {
+        ...prefs,
+        llmApiKey: null,
+      };
+    }
   }
 
   return prefs;
@@ -36,27 +56,76 @@ export async function getUserPreferencesWithDecryptedKey(userId: string): Promis
 
   // Decrypt API key
   if (prefs.llmApiKey) {
-    return {
-      ...prefs,
-      llmApiKey: decrypt(prefs.llmApiKey),
-    };
+    try {
+      const decryptedKey = decrypt(prefs.llmApiKey);
+      return {
+        ...prefs,
+        llmApiKey: decryptedKey || null,
+      };
+    } catch (error) {
+      // If decryption fails (e.g., encryption key changed), clear the invalid key
+      logger.warn("Failed to decrypt API key for internal use, clearing invalid value", { userId, error });
+      await prisma.userPreferences.update({
+        where: { userId },
+        data: { llmApiKey: null },
+      });
+      return {
+        ...prefs,
+        llmApiKey: null,
+      };
+    }
   }
 
   return prefs;
 }
 
 /**
- * Update user preferences
+ * Update user preferences with constraint validation
  */
 export async function updateUserPreferences(
   userId: string,
   data: Partial<Omit<UserPreferences, "id" | "userId" | "createdAt" | "updatedAt">>
 ): Promise<UserPreferences> {
+  // Validate user preferences against admin constraints
+  if (data.defaultRefreshInterval !== undefined) {
+    const validation = await validateUserPreferenceValue(
+      "refreshInterval",
+      data.defaultRefreshInterval
+    );
+    if (!validation.valid) {
+      throw new Error(validation.error);
+    }
+  }
+
+  if (data.defaultMaxArticlesPerFeed !== undefined) {
+    const validation = await validateUserPreferenceValue(
+      "maxArticlesPerFeed",
+      data.defaultMaxArticlesPerFeed
+    );
+    if (!validation.valid) {
+      throw new Error(validation.error);
+    }
+  }
+
+  if (data.defaultMaxArticleAge !== undefined) {
+    const validation = await validateUserPreferenceValue(
+      "maxArticleAge",
+      data.defaultMaxArticleAge
+    );
+    if (!validation.valid) {
+      throw new Error(validation.error);
+    }
+  }
+
   // Encrypt API key if provided
   const processedData = { ...data };
-  if (processedData.llmApiKey) {
+  if (processedData.llmApiKey !== undefined) {
+    // If the API key is null or empty, just pass it through (clear it)
+    if (!processedData.llmApiKey || processedData.llmApiKey.trim() === "") {
+      processedData.llmApiKey = null;
+    }
     // Only encrypt if it's not already masked (doesn't contain bullets)
-    if (!processedData.llmApiKey.includes("••••")) {
+    else if (!processedData.llmApiKey.includes("••••")) {
       processedData.llmApiKey = encrypt(processedData.llmApiKey);
     } else {
       // If it's masked, don't update it (keep existing)
@@ -76,11 +145,12 @@ export async function updateUserPreferences(
       data: processedData as any,
     });
   } else {
-    // Create with defaults if doesn't exist
+    // Create with defaults if doesn't exist (inherit from admin defaults)
+    const defaults = await getDefaultPreferences();
     updated = await prisma.userPreferences.create({
       data: {
         userId,
-        ...getDefaultPreferences(),
+        ...defaults,
         ...processedData,
       } as any,
     });
@@ -99,12 +169,14 @@ export async function updateUserPreferences(
 }
 
 /**
- * Get default preferences
+ * Get default preferences (inherit from admin defaults where applicable)
  */
-export function getDefaultPreferences(): Omit<
-  UserPreferences,
-  "id" | "userId" | "createdAt" | "updatedAt"
+export async function getDefaultPreferences(): Promise<
+  Omit<UserPreferences, "id" | "userId" | "createdAt" | "updatedAt">
 > {
+  // Get admin-defined defaults
+  const adminDefaults = await getAdminDefaults();
+
   return {
     theme: "system",
     fontSize: "medium",
@@ -116,9 +188,12 @@ export function getDefaultPreferences(): Omit<
     bounceThreshold: 0.25,
     showLowRelevanceArticles: true,
     llmProvider: null,
-    llmModel: null,
     llmApiKey: null,
     llmBaseUrl: null,
+    llmSummaryModel: null,
+    llmEmbeddingModel: null,
+    llmDigestModel: null,
+    embeddingsEnabled: adminDefaults.embeddingsEnabled, // Inherit from admin
     readingPanelEnabled: false,
     readingPanelPosition: "right",
     readingPanelSize: 50,
@@ -136,9 +211,38 @@ export function getDefaultPreferences(): Omit<
     articleSortOrder: "publishedAt",
     articleSortDirection: "desc",
     infiniteScrollMode: "both",
-    searchRecencyWeight: 0.3,
-    searchRecencyDecayDays: 30,
+    searchRecencyWeight: adminDefaults.searchRecencyWeight, // Inherit from admin
+    searchRecencyDecayDays: adminDefaults.searchRecencyDecayDays, // Inherit from admin
   };
+}
+
+/**
+ * Get user preferences with system LLM credentials merged
+ * If user hasn't set their own credentials, use system credentials
+ */
+export async function getUserPreferencesWithSystemFallback(
+  userId: string
+): Promise<UserPreferences | null> {
+  const userPrefs = await getUserPreferencesWithDecryptedKey(userId);
+  if (!userPrefs) return null;
+
+  // If user doesn't have their own LLM credentials, use system credentials
+  if (!userPrefs.llmProvider || !userPrefs.llmApiKey) {
+    const systemCreds = await getSystemLLMCredentials(false);
+    
+    return {
+      ...userPrefs,
+      llmProvider: userPrefs.llmProvider || systemCreds.provider,
+      llmApiKey: userPrefs.llmApiKey || systemCreds.apiKey,
+      llmBaseUrl: userPrefs.llmBaseUrl || systemCreds.baseUrl,
+      // Feature-specific models inherit from system if not set
+      llmSummaryModel: userPrefs.llmSummaryModel || systemCreds.model,
+      llmEmbeddingModel: userPrefs.llmEmbeddingModel || systemCreds.model,
+      llmDigestModel: userPrefs.llmDigestModel || systemCreds.model,
+    };
+  }
+
+  return userPrefs;
 }
 
 /**

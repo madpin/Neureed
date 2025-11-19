@@ -3,9 +3,9 @@
  * Admin endpoints for managing embeddings
  */
 
-import { NextRequest, NextResponse } from "next/server";
-import { apiResponse, apiError } from "@/lib/api-response";
+import { createHandler } from "@/lib/api-handler";
 import { logger } from "@/lib/logger";
+import { z } from "zod";
 import {
   getEmbeddingStats,
   clearAllEmbeddings,
@@ -18,94 +18,105 @@ export const dynamic = "force-dynamic";
 /**
  * GET - Get embedding statistics
  */
-export async function GET() {
-  try {
+export const GET = createHandler(
+  async () => {
     const stats = await getEmbeddingStats();
     const articlesWithoutEmbeddings = await getArticlesWithoutEmbeddings(10);
 
-    return apiResponse({
+    return {
       stats,
       sampleArticlesWithoutEmbeddings: articlesWithoutEmbeddings.map((a) => ({
         id: a.id,
         title: a.title,
         feedId: a.feedId,
       })),
-    });
-  } catch (error) {
-    logger.error("Failed to get embedding stats", { error });
-    return apiError(
-      "Failed to get stats",
-      error instanceof Error ? error.message : String(error),
-      { status: 500 }
-    );
-  }
-}
+    };
+  },
+  { requireAuth: true }
+);
+
+const generateEmbeddingsSchema = z.object({
+  articleIds: z.array(z.string()).optional(),
+  limit: z.number().int().min(1).max(1000).optional().default(100),
+});
 
 /**
  * POST - Generate embeddings for articles
+ * Uses logged-in user's LLM preferences if system key is not available
  */
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json().catch(() => ({}));
-    const articleIds = body.articleIds as string[] | undefined;
-    const limit = body.limit || 100;
+export const POST = createHandler(
+  async ({ body, session }) => {
+    const { articleIds, limit } = body;
+    const userId = session?.user?.id; // Get user ID from session
 
     if (articleIds && articleIds.length > 0) {
       // Generate for specific articles
-      logger.info("Generating embeddings for specific articles", {
+      logger.info("Admin generating embeddings for specific articles", {
         count: articleIds.length,
+        userId,
       });
 
-      const result = await generateBatchEmbeddings(articleIds);
+      // Pass userId so it can use user's LLM preferences if system key fails
+      const result = await generateBatchEmbeddings(
+        articleIds,
+        undefined,
+        userId
+      );
 
-      return apiResponse({
+      return {
         ...result,
-        message: `Generated embeddings for ${result.processed} articles`,
-      });
+        message: `Generated embeddings for ${result.processed} articles${result.skipped > 0 ? `, skipped ${result.skipped} that already have embeddings` : ""}`,
+      };
     } else {
       // Generate for articles without embeddings
-      logger.info("Generating embeddings for articles without embeddings", {
+      logger.info("Admin generating embeddings for articles without embeddings", {
         limit,
+        userId,
       });
 
       const articles = await getArticlesWithoutEmbeddings(limit);
-      const result = await generateBatchEmbeddings(articles.map((a) => a.id));
+      
+      if (articles.length === 0) {
+        return {
+          processed: 0,
+          failed: 0,
+          skipped: 0,
+          totalTokens: 0,
+          errors: [],
+          message: "No articles without embeddings found",
+        };
+      }
 
-      return apiResponse({
+      // Pass userId so it can use user's LLM preferences if system key fails
+      const result = await generateBatchEmbeddings(
+        articles.map((a) => a.id),
+        undefined,
+        userId
+      );
+
+      return {
         ...result,
-        message: `Generated embeddings for ${result.processed} articles`,
-      });
+        message: `Generated embeddings for ${result.processed} articles${result.skipped > 0 ? `, skipped ${result.skipped} that already have embeddings` : ""}`,
+      };
     }
-  } catch (error) {
-    logger.error("Failed to generate embeddings", { error });
-    return apiError(
-      "Failed to generate embeddings",
-      error instanceof Error ? error.message : String(error),
-      { status: 500 }
-    );
-  }
-}
+  },
+  { bodySchema: generateEmbeddingsSchema, requireAuth: true }
+);
 
 /**
  * DELETE - Clear all embeddings
  */
-export async function DELETE() {
-  try {
+export const DELETE = createHandler(
+  async () => {
     logger.warn("Clearing all embeddings");
 
     const count = await clearAllEmbeddings();
 
-    return apiResponse({
+    return {
       cleared: count,
       message: `Cleared embeddings for ${count} articles`,
-    });
-  } catch (error) {
-    logger.error("Failed to clear embeddings", { error });
-    return apiError(
-      "Failed to clear embeddings",
-      error instanceof Error ? error.message : String(error),
-      { status: 500 }
-    );
-  }
-}
+    };
+  },
+  { requireAuth: true }
+);
 

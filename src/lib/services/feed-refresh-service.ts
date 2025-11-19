@@ -139,20 +139,26 @@ export async function refreshFeed(
     const autoGenerateEmbeddings = await shouldAutoGenerateEmbeddings();
     if (autoGenerateEmbeddings && result.articleIds.length > 0) {
       try {
+        // Pass userId if available so user's LLM preferences are used
         const embeddingResult = await generateBatchEmbeddings(
-          result.articleIds
+          result.articleIds,
+          undefined, // Use default provider
+          userId // Use user's LLM preferences if available
         );
         embeddingsGenerated = embeddingResult.processed;
         embeddingTokens = embeddingResult.totalTokens;
 
         logger.info("Generated embeddings for new articles", {
           feedId,
+          userId,
           count: embeddingsGenerated,
+          skipped: embeddingResult.skipped,
           tokens: embeddingTokens,
         });
       } catch (error) {
         logger.error("Failed to generate embeddings for new articles", {
           feedId,
+          userId,
           error,
         });
         // Don't fail the refresh if embedding generation fails

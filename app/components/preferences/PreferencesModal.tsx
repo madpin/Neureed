@@ -24,9 +24,12 @@ interface UserPreferences {
   bounceThreshold: number;
   showLowRelevanceArticles: boolean;
   llmProvider: string | null;
-  llmModel: string | null;
+  llmSummaryModel: string | null;
+  llmEmbeddingModel: string | null;
+  llmDigestModel: string | null;
   llmApiKey: string | null;
   llmBaseUrl: string | null;
+  embeddingsEnabled?: boolean;
   readingPanelEnabled: boolean;
   readingPanelPosition: string;
   readingPanelSize: number;
@@ -105,9 +108,12 @@ export function PreferencesModal({
     showLowRelevanceArticles: true,
     infiniteScrollMode: "both",
     llmProvider: null,
-    llmModel: null,
+    llmSummaryModel: null,
+    llmEmbeddingModel: null,
+    llmDigestModel: null,
     llmApiKey: null,
     llmBaseUrl: null,
+    embeddingsEnabled: false,
     readingPanelEnabled: false,
     readingPanelPosition: "right",
     readingPanelSize: 50,
@@ -874,20 +880,54 @@ function LLMView({
           </select>
         </div>
 
-        {/* LLM Model */}
+        {/* Summary Model */}
         <div>
-          <label className="mb-2 block text-sm font-medium">Model</label>
+          <label className="mb-2 block text-sm font-medium">Summarization Model</label>
           <input
             type="text"
-            value={preferences.llmModel || ""}
-            onChange={(e) => updatePreference("llmModel", e.target.value || null)}
+            value={preferences.llmSummaryModel || ""}
+            onChange={(e) => updatePreference("llmSummaryModel", e.target.value || null)}
             placeholder={preferences.llmProvider === "openai" ? "e.g., gpt-4o-mini" : preferences.llmProvider === "ollama" ? "e.g., llama2" : "Use system default"}
             className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            {preferences.llmProvider === "openai" && "OpenAI models: gpt-4o-mini, gpt-4o, gpt-3.5-turbo"}
-            {preferences.llmProvider === "ollama" && "Ollama models: llama2, mistral, codellama, etc."}
-            {!preferences.llmProvider && "Select a provider first"}
+            {preferences.llmProvider === "openai" && "For article summaries. Recommended: gpt-4o-mini, gpt-4o, gpt-3.5-turbo"}
+            {preferences.llmProvider === "ollama" && "For article summaries. Examples: llama2, mistral, codellama"}
+            {!preferences.llmProvider && "Model for generating article summaries"}
+          </p>
+        </div>
+
+        {/* Embedding Model */}
+        <div>
+          <label className="mb-2 block text-sm font-medium">Embedding Model</label>
+          <input
+            type="text"
+            value={preferences.llmEmbeddingModel || ""}
+            onChange={(e) => updatePreference("llmEmbeddingModel", e.target.value || null)}
+            placeholder={preferences.llmProvider === "openai" ? "e.g., text-embedding-3-small" : preferences.llmProvider === "ollama" ? "e.g., nomic-embed-text" : "Use system default"}
+            className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            {preferences.llmProvider === "openai" && "For semantic search. Recommended: text-embedding-3-small, text-embedding-3-large"}
+            {preferences.llmProvider === "ollama" && "For semantic search. Example: nomic-embed-text"}
+            {!preferences.llmProvider && "Model for generating embeddings (semantic search)"}
+          </p>
+        </div>
+
+        {/* Digest Model */}
+        <div>
+          <label className="mb-2 block text-sm font-medium">Digest Model</label>
+          <input
+            type="text"
+            value={preferences.llmDigestModel || ""}
+            onChange={(e) => updatePreference("llmDigestModel", e.target.value || null)}
+            placeholder={preferences.llmProvider === "openai" ? "e.g., gpt-4o" : preferences.llmProvider === "ollama" ? "e.g., mistral" : "Use system default"}
+            className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            {preferences.llmProvider === "openai" && "For digest generation (future). Recommended: gpt-4o, gpt-4-turbo"}
+            {preferences.llmProvider === "ollama" && "For digest generation (future). Example: mistral"}
+            {!preferences.llmProvider && "Model for generating daily digests (future feature)"}
           </p>
         </div>
 

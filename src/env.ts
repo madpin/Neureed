@@ -73,7 +73,8 @@ export const env = createEnv({
     LLM_PROVIDER: z
       .enum(["openai", "ollama"])
       .default("openai"),
-    LLM_MODEL: z.string().default("gpt-4o-mini"),
+    LLM_SUMMARY_MODEL: z.string().default("gpt-4o-mini"), // Model for summarization
+    LLM_DIGEST_MODEL: z.string().default("gpt-4o-mini"), // Model for digest generation
     OLLAMA_BASE_URL: z.string().default("http://localhost:11434"),
     
     // Cron job configuration
@@ -138,7 +139,8 @@ export const env = createEnv({
     
     // LLM configuration
     LLM_PROVIDER: process.env.LLM_PROVIDER,
-    LLM_MODEL: process.env.LLM_MODEL,
+    LLM_SUMMARY_MODEL: process.env.LLM_SUMMARY_MODEL,
+    LLM_DIGEST_MODEL: process.env.LLM_DIGEST_MODEL,
     OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
     
     // Cron job configuration

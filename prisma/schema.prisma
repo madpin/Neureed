@@ -247,11 +247,18 @@ model UserPreferences {
   bounceThreshold          Float    @default(0.25) // 25% of reading time to trigger bounce
   showLowRelevanceArticles Boolean  @default(true) // Show dimmed vs hide completely
   
-  // LLM Settings
+  // LLM Settings - Shared
   llmProvider              String?  // "openai", "ollama", null (use system default)
-  llmModel                 String?  // Model name (e.g., "gpt-4o-mini", "llama2")
   llmApiKey                String?  @db.Text // Encrypted API key for OpenAI
   llmBaseUrl               String?  // Base URL for Ollama or custom endpoints
+  
+  // LLM Settings - Feature-specific Models
+  llmSummaryModel          String?  // Model for article summarization (e.g., "gpt-4o-mini", "llama2")
+  llmEmbeddingModel        String?  // Model for embeddings (e.g., "text-embedding-3-small")
+  llmDigestModel           String?  // Model for digest generation (future use)
+  
+  // Embedding Settings
+  embeddingsEnabled        Boolean  @default(false) // Enable embedding generation for semantic search
   
   // Reading Panel Settings
   readingPanelEnabled      Boolean  @default(false) // Enable split-pane reading panel

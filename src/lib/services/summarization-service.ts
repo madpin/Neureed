@@ -42,7 +42,7 @@ async function resolveLLMConfig(userId?: string): Promise<LLMProviderConfig> {
   if (provider === "ollama") {
     return {
       provider,
-      model: preferences?.llmModel ?? env.LLM_MODEL,
+      model: preferences?.llmSummaryModel ?? env.LLM_SUMMARY_MODEL,
       baseUrl: preferences?.llmBaseUrl ?? env.OLLAMA_BASE_URL,
     };
   }
@@ -56,7 +56,7 @@ async function resolveLLMConfig(userId?: string): Promise<LLMProviderConfig> {
 
   return {
     provider: "openai",
-    model: preferences?.llmModel ?? env.LLM_MODEL,
+    model: preferences?.llmSummaryModel ?? env.LLM_SUMMARY_MODEL,
     apiKey,
     baseUrl: preferences?.llmBaseUrl ?? env.OPENAI_BASE_URL ?? "https://api.openai.com/v1",
   };

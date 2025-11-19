@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { formatLocalizedDate } from "@/lib/date-utils";
 import { Tooltip } from "@/app/components/admin/Tooltip";
 
-type TabId = "overview" | "search" | "users" | "jobs" | "storage" | "config";
+type TabId = "overview" | "search" | "users" | "jobs" | "storage" | "config" | "llm-config";
 
 interface Tab {
   id: TabId;
@@ -130,6 +130,15 @@ export default function AdminDashboardPage() {
         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      ),
+    },
+    {
+      id: "llm-config",
+      label: "LLM Config",
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
         </svg>
       ),
     },
@@ -420,6 +429,10 @@ export default function AdminDashboardPage() {
 
               {activeTab === "config" && (
                 <ConfigurationTab />
+              )}
+
+              {activeTab === "llm-config" && (
+                <LLMConfigTab />
               )}
             </div>
           </div>
@@ -821,12 +834,20 @@ function SearchTab({
   const [isSavingRecency, setIsSavingRecency] = useState(false);
   const [recencySaveMessage, setRecencySaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  // Track if this is initial load vs manual provider change
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
   useEffect(() => {
-    if (embeddingConfig) {
+    // Only sync from embeddingConfig on initial load
+    if (embeddingConfig && isInitialLoad) {
       setAutoGenerate(embeddingConfig.autoGenerate);
       setActiveProvider(embeddingConfig.provider as "openai" | "local");
+      setIsInitialLoad(false);
+    } else if (embeddingConfig) {
+      // After initial load, only update autoGenerate, not provider
+      setAutoGenerate(embeddingConfig.autoGenerate);
     }
-  }, [embeddingConfig]);
+  }, [embeddingConfig, isInitialLoad]);
 
   // Load provider status
   useEffect(() => {
@@ -883,16 +904,35 @@ function SearchTab({
       }
 
       const result = await response.json();
+      
+      // Immediately update UI state - this takes precedence over config updates
       setActiveProvider(provider);
       setProviderMessage({ type: "success", text: result.data.message });
       
-      // Reload provider status
-      await loadProviderStatus();
+      // Reload provider availability status (but keep the provider we just set)
+      try {
+        const statusResponse = await fetch("/api/admin/embeddings/provider");
+        if (statusResponse.ok) {
+          const data = await statusResponse.json();
+          setProviderStatus({
+            openai: {
+              available: data.data.providers.openai.available,
+              error: data.data.providers.openai.error,
+            },
+            local: {
+              available: data.data.providers.local.available,
+              error: data.data.providers.local.error,
+            },
+          });
+        }
+      } catch (error) {
+        console.error("Failed to reload provider status:", error);
+      }
       
-      // Notify parent to reload
+      // Notify parent to reload (won't override activeProvider now)
       setTimeout(() => {
         onSettingsUpdate();
-      }, 100);
+      }, 300);
 
       // Clear success message after 5 seconds
       setTimeout(() => setProviderMessage(null), 5000);
@@ -1121,13 +1161,13 @@ function SearchTab({
                 {/* OpenAI Provider Option */}
                 <button
                   onClick={() => handleSwitchProvider("openai")}
-                  disabled={isSwitchingProvider || !providerStatus?.openai.available}
+                  disabled={isSwitchingProvider}
                   className={`w-full text-left rounded-lg border-2 p-4 transition-all ${
                     activeProvider === "openai"
                       ? "border-blue-600 bg-blue-50 dark:bg-blue-900/20"
                       : "border-border hover:border-blue-300 dark:hover:border-blue-700"
                   } ${
-                    !providerStatus?.openai.available
+                    isSwitchingProvider
                       ? "opacity-50 cursor-not-allowed"
                       : "cursor-pointer"
                   }`}
@@ -1151,8 +1191,8 @@ function SearchTab({
                         Fast, high-quality embeddings. Costs ~$0.065 per 1,000 articles.
                       </p>
                       {!providerStatus?.openai.available && providerStatus?.openai.error && (
-                        <p className="text-xs text-red-600 dark:text-red-400 mt-2">
-                          {providerStatus.openai.error}
+                        <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">
+                          ⚠️ {providerStatus.openai.error} - Users can still provide their own API keys in preferences.
                         </p>
                       )}
                     </div>
@@ -2435,6 +2475,21 @@ function ConfigurationTab() {
           </button>
           {expandedSections.has("llm") && (
             <div className="border-t border-border p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <p className="text-sm text-foreground/70">
+                  Configure system-level LLM settings (API keys, models, endpoints)
+                </p>
+                <Link
+                  href="/admin/llm-config"
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Configure LLM Settings
+                </Link>
+              </div>
               <dl className="grid gap-4 md:grid-cols-2">
                 <div>
                   <dt className="text-sm font-medium text-foreground/70">Provider</dt>
@@ -2960,6 +3015,477 @@ function DatabaseTab({
               <li>• User preferences (UI settings, theme, etc.)</li>
               <li>• Admin settings</li>
             </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// LLM Configuration Tab
+function LLMConfigTab() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  
+  // Form state
+  const [provider, setProvider] = useState<"openai" | "ollama">("openai");
+  const [apiKey, setApiKey] = useState("");
+  const [baseUrl, setBaseUrl] = useState("");
+  const [summaryModel, setSummaryModel] = useState("");
+  const [embeddingModel, setEmbeddingModel] = useState("");
+  const [digestModel, setDigestModel] = useState("");
+  
+  // Masked API key and sources for display
+  const [maskedKey, setMaskedKey] = useState("");
+  const [sources, setSources] = useState<{
+    provider: string;
+    apiKey: string;
+    baseUrl: string;
+    summaryModel: string;
+    embeddingModel: string;
+    digestModel: string;
+  }>({
+    provider: "environment",
+    apiKey: "none",
+    baseUrl: "none",
+    summaryModel: "environment",
+    embeddingModel: "environment",
+    digestModel: "environment",
+  });
+
+  useEffect(() => {
+    loadConfig();
+  }, []);
+
+  const loadConfig = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/admin/llm/config");
+      
+      if (response.ok) {
+        const data = await response.json();
+        const config = data.data.config;
+        
+        setProvider(config.provider || "openai");
+        setBaseUrl(config.baseUrl || "");
+        setSummaryModel(config.summaryModel || "");
+        setEmbeddingModel(config.embeddingModel || "");
+        setDigestModel(config.digestModel || "");
+        setMaskedKey(config.apiKey || "");
+        
+        // Set sources
+        setSources({
+          provider: config.providerSource || "environment",
+          apiKey: config.apiKeySource || "none",
+          baseUrl: config.baseUrlSource || "none",
+          summaryModel: config.summaryModelSource || "environment",
+          embeddingModel: config.embeddingModelSource || "environment",
+          digestModel: config.digestModelSource || "environment",
+        });
+      }
+    } catch (error) {
+      console.error("Failed to load LLM config:", error);
+      toast.error("Failed to load LLM configuration");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveMessage(null);
+
+    try {
+      const response = await fetch("/api/admin/llm/config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider,
+          apiKey: apiKey || null,
+          baseUrl: baseUrl || null,
+          summaryModel: summaryModel || null,
+          embeddingModel: embeddingModel || null,
+          digestModel: digestModel || null,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      setSaveMessage({ type: "success", text: "Configuration saved successfully" });
+      toast.success("LLM configuration saved");
+      
+      // Reload to get masked key
+      await loadConfig();
+      
+      // Clear API key input
+      setApiKey("");
+
+      // Clear success message after 5 seconds
+      setTimeout(() => setSaveMessage(null), 5000);
+    } catch (error) {
+      console.error("Failed to save LLM config:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to save configuration";
+      setSaveMessage({ type: "error", text: errorMessage });
+      toast.error(errorMessage);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleTest = async () => {
+    setIsTesting(true);
+    setSaveMessage(null);
+
+    try {
+      const response = await fetch("/api/admin/llm/config/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider,
+          apiKey: apiKey || null,
+          baseUrl: baseUrl || null,
+          summaryModel: summaryModel || null,
+          embeddingModel: embeddingModel || null,
+          digestModel: digestModel || null,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      const testResults = result.data?.results;
+
+      if (!testResults || !testResults.success) {
+        // Test failed - show detailed error
+        const errors: string[] = [];
+        
+        if (testResults?.embedding && !testResults.embedding.success) {
+          errors.push(`Embedding: ${testResults.embedding.error || "Failed"}`);
+        }
+        
+        if (testResults?.summary && !testResults.summary.success) {
+          errors.push(`Summary: ${testResults.summary.error || "Failed"}`);
+        }
+        
+        if (testResults?.error) {
+          errors.push(testResults.error);
+        }
+        
+        const errorMessage = errors.length > 0 
+          ? errors.join(" | ") 
+          : "Configuration test failed";
+        
+        setSaveMessage({ type: "error", text: errorMessage });
+        toast.error("LLM configuration test failed");
+      } else {
+        // Test successful
+        const details: string[] = [];
+        
+        if (testResults.embedding?.success) {
+          details.push(`Embedding: ✓ ${testResults.embedding.model} (${testResults.embedding.testTime}ms)`);
+        }
+        
+        if (testResults.summary?.success) {
+          details.push(`Summary: ✓ ${testResults.summary.model} (${testResults.summary.testTime}ms)`);
+        }
+        
+        const successMessage = details.length > 0
+          ? `Tests passed! ${details.join(" | ")}`
+          : "Configuration test successful!";
+        
+        setSaveMessage({ type: "success", text: successMessage });
+        toast.success("LLM configuration test successful");
+      }
+
+      // Clear message after 10 seconds (longer for detailed messages)
+      setTimeout(() => setSaveMessage(null), 10000);
+    } catch (error) {
+      console.error("Failed to test LLM config:", error);
+      const errorMessage = error instanceof Error ? error.message : "Configuration test failed";
+      setSaveMessage({ type: "error", text: errorMessage });
+      toast.error(errorMessage);
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  // Helper to render source badge
+  const SourceBadge = ({ source }: { source: string }) => {
+    if (source === "database") {
+      return (
+        <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+          [Database Override]
+        </span>
+      );
+    } else if (source === "environment") {
+      return (
+        <span className="text-xs text-green-600 dark:text-green-400 font-medium">
+          [Environment Variable]
+        </span>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-foreground">System LLM Configuration</h2>
+        <p className="mt-2 text-foreground/70">
+          System-wide LLM configuration hierarchy: <strong>Environment Variables (.env)</strong> → <strong>Database Overrides (this form)</strong> → <strong>User Preferences</strong>
+        </p>
+        <p className="mt-1 text-sm text-foreground/60">
+          Environment variables provide the base system defaults. Database settings here override those defaults. Users can further override with their own credentials in preferences.
+        </p>
+      </div>
+
+      <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
+        <h3 className="mb-4 text-lg font-semibold text-foreground">LLM Provider</h3>
+        
+        <div className="space-y-6">
+          {/* Provider Selection */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+              Provider
+              <SourceBadge source={sources.provider} />
+            </label>
+            <select
+              value={provider}
+              onChange={(e) => setProvider(e.target.value as "openai" | "ollama")}
+              className="w-full rounded-lg border border-border bg-background px-4 py-2 text-foreground"
+            >
+              <option value="openai">OpenAI</option>
+              <option value="ollama">Ollama</option>
+            </select>
+            <p className="mt-1 text-sm text-foreground/60">
+              Choose between OpenAI (cloud-based) or Ollama (self-hosted). Current: <strong>{provider}</strong>
+            </p>
+          </div>
+
+          {/* API Key */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+              API Key {provider === "openai" && "(optional)"}
+              <SourceBadge source={sources.apiKey} />
+            </label>
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder={maskedKey || "Enter API key..."}
+              className="w-full rounded-lg border border-border bg-background px-4 py-2 text-foreground"
+            />
+            <p className="mt-1 text-sm text-foreground/60">
+              {provider === "openai" 
+                ? "Optional: Provide a system-wide API key. Users can also use their own keys."
+                : "Your Ollama API key (if authentication is enabled)"}
+            </p>
+            {maskedKey && (
+              <p className="mt-1 text-sm text-green-600 dark:text-green-400">
+                ✓ Current key: {maskedKey}
+              </p>
+            )}
+          </div>
+
+          {/* Base URL */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+              Base URL (optional)
+              <SourceBadge source={sources.baseUrl} />
+            </label>
+            <input
+              type="url"
+              value={baseUrl}
+              onChange={(e) => setBaseUrl(e.target.value)}
+              placeholder={provider === "openai" ? "https://api.openai.com/v1" : "http://localhost:11434"}
+              className="w-full rounded-lg border border-border bg-background px-4 py-2 text-foreground"
+            />
+            <p className="mt-1 text-sm text-foreground/60">
+              {provider === "openai" 
+                ? "Use a custom OpenAI-compatible API endpoint"
+                : "Your Ollama server URL"}
+            </p>
+          </div>
+
+          {/* Model Names */}
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
+            <h4 className="font-medium text-blue-900 dark:text-blue-200 mb-3">
+              Model Configuration
+            </h4>
+            <p className="text-sm text-blue-800 dark:text-blue-300 mb-4">
+              Specify different models for different features
+            </p>
+            
+            <div className="space-y-4">
+              {/* Summary Model */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                  Summary Model
+                  <SourceBadge source={sources.summaryModel} />
+                </label>
+                <input
+                  type="text"
+                  value={summaryModel}
+                  onChange={(e) => setSummaryModel(e.target.value)}
+                  placeholder={provider === "openai" ? "gpt-4o-mini" : "llama2"}
+                  className="w-full rounded-lg border border-border bg-background px-4 py-2 text-foreground"
+                />
+                <p className="mt-1 text-sm text-foreground/60">
+                  Model for generating article summaries. Current: <strong>{summaryModel || "not set"}</strong>
+                </p>
+              </div>
+
+              {/* Embedding Model */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                  Embedding Model
+                  <SourceBadge source={sources.embeddingModel} />
+                </label>
+                <input
+                  type="text"
+                  value={embeddingModel}
+                  onChange={(e) => setEmbeddingModel(e.target.value)}
+                  placeholder={provider === "openai" ? "text-embedding-3-small" : "nomic-embed-text"}
+                  className="w-full rounded-lg border border-border bg-background px-4 py-2 text-foreground"
+                />
+                <p className="mt-1 text-sm text-foreground/60">
+                  Model for generating vector embeddings for semantic search. Current: <strong>{embeddingModel || "not set"}</strong>
+                </p>
+              </div>
+
+              {/* Digest Model */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                  Digest Model
+                  <SourceBadge source={sources.digestModel} />
+                </label>
+                <input
+                  type="text"
+                  value={digestModel}
+                  onChange={(e) => setDigestModel(e.target.value)}
+                  placeholder={provider === "openai" ? "gpt-4o-mini" : "llama2"}
+                  className="w-full rounded-lg border border-border bg-background px-4 py-2 text-foreground"
+                />
+                <p className="mt-1 text-sm text-foreground/60">
+                  Model for generating daily digests (future feature). Current: <strong>{digestModel || "not set"}</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            <button
+              onClick={handleTest}
+              disabled={isTesting || isSaving}
+              className="rounded-lg border border-blue-600 bg-transparent px-6 py-2 font-medium text-blue-600 hover:bg-blue-50 disabled:opacity-50 dark:hover:bg-blue-900/20"
+            >
+              {isTesting ? "Testing..." : "Test Configuration"}
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isSaving || isTesting}
+              className="rounded-lg bg-blue-600 px-6 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+            >
+              {isSaving ? "Saving..." : "Save Configuration"}
+            </button>
+          </div>
+
+          {/* Status Message */}
+          {saveMessage && (
+            <div
+              className={`rounded-lg p-4 ${
+                saveMessage.type === "success"
+                  ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
+                  : "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
+              }`}
+            >
+              {saveMessage.text}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Information Panel */}
+      <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-900/20">
+        <h3 className="font-medium text-yellow-900 dark:text-yellow-200 mb-2">
+          💡 How It Works
+        </h3>
+        <ul className="space-y-2 text-sm text-yellow-800 dark:text-yellow-300">
+          <li>
+            <strong>Environment Variables</strong> (from .env file) provide system-wide defaults
+            <ul className="ml-4 mt-1 space-y-1">
+              <li>• LLM_PROVIDER, OPENAI_API_KEY, OPENAI_BASE_URL</li>
+              <li>• LLM_SUMMARY_MODEL, EMBEDDING_MODEL, LLM_DIGEST_MODEL</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Database Overrides</strong> (set here) take precedence over environment variables
+          </li>
+          <li>
+            <strong>User Preferences</strong> override both system settings with personal credentials
+          </li>
+          <li>
+            For OpenAI: System credentials are optional - users can always provide their own keys
+          </li>
+        </ul>
+      </div>
+      
+      {/* Environment Variables Reference */}
+      <div className="rounded-lg border border-border bg-muted/30 p-4">
+        <h3 className="font-medium text-foreground mb-2">
+          Environment Variables Reference
+        </h3>
+        <p className="text-sm text-foreground/70 mb-3">
+          Configure these in your .env file for system-wide defaults:
+        </p>
+        <div className="space-y-2 font-mono text-xs">
+          <div className="flex items-center gap-2">
+            <span className="text-green-600 dark:text-green-400">LLM_PROVIDER</span>
+            <span className="text-foreground/60">=</span>
+            <span className="text-foreground/80">&quot;openai&quot; | &quot;ollama&quot;</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-green-600 dark:text-green-400">OPENAI_API_KEY</span>
+            <span className="text-foreground/60">=</span>
+            <span className="text-foreground/80">&quot;sk-...&quot;</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-green-600 dark:text-green-400">OPENAI_BASE_URL</span>
+            <span className="text-foreground/60">=</span>
+            <span className="text-foreground/80">&quot;https://api.openai.com/v1&quot;</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-green-600 dark:text-green-400">LLM_SUMMARY_MODEL</span>
+            <span className="text-foreground/60">=</span>
+            <span className="text-foreground/80">&quot;gpt-4o-mini&quot;</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-green-600 dark:text-green-400">EMBEDDING_MODEL</span>
+            <span className="text-foreground/60">=</span>
+            <span className="text-foreground/80">&quot;text-embedding-3-small&quot;</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-green-600 dark:text-green-400">LLM_DIGEST_MODEL</span>
+            <span className="text-foreground/60">=</span>
+            <span className="text-foreground/80">&quot;gpt-4o-mini&quot;</span>
           </div>
         </div>
       </div>

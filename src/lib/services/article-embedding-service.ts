@@ -37,11 +37,13 @@ export function prepareTextForEmbedding(article: Article): string {
 
 /**
  * Generate embedding for a single article
+ * If userId is provided, uses their LLM preferences and checks if they have embeddings enabled
  */
 export async function generateArticleEmbedding(
   articleId: string,
-  provider?: EmbeddingProvider
-): Promise<{ success: boolean; tokens?: number; error?: string }> {
+  provider?: EmbeddingProvider,
+  userId?: string
+): Promise<{ success: boolean; tokens?: number; error?: string; skipped?: boolean }> {
   try {
     // Fetch article
     const article = await prisma.article.findUnique({
@@ -52,11 +54,18 @@ export async function generateArticleEmbedding(
       return { success: false, error: "Article not found" };
     }
 
+    // Check if article already has embeddings (don't recalculate)
+    // @ts-expect-error - embedding field is Unsupported type in Prisma
+    if (article.embedding) {
+      logger.info("Article already has embedding, skipping", { articleId });
+      return { success: true, skipped: true };
+    }
+
     // Prepare text
     const text = prepareTextForEmbedding(article);
 
-    // Generate embedding
-    const result = await generateEmbedding(text, provider);
+    // Generate embedding (this will check user preferences if userId is provided)
+    const result = await generateEmbedding(text, provider, userId);
 
     // Update article with embedding
     await prisma.$executeRaw`
@@ -68,11 +77,18 @@ export async function generateArticleEmbedding(
     logger.info("Generated article embedding", {
       articleId,
       tokens: result.tokens,
+      userId,
     });
 
     return { success: true, tokens: result.tokens };
   } catch (error) {
-    logger.error("Failed to generate article embedding", { articleId, error });
+    // Check if error is due to embeddings being disabled
+    if (error instanceof Error && error.message === "Embeddings disabled for user") {
+      logger.info("Embeddings disabled for user, skipping", { articleId, userId });
+      return { success: false, error: "Embeddings disabled", skipped: true };
+    }
+    
+    logger.error("Failed to generate article embedding", { articleId, userId, error });
     return {
       success: false,
       error: error instanceof Error ? error.message : String(error),
@@ -82,35 +98,50 @@ export async function generateArticleEmbedding(
 
 /**
  * Generate embeddings for multiple articles in batch
+ * If userId is provided, uses their LLM preferences and checks if they have embeddings enabled
+ * Skips articles that already have embeddings
  */
 export async function generateBatchEmbeddings(
   articleIds: string[],
-  provider?: EmbeddingProvider
+  provider?: EmbeddingProvider,
+  userId?: string
 ): Promise<{
   processed: number;
   failed: number;
+  skipped: number;
   totalTokens: number;
   errors: Array<{ articleId: string; error: string }>;
 }> {
   if (articleIds.length === 0) {
-    return { processed: 0, failed: 0, totalTokens: 0, errors: [] };
+    return { processed: 0, failed: 0, skipped: 0, totalTokens: 0, errors: [] };
   }
 
   try {
-    // Fetch articles
-    const articles = await prisma.article.findMany({
-      where: { id: { in: articleIds } },
+    // Fetch articles (we can't filter by embedding in Prisma due to Unsupported type)
+    const allArticles = await prisma.article.findMany({
+      where: { 
+        id: { in: articleIds },
+      },
     });
 
+    // Filter out articles that already have embeddings
+    // @ts-expect-error - embedding field is Unsupported type in Prisma
+    const articles = allArticles.filter((article) => !article.embedding);
+
+    const skipped = articleIds.length - articles.length;
+    if (skipped > 0) {
+      logger.info("Skipping articles that already have embeddings", { skipped });
+    }
+
     if (articles.length === 0) {
-      return { processed: 0, failed: 0, totalTokens: 0, errors: [] };
+      return { processed: 0, failed: 0, skipped, totalTokens: 0, errors: [] };
     }
 
     // Prepare texts
     const texts = articles.map(prepareTextForEmbedding);
 
-    // Generate embeddings
-    const result = await generateEmbeddings(texts, provider);
+    // Generate embeddings (this will check user preferences if userId is provided)
+    const result = await generateEmbeddings(texts, provider, userId);
 
     // Update articles with embeddings
     let processed = 0;
@@ -137,23 +168,40 @@ export async function generateBatchEmbeddings(
     logger.info("Generated batch article embeddings", {
       processed,
       failed,
+      skipped,
       totalTokens: result.totalTokens,
+      userId,
     });
 
     return {
       processed,
       failed,
+      skipped,
       totalTokens: result.totalTokens,
       errors,
     };
   } catch (error) {
+    // Check if error is due to embeddings being disabled
+    if (error instanceof Error && error.message === "Embeddings disabled for user") {
+      logger.info("Embeddings disabled for user, skipping batch", { userId });
+      return {
+        processed: 0,
+        failed: 0,
+        skipped: articleIds.length,
+        totalTokens: 0,
+        errors: [],
+      };
+    }
+    
     logger.error("Failed to generate batch embeddings", {
       count: articleIds.length,
+      userId,
       error,
     });
     return {
       processed: 0,
       failed: articleIds.length,
+      skipped: 0,
       totalTokens: 0,
       errors: articleIds.map((id) => ({
         articleId: id,

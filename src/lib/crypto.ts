@@ -12,6 +12,10 @@ const SALT_LENGTH = 64;
 export function encrypt(text: string): string {
   if (!text) return "";
 
+  if (!env.ENCRYPTION_SECRET) {
+    throw new Error("ENCRYPTION_SECRET is not configured. Please set it in your environment variables.");
+  }
+
   const key = Buffer.from(env.ENCRYPTION_SECRET, "utf-8").subarray(0, 32);
   const iv = randomBytes(IV_LENGTH);
   const cipher = createCipheriv(ALGORITHM, key, iv);
@@ -32,6 +36,10 @@ export function decrypt(encryptedText: string): string {
   if (!encryptedText) return "";
 
   try {
+    if (!env.ENCRYPTION_SECRET) {
+      throw new Error("ENCRYPTION_SECRET is not configured. Please set it in your environment variables.");
+    }
+
     const parts = encryptedText.split(":");
     if (parts.length !== 3) {
       throw new Error("Invalid encrypted format");
@@ -50,8 +58,8 @@ export function decrypt(encryptedText: string): string {
 
     return decrypted;
   } catch (error) {
-    console.error("Decryption failed:", error);
-    return "";
+    // Don't log to console in production, throw error so caller can handle it
+    throw error;
   }
 }
 

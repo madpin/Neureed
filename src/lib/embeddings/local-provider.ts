@@ -45,10 +45,14 @@ export class LocalEmbeddingProvider implements EmbeddingProviderInterface {
       
       transformersEnv.allowLocalModels = false;
       transformersEnv.allowRemoteModels = true;
-      transformersEnv.useBrowserCache = true;
       
-      // Set cache directory for model downloads
-      if (typeof process !== 'undefined' && process.env) {
+      // Only use browser cache in browser environments
+      // In Node.js, use file system cache instead
+      const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
+      transformersEnv.useBrowserCache = isBrowser;
+      
+      // Set cache directory for model downloads in Node.js
+      if (!isBrowser && typeof process !== 'undefined' && process.env) {
         transformersEnv.cacheDir = process.env.TRANSFORMERS_CACHE || './.cache/transformers';
       }
 

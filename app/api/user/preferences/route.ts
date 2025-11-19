@@ -30,11 +30,16 @@ const preferencesSchema = z.object({
   showRelatedExcerpts: z.boolean().optional(),
   bounceThreshold: z.number().min(0.1).max(0.5).optional(),
   showLowRelevanceArticles: z.boolean().optional(),
-  // LLM Settings
+  // LLM Settings - Shared
   llmProvider: z.enum(["openai", "ollama"]).nullable().optional(),
-  llmModel: z.string().nullable().optional(),
   llmApiKey: z.string().nullable().optional(),
   llmBaseUrl: z.string().url().nullable().optional(),
+  // LLM Settings - Feature-specific Models
+  llmSummaryModel: z.string().nullable().optional(),
+  llmEmbeddingModel: z.string().nullable().optional(),
+  llmDigestModel: z.string().nullable().optional(),
+  // Embedding Settings
+  embeddingsEnabled: z.boolean().optional(),
   // Reading Panel Settings
   readingPanelEnabled: z.boolean().optional(),
   readingPanelPosition: z.enum(["right", "left", "top", "bottom"]).optional(),
@@ -50,9 +55,10 @@ const preferencesSchema = z.object({
   breakLineSpacing: z.number().min(0.25).max(2).optional(),
   showReadingTime: z.boolean().optional(),
   // Feed Refresh & Cleanup Settings
-  defaultRefreshInterval: z.number().int().min(15).max(1440).optional(),
-  defaultMaxArticlesPerFeed: z.number().int().min(50).max(5000).optional(),
-  defaultMaxArticleAge: z.number().int().min(1).max(365).optional(),
+  // Note: These are validated against admin-defined constraints in the service layer
+  defaultRefreshInterval: z.number().int().min(1).max(10080).optional(),
+  defaultMaxArticlesPerFeed: z.number().int().min(10).max(10000).optional(),
+  defaultMaxArticleAge: z.number().int().min(1).max(730).optional(),
   // Article Sorting Settings
   articleSortOrder: articleSortOrderSchema.optional(),
   articleSortDirection: articleSortDirectionSchema.optional(),
