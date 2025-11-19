@@ -38,6 +38,11 @@ export const GET = createHandler(async ({ params, request }) => {
   } catch (error) {
     // Handle "no embedding" error gracefully
     const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error("Failed to find related articles", { 
+      error: error instanceof Error ? { message: error.message, stack: error.stack } : error,
+      articleId: id 
+    });
+    
     if (errorMessage.includes("no embedding")) {
       return apiResponse({
         articleId: id,

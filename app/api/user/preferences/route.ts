@@ -41,7 +41,7 @@ const preferencesSchema = z.object({
   readingPanelSize: z.number().int().min(30).max(70).optional(),
   // Sidebar Settings
   sidebarCollapsed: z.boolean().optional(),
-  categoryStates: z.record(z.boolean()).optional(),
+  categoryStates: z.record(z.boolean()).nullable().optional(),
   // Reading Typography Settings
   readingFontFamily: z.string().optional(),
   readingFontSize: z.number().int().min(12).max(32).optional(),

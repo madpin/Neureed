@@ -307,7 +307,10 @@ export async function findRelatedArticles(
 
     return resultsWithFeeds;
   } catch (error) {
-    logger.error("Failed to find related articles", { error, articleId });
+    logger.error("Failed to find related articles", { 
+      error: error instanceof Error ? { message: error.message, stack: error.stack } : error,
+      articleId 
+    });
     throw error;
   }
 }
