@@ -59,7 +59,6 @@ export class LocalEmbeddingProvider implements EmbeddingProviderInterface {
 
       this.pipeline = await pipeline("feature-extraction", this.model, {
         quantized: true, // Use quantized model for better performance
-        device: 'wasm', // Explicitly request WASM device
       });
 
       logger.info("Local embedding model loaded successfully", {
