@@ -11,6 +11,7 @@ import {
 import { createHandler } from "@/lib/api-handler";
 import { getCurrentUser } from "@/lib/middleware/auth-middleware";
 import { subscribeFeed } from "@/lib/services/user-feed-service";
+import { z } from "zod";
 
 /**
  * GET /api/feeds
@@ -18,7 +19,10 @@ import { subscribeFeed } from "@/lib/services/user-feed-service";
  */
 export const GET = createHandler(
   async ({ query }) => {
-    const { page, limit, category, search } = query;
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 20;
+    const category = query.category as string | undefined;
+    const search = query.search as string | undefined;
 
     // Handle search
     if (search && search.trim()) {
@@ -43,7 +47,9 @@ export const GET = createHandler(
     }
 
     // Get all feeds with pagination
-    const { feeds, total } = await getAllFeeds({ page, limit });
+    const result = await getAllFeeds({ page, limit });
+    const feeds = result.feeds;
+    const total: number = result.total;
 
     return {
       feeds,

@@ -14,7 +14,7 @@ import type { FeedWithCategories } from "@/lib/services/opml-service";
  */
 export const GET = createHandler(
   async ({ query, session }) => {
-    const userId = session.user.id;
+    const userId = session!.user!.id;
     const { categoryIds, feedIds } = query;
 
     // Get user's subscribed feeds
@@ -46,9 +46,9 @@ export const GET = createHandler(
 
     // Generate OPML
     const opmlXml = await generateOPML(feeds, {
-      title: `${session.user.name || session.user.email}'s Feed Subscriptions`,
-      ownerName: session.user.name || undefined,
-      ownerEmail: session.user.email || undefined,
+      title: `${session!.user!.name || session!.user!.email}'s Feed Subscriptions`,
+      ownerName: session!.user!.name || undefined,
+      ownerEmail: session!.user!.email || undefined,
     });
 
     // Return as downloadable file

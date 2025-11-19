@@ -10,7 +10,7 @@ export interface UseInfiniteScrollReturn {
   page: number;
   isLoading: boolean;
   hasMore: boolean;
-  loadMoreRef: React.RefObject<HTMLDivElement | null>;
+  loadMoreRef: React.RefObject<HTMLDivElement>;
   loadMore: () => void;
   reset: () => void;
   setHasMore: (hasMore: boolean) => void;
@@ -116,7 +116,7 @@ export function useInfiniteScroll(
     page,
     isLoading,
     hasMore,
-    loadMoreRef,
+    loadMoreRef: loadMoreRef as React.RefObject<HTMLDivElement>,
     loadMore,
     reset,
     setHasMore,

@@ -1,6 +1,5 @@
 import { createHandler } from "@/lib/api-handler";
 import { refreshUserFeeds, getRefreshStats } from "@/lib/services/feed-refresh-service";
-import { requireAuth } from "@/lib/middleware/auth-middleware";
 
 /**
  * POST /api/user/feeds/refresh
@@ -9,11 +8,8 @@ import { requireAuth } from "@/lib/middleware/auth-middleware";
  */
 export const POST = createHandler(
   async ({ session }) => {
-    // Require authentication
-    const user = await requireAuth(session);
-
     // Refresh user's feeds
-    const result = await refreshUserFeeds(user.id);
+    const result = await refreshUserFeeds(session!.user!.id);
     const stats = getRefreshStats(result.results);
 
     // Calculate cleanup stats
@@ -38,6 +34,7 @@ export const POST = createHandler(
         cleanupResult: r.cleanupResult,
       })),
     };
-  }
+  },
+  { requireAuth: true }
 );
 

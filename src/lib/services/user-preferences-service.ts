@@ -73,7 +73,7 @@ export async function updateUserPreferences(
   if (existing) {
     updated = await prisma.userPreferences.update({
       where: { userId },
-      data: processedData,
+      data: processedData as any,
     });
   } else {
     // Create with defaults if doesn't exist
@@ -82,7 +82,7 @@ export async function updateUserPreferences(
         userId,
         ...getDefaultPreferences(),
         ...processedData,
-      },
+      } as any,
     });
   }
 
@@ -119,6 +119,25 @@ export function getDefaultPreferences(): Omit<
     llmModel: null,
     llmApiKey: null,
     llmBaseUrl: null,
+    readingPanelEnabled: false,
+    readingPanelPosition: "right",
+    readingPanelSize: 50,
+    sidebarCollapsed: false,
+    categoryStates: null,
+    readingFontFamily: "Georgia",
+    readingFontSize: 18,
+    readingLineHeight: 1.7,
+    readingParagraphSpacing: 1.5,
+    breakLineSpacing: 0.75,
+    showReadingTime: true,
+    defaultRefreshInterval: 60,
+    defaultMaxArticlesPerFeed: 500,
+    defaultMaxArticleAge: 90,
+    articleSortOrder: "publishedAt",
+    articleSortDirection: "desc",
+    infiniteScrollMode: "both",
+    searchRecencyWeight: 0.3,
+    searchRecencyDecayDays: 30,
   };
 }
 
@@ -128,7 +147,7 @@ export function getDefaultPreferences(): Omit<
 export async function resetUserPreferences(userId: string): Promise<UserPreferences> {
   return await prisma.userPreferences.update({
     where: { userId },
-    data: getDefaultPreferences(),
+    data: getDefaultPreferences() as any,
   });
 }
 

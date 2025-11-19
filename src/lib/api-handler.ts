@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { apiResponse, apiError } from "@/lib/api-response";
+import type { Session } from "next-auth";
 
 /**
  * Context passed to API handlers
@@ -9,7 +10,7 @@ import { apiResponse, apiError } from "@/lib/api-response";
 export interface HandlerContext<TBody = any, TQuery = any> {
   body: TBody;
   query: TQuery;
-  session: Awaited<ReturnType<typeof auth>>;
+  session: Session | null;
   params: Record<string, string>;
   request: NextRequest;
 }

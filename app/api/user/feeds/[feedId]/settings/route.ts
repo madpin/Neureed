@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { createHandler } from "@/lib/api-handler";
-import { requireAuth } from "@/lib/middleware/auth-middleware";
 import { prisma } from "@/lib/db";
 import { 
   getEffectiveFeedSettings, 
@@ -22,14 +21,13 @@ const feedSettingsSchema = z.object({
  */
 export const GET = createHandler(
   async ({ params, session }) => {
-    const user = await requireAuth(session);
     const { feedId } = params;
 
     // Check if user is subscribed to this feed
     const userFeed = await prisma.userFeed.findUnique({
       where: {
         userId_feedId: {
-          userId: user.id,
+          userId: session!.user!.id,
           feedId: feedId as string,
         },
       },
@@ -40,7 +38,7 @@ export const GET = createHandler(
     }
 
     // Get effective settings
-    const effectiveSettings = await getEffectiveFeedSettings(user.id, feedId as string);
+    const effectiveSettings = await getEffectiveFeedSettings(session!.user!.id, feedId as string);
 
     // Get feed-specific overrides
     const feedSettings = userFeed.settings as any;
@@ -53,7 +51,8 @@ export const GET = createHandler(
         maxArticleAge: feedSettings?.maxArticleAge ?? null,
       },
     };
-  }
+  },
+  { requireAuth: true }
 );
 
 /**
@@ -62,9 +61,14 @@ export const GET = createHandler(
  */
 export const PUT = createHandler(
   async ({ params, body, session }) => {
-    const user = await requireAuth(session);
     const { feedId } = params;
-    const settings = body;
+    
+    // Convert null to undefined for validation
+    const settings = {
+      refreshInterval: body.refreshInterval ?? undefined,
+      maxArticlesPerFeed: body.maxArticlesPerFeed ?? undefined,
+      maxArticleAge: body.maxArticleAge ?? undefined,
+    };
 
     // Validate settings
     const validation = validateFeedSettings(settings);
@@ -76,7 +80,7 @@ export const PUT = createHandler(
     const userFeed = await prisma.userFeed.findUnique({
       where: {
         userId_feedId: {
-          userId: user.id,
+          userId: session!.user!.id,
           feedId: feedId as string,
         },
       },
@@ -92,14 +96,14 @@ export const PUT = createHandler(
     // Merge with new settings (null values remove overrides)
     const newSettings = {
       ...existingSettings,
-      ...(settings.refreshInterval !== undefined && {
-        refreshInterval: settings.refreshInterval,
+      ...(body.refreshInterval !== undefined && {
+        refreshInterval: body.refreshInterval,
       }),
-      ...(settings.maxArticlesPerFeed !== undefined && {
-        maxArticlesPerFeed: settings.maxArticlesPerFeed,
+      ...(body.maxArticlesPerFeed !== undefined && {
+        maxArticlesPerFeed: body.maxArticlesPerFeed,
       }),
-      ...(settings.maxArticleAge !== undefined && {
-        maxArticleAge: settings.maxArticleAge,
+      ...(body.maxArticleAge !== undefined && {
+        maxArticleAge: body.maxArticleAge,
       }),
     };
 
@@ -114,7 +118,7 @@ export const PUT = createHandler(
     const updatedUserFeed = await prisma.userFeed.update({
       where: {
         userId_feedId: {
-          userId: user.id,
+          userId: session!.user!.id,
           feedId: feedId as string,
         },
       },
@@ -124,7 +128,7 @@ export const PUT = createHandler(
     });
 
     // Get effective settings after update
-    const effectiveSettings = await getEffectiveFeedSettings(user.id, feedId as string);
+    const effectiveSettings = await getEffectiveFeedSettings(session!.user!.id, feedId as string);
 
     return {
       success: true,
@@ -132,6 +136,6 @@ export const PUT = createHandler(
       effective: effectiveSettings,
     };
   },
-  { bodySchema: feedSettingsSchema }
+  { bodySchema: feedSettingsSchema, requireAuth: true }
 );
 

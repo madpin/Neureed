@@ -30,8 +30,8 @@ export const GET = createHandler(
 
 const updateCategorySchema = z.object({
   name: z.string().min(1).max(100).optional(),
-  description: z.string().max(500).optional().nullable(),
-  settings: z.record(z.any()).optional().nullable(),
+  description: z.string().max(500).optional().nullable().transform(val => val ?? undefined),
+  settings: z.record(z.any()).optional().nullable().transform(val => val ?? undefined),
   icon: z.string().optional(),
 });
 
@@ -46,7 +46,12 @@ export const PUT = createHandler(
     const category = await updateUserCategory(
       session!.user!.id,
       categoryId,
-      body
+      {
+        name: body.name,
+        description: body.description ?? undefined,
+        settings: body.settings ?? undefined,
+        icon: body.icon,
+      }
     );
 
     return {

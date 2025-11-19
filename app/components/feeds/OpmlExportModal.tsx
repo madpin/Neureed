@@ -9,6 +9,10 @@ interface FeedWithCategories extends Feed {
   }>;
 }
 
+interface UserFeedSubscription {
+  feed: FeedWithCategories;
+}
+
 interface OpmlExportModalProps {
   onClose: () => void;
 }
@@ -16,7 +20,7 @@ interface OpmlExportModalProps {
 export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
-  const [feeds, setFeeds] = useState<FeedWithCategories[]>([]);
+  const [subscriptions, setSubscriptions] = useState<UserFeedSubscription[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [exportMode, setExportMode] = useState<"all" | "categories" | "feeds">("all");
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<string>>(new Set());
@@ -49,7 +53,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
       const feedsResponse = await fetch("/api/user/feeds");
       if (!feedsResponse.ok) throw new Error("Failed to load feeds");
       const feedsData = await feedsResponse.json();
-      setFeeds(feedsData.data || []);
+      setSubscriptions(feedsData.subscriptions || []);
 
       // Load categories
       const categoriesResponse = await fetch("/api/feeds?limit=1000");
@@ -58,9 +62,9 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
 
       // Extract unique categories from feeds
       const uniqueCategories = new Map<string, Category>();
-      for (const feed of feedsData.data || []) {
-        if (feed.feed?.feedCategories) {
-          for (const fc of feed.feed.feedCategories) {
+      for (const subscription of feedsData.subscriptions || []) {
+        if (subscription.feed?.feedCategories) {
+          for (const fc of subscription.feed.feedCategories) {
             if (fc.category && !uniqueCategories.has(fc.category.id)) {
               uniqueCategories.set(fc.category.id, fc.category);
             }
@@ -146,7 +150,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
   };
 
   const selectAllFeeds = () => {
-    setSelectedFeedIds(new Set(feeds.map((f) => f.feed.id)));
+    setSelectedFeedIds(new Set(subscriptions.map((s) => s.feed.id)));
   };
 
   const deselectAllFeeds = () => {
@@ -154,10 +158,10 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
   };
 
   const getExportCount = () => {
-    if (exportMode === "all") return feeds.length;
+    if (exportMode === "all") return subscriptions.length;
     if (exportMode === "categories") {
-      return feeds.filter((f) =>
-        f.feed?.feedCategories?.some((fc) =>
+      return subscriptions.filter((s) =>
+        s.feed?.feedCategories?.some((fc) =>
           selectedCategoryIds.has(fc.category.id)
         )
       ).length;
@@ -211,7 +215,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
                       className="h-4 w-4 text-primary"
                     />
                     <span className="text-sm text-foreground/70">
-                      All feeds ({feeds.length})
+                      All feeds ({subscriptions.length})
                     </span>
                   </label>
                   <label className="flex items-center gap-3 cursor-pointer">
@@ -312,16 +316,16 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
                     </div>
                   </div>
                   <div className="max-h-64 overflow-y-auto space-y-2 rounded-lg border border-border p-3 border-border">
-                    {feeds.map((userFeed) => (
-                      <label key={userFeed.feed.id} className="flex items-center gap-3 cursor-pointer">
+                    {subscriptions.map((subscription) => (
+                      <label key={subscription.feed.id} className="flex items-center gap-3 cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={selectedFeedIds.has(userFeed.feed.id)}
-                          onChange={() => toggleFeed(userFeed.feed.id)}
+                          checked={selectedFeedIds.has(subscription.feed.id)}
+                          onChange={() => toggleFeed(subscription.feed.id)}
                           className="h-4 w-4 rounded text-blue-600"
                         />
                         <span className="text-sm text-foreground/70">
-                          {userFeed.feed.name}
+                          {subscription.feed.name}
                         </span>
                       </label>
                     ))}

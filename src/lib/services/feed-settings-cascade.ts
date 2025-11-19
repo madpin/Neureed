@@ -93,10 +93,14 @@ export async function getEffectiveFeedSettings(
     let maxArticlesPerFeed = SYSTEM_DEFAULTS.maxArticlesPerFeed;
     let maxArticleAge = SYSTEM_DEFAULTS.maxArticleAge;
 
-    const source = {
-      refreshInterval: "system" as const,
-      maxArticlesPerFeed: "system" as const,
-      maxArticleAge: "system" as const,
+    const source: {
+      refreshInterval: "feed" | "category" | "user" | "system";
+      maxArticlesPerFeed: "feed" | "category" | "user" | "system";
+      maxArticleAge: "feed" | "category" | "user" | "system";
+    } = {
+      refreshInterval: "system",
+      maxArticlesPerFeed: "system",
+      maxArticleAge: "system",
     };
 
     // Apply user preferences defaults
