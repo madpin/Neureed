@@ -415,6 +415,7 @@ docker run -d \
   -e DATABASE_URL="postgresql://user:pass@host:5432/neureed" \
   -e NEXTAUTH_URL="https://your-domain.com" \
   -e NEXTAUTH_SECRET="your-secret" \
+  -e AUTH_TRUST_HOST="true" \
   -e GITHUB_CLIENT_ID="your-id" \
   -e GITHUB_CLIENT_SECRET="your-secret" \
   -e OPENAI_API_KEY="your-key" \

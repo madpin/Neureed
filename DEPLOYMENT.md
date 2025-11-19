@@ -19,6 +19,7 @@ DATABASE_URL="postgresql://user:password@host:port/database"
 # NextAuth
 NEXTAUTH_URL="https://your-domain.com"
 NEXTAUTH_SECRET="your-secret-key"
+AUTH_TRUST_HOST="true"  # Required for production to trust the host
 
 # GitHub OAuth (if using)
 GITHUB_CLIENT_ID="your-github-client-id"

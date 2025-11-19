@@ -15,6 +15,10 @@ export const env = createEnv({
     // Authentication configuration
     NEXTAUTH_URL: z.string().url().optional(),
     NEXTAUTH_SECRET: z.string().min(32),
+    AUTH_TRUST_HOST: z
+      .enum(["true", "false"])
+      .default("false")
+      .transform((val) => val === "true"),
     
     // OAuth Providers - Google
     GOOGLE_CLIENT_ID: z.string().optional(),
@@ -101,6 +105,7 @@ export const env = createEnv({
     // Authentication
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+    AUTH_TRUST_HOST: process.env.AUTH_TRUST_HOST,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,

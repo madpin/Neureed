@@ -82,6 +82,7 @@ export const authConfig: NextAuthConfig = {
     signIn: "/",
     error: "/",
   },
+  trustHost: env.AUTH_TRUST_HOST,
   callbacks: {
     async session({ session, token }) {
       if (token && session.user) {
