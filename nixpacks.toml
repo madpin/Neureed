@@ -3,7 +3,9 @@ nixPkgs = ["nodejs_20", "openssl"]
 
 [phases.install]
 cmds = [
-  "npm ci --no-audit --omit=optional --no-fund --fetch-timeout=300000 --fetch-retries=3"
+  "echo '📦 Starting npm install...'",
+  "npm ci --no-audit --omit=optional --no-fund --fetch-timeout=300000 --fetch-retries=3 --loglevel=verbose",
+  "echo '✅ npm install completed'"
 ]
 
 [variables]
@@ -13,12 +15,17 @@ SKIP_ENV_VALIDATION = "1"
 NODE_OPTIONS = "--max-old-space-size=4096"
 NPM_CONFIG_FETCH_TIMEOUT = "300000"
 NPM_CONFIG_FETCH_RETRIES = "3"
+NPM_CONFIG_LOGLEVEL = "verbose"
 CI = "true"
 
 [phases.build]
 cmds = [
-  "npx prisma generate",
-  "npm run build"
+  "echo '🔨 Generating Prisma Client...'",
+  "npx prisma generate --schema=./prisma/schema.prisma",
+  "echo '✅ Prisma Client generated'",
+  "echo '🏗️  Building Next.js application...'",
+  "npm run build",
+  "echo '✅ Build completed'"
 ]
 
 [start]
