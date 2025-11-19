@@ -1,6 +1,6 @@
 import { prisma } from "../db";
 import type { User, UserPreferences } from "@prisma/client";
-import type { UserWithPreferences } from "@/src/types/user";
+import type { UserWithPreferences } from "@/types/user";
 
 /**
  * Get user by ID with preferences

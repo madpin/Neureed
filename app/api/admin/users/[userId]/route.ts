@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { apiResponse, apiError } from "@/src/lib/api-response";
-import { prisma } from "@/src/lib/db";
+import { apiResponse, apiError } from "@/lib/api-response";
+import { prisma } from "@/lib/db";
 
 /**
  * GET /api/admin/users/[userId]

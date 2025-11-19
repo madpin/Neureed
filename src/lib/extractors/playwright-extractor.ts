@@ -1,10 +1,10 @@
 import { BaseExtractor } from "./base-extractor";
 import type { ExtractorConfig, ExtractedContent, ParsedCookie } from "./types";
-import { env } from "@/src/env";
-import { logger } from "@/src/lib/logger";
+import { env } from "@/env";
+import { logger } from "@/lib/logger";
 import { Readability } from "@mozilla/readability";
 import { JSDOM } from "jsdom";
-import { sanitizeHtml } from "@/src/lib/feed-parser";
+import { sanitizeHtml } from "@/lib/feed-parser";
 
 /**
  * Playwright-based content extractor for JavaScript-rendered content

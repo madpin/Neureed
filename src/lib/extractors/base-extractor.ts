@@ -4,8 +4,8 @@ import type {
   ExtractedContent,
   ParsedCookie,
 } from "./types";
-import { env } from "@/src/env";
-import { logger } from "@/src/lib/logger";
+import { env } from "@/env";
+import { logger } from "@/lib/logger";
 
 /**
  * Base extractor class with common functionality

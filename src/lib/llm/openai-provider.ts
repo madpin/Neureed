@@ -3,7 +3,7 @@
  * Uses OpenAI's GPT models for text generation
  */
 
-import { env } from "@/src/env";
+import { env } from "@/env";
 import { logger } from "../logger";
 import type {
   LLMProviderInterface,

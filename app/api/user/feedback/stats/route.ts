@@ -1,5 +1,5 @@
-import { getFeedbackStats } from "@/src/lib/services/feedback-service";
-import { createHandler } from "@/src/lib/api-handler";
+import { getFeedbackStats } from "@/lib/services/feedback-service";
+import { createHandler } from "@/lib/api-handler";
 
 /**
  * GET /api/user/feedback/stats

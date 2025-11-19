@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import type { Article, Feed } from "@prisma/client";
 import { FeedbackButtons } from "./FeedbackButtons";
-import { formatSmartDate, toISOString } from "@/src/lib/date-utils";
+import { formatSmartDate, toISOString } from "@/lib/date-utils";
 
 interface ArticleWithFeed extends Article {
   feed: Feed;

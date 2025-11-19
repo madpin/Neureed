@@ -1,6 +1,6 @@
-import { getFeed } from "@/src/lib/services/feed-service";
-import { refreshFeed } from "@/src/lib/services/feed-refresh-service";
-import { createHandler } from "@/src/lib/api-handler";
+import { getFeed } from "@/lib/services/feed-service";
+import { refreshFeed } from "@/lib/services/feed-refresh-service";
+import { createHandler } from "@/lib/api-handler";
 
 /**
  * POST /api/feeds/:id/refresh

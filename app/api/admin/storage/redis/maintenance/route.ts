@@ -4,8 +4,8 @@
  */
 
 import { NextRequest } from "next/server";
-import { getRedisClient } from "@/src/lib/cache/redis-client";
-import { apiResponse, apiError } from "@/src/lib/api-response";
+import { getRedisClient } from "@/lib/cache/redis-client";
+import { apiResponse, apiError } from "@/lib/api-response";
 import { z } from "zod";
 
 const maintenanceSchema = z.object({

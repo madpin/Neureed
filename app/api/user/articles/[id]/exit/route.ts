@@ -1,6 +1,6 @@
-import { recordArticleExit } from "@/src/lib/services/feedback-service";
-import { updateUserPatterns } from "@/src/lib/services/pattern-detection-service";
-import { createHandler } from "@/src/lib/api-handler";
+import { recordArticleExit } from "@/lib/services/feedback-service";
+import { updateUserPatterns } from "@/lib/services/pattern-detection-service";
+import { createHandler } from "@/lib/api-handler";
 import { z } from "zod";
 
 const exitSchema = z.object({

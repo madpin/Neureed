@@ -1,6 +1,6 @@
 import { prisma } from "../db";
 import type { ReadArticle } from "@prisma/client";
-import type { ReadArticleStatus } from "@/src/types/user";
+import type { ReadArticleStatus } from "@/types/user";
 
 /**
  * Mark an article as read

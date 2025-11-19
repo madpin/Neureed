@@ -3,8 +3,8 @@
  * Uses OpenAI's text-embedding-3-small model (1536 dimensions)
  */
 
-import { env } from "@/src/env";
-import { logger } from "@/src/lib/logger";
+import { env } from "@/env";
+import { logger } from "@/lib/logger";
 import type {
   EmbeddingProviderInterface,
   EmbeddingResult,

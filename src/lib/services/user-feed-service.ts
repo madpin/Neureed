@@ -1,6 +1,6 @@
 import { prisma } from "../db";
 import type { UserFeed, Feed } from "@prisma/client";
-import type { UserFeedSubscription, FeedWithSubscription } from "@/src/types/user";
+import type { UserFeedSubscription, FeedWithSubscription } from "@/types/user";
 import { assignFeedToCategory } from "./user-category-service";
 
 /**

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { ArticleSortOrder, ArticleSortDirection } from "@/src/lib/validations/article-validation";
+import type { ArticleSortOrder, ArticleSortDirection } from "@/lib/validations/article-validation";
 
 interface ArticleSortDropdownProps {
   currentSortOrder: ArticleSortOrder;

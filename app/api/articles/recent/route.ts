@@ -1,6 +1,6 @@
-import { getArticlesByDateRange } from "@/src/lib/services/article-service";
-import { recentArticlesSchema } from "@/src/lib/validations/article-validation";
-import { createHandler } from "@/src/lib/api-handler";
+import { getArticlesByDateRange } from "@/lib/services/article-service";
+import { recentArticlesSchema } from "@/lib/validations/article-validation";
+import { createHandler } from "@/lib/api-handler";
 
 /**
  * GET /api/articles/recent
@@ -8,7 +8,7 @@ import { createHandler } from "@/src/lib/api-handler";
  */
 export const GET = createHandler(
   async ({ query }) => {
-    const { limit, hours } = query;
+    const { limit, hours = 24 } = query;
 
     // Calculate date range
     const endDate = new Date();

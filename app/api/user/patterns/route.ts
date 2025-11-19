@@ -1,5 +1,5 @@
-import { getUserPatterns } from "@/src/lib/services/pattern-detection-service";
-import { createHandler } from "@/src/lib/api-handler";
+import { getUserPatterns } from "@/lib/services/pattern-detection-service";
+import { createHandler } from "@/lib/api-handler";
 
 /**
  * GET /api/user/patterns

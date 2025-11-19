@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { formatLocalizedDate } from "@/src/lib/date-utils";
+import { formatLocalizedDate } from "@/lib/date-utils";
 import { Tooltip } from "@/app/components/admin/Tooltip";
 
 type TabId = "overview" | "search" | "users" | "jobs" | "storage";

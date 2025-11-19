@@ -1,12 +1,12 @@
-import { extractorRegistry } from "@/src/lib/extractors/extractor-registry";
+import { extractorRegistry } from "@/lib/extractors/extractor-registry";
 import type {
   ExtractedContent,
   ExtractorConfig,
   ExtractionSettings,
-} from "@/src/lib/extractors/types";
-import { decrypt } from "@/src/lib/services/encryption-service";
-import { logger } from "@/src/lib/logger";
-import { prisma } from "@/src/lib/db";
+} from "@/lib/extractors/types";
+import { decrypt } from "@/lib/services/encryption-service";
+import { logger } from "@/lib/logger";
+import { prisma } from "@/lib/db";
 
 /**
  * Content extraction service

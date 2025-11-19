@@ -1,5 +1,5 @@
-import { markAsRead, markAsUnread } from "@/src/lib/services/read-status-service";
-import { createHandler } from "@/src/lib/api-handler";
+import { markAsRead, markAsUnread } from "@/lib/services/read-status-service";
+import { createHandler } from "@/lib/api-handler";
 
 /**
  * POST /api/user/articles/:id/read

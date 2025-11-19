@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/src/lib/auth";
-import { apiResponse, apiError } from "@/src/lib/api-response";
+import { auth } from "@/lib/auth";
+import { apiResponse, apiError } from "@/lib/api-response";
 
 /**
  * Context passed to API handlers

@@ -1,13 +1,13 @@
 import { NextRequest } from "next/server";
-import { apiHandler } from "@/lib/api-handler";
-import { db } from "@/lib/db";
+import { createHandler } from "@/lib/api-handler";
+import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
 
 /**
  * POST /api/admin/database/reset
  * Reset database by clearing all feed, category, embedding, and article-related data
  */
-export const POST = apiHandler(async (req: NextRequest) => {
+export const POST = createHandler(async () => {
   logger.info("Starting database reset...");
 
   try {
@@ -15,42 +15,42 @@ export const POST = apiHandler(async (req: NextRequest) => {
     // Start with dependent tables first
     
     // 1. Delete article-related data
-    const deletedReadArticles = await db.readArticle.deleteMany({});
+    const deletedReadArticles = await prisma.readArticle.deleteMany({});
     logger.info(`Deleted ${deletedReadArticles.count} read articles`);
 
-    const deletedArticleFeedback = await db.articleFeedback.deleteMany({});
+    const deletedArticleFeedback = await prisma.articleFeedback.deleteMany({});
     logger.info(`Deleted ${deletedArticleFeedback.count} article feedback entries`);
 
     // 2. Delete articles (this will also clear embeddings since they're part of articles)
-    const deletedArticles = await db.article.deleteMany({});
+    const deletedArticles = await prisma.article.deleteMany({});
     logger.info(`Deleted ${deletedArticles.count} articles (including embeddings)`);
 
     // 3. Delete user feed category assignments
-    const deletedUserFeedCategories = await db.userFeedCategory.deleteMany({});
+    const deletedUserFeedCategories = await prisma.userFeedCategory.deleteMany({});
     logger.info(`Deleted ${deletedUserFeedCategories.count} user feed category assignments`);
 
     // 4. Delete user feeds
-    const deletedUserFeeds = await db.userFeed.deleteMany({});
+    const deletedUserFeeds = await prisma.userFeed.deleteMany({});
     logger.info(`Deleted ${deletedUserFeeds.count} user feed subscriptions`);
 
     // 5. Delete user categories
-    const deletedUserCategories = await db.userCategory.deleteMany({});
+    const deletedUserCategories = await prisma.userCategory.deleteMany({});
     logger.info(`Deleted ${deletedUserCategories.count} user categories`);
 
     // 6. Delete feed categories (junction table)
-    const deletedFeedCategories = await db.feedCategory.deleteMany({});
+    const deletedFeedCategories = await prisma.feedCategory.deleteMany({});
     logger.info(`Deleted ${deletedFeedCategories.count} feed category assignments`);
 
     // 7. Delete feeds
-    const deletedFeeds = await db.feed.deleteMany({});
+    const deletedFeeds = await prisma.feed.deleteMany({});
     logger.info(`Deleted ${deletedFeeds.count} feeds`);
 
     // 8. Delete categories
-    const deletedCategories = await db.category.deleteMany({});
+    const deletedCategories = await prisma.category.deleteMany({});
     logger.info(`Deleted ${deletedCategories.count} categories`);
 
     // 9. Delete user patterns (related to article feedback)
-    const deletedUserPatterns = await db.userPattern.deleteMany({});
+    const deletedUserPatterns = await prisma.userPattern.deleteMany({});
     logger.info(`Deleted ${deletedUserPatterns.count} user patterns`);
 
     const summary = {

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { formatLocalizedDate } from "@/src/lib/date-utils";
+import { formatLocalizedDate } from "@/lib/date-utils";
 
 interface RelatedArticle {
   id: string;

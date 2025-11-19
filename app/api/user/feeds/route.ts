@@ -3,10 +3,10 @@ import {
   subscribeFeed,
   unsubscribeFeed,
   getAllFeedsWithSubscriptionStatus,
-} from "@/src/lib/services/user-feed-service";
-import { getFeedsGroupedByCategory } from "@/src/lib/services/user-category-service";
+} from "@/lib/services/user-feed-service";
+import { getFeedsGroupedByCategory } from "@/lib/services/user-category-service";
 import { z } from "zod";
-import { createHandler } from "@/src/lib/api-handler";
+import { createHandler } from "@/lib/api-handler";
 
 /**
  * GET /api/user/feeds

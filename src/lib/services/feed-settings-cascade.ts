@@ -3,8 +3,8 @@
  * Handles cascading configuration from user defaults → category settings → feed settings
  */
 
-import { prisma } from "@/src/lib/db";
-import { logger } from "@/src/lib/logger";
+import { prisma } from "@/lib/db";
+import { logger } from "@/lib/logger";
 
 /**
  * Effective feed settings after applying cascade logic

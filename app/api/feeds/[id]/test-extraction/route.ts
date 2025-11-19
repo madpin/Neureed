@@ -1,9 +1,9 @@
-import { testFeedExtractionSettings } from "@/src/lib/services/feed-settings-service";
-import { testExtraction } from "@/src/lib/services/content-extraction-service";
-import { testExtractionSchema } from "@/src/lib/validations/extraction-validation";
-import { createHandler } from "@/src/lib/api-handler";
-import { logger } from "@/src/lib/logger";
-import { prisma } from "@/src/lib/db";
+import { testFeedExtractionSettings } from "@/lib/services/feed-settings-service";
+import { testExtraction } from "@/lib/services/content-extraction-service";
+import { testExtractionSchema } from "@/lib/validations/extraction-validation";
+import { createHandler } from "@/lib/api-handler";
+import { logger } from "@/lib/logger";
+import { prisma } from "@/lib/db";
 
 /**
  * POST /api/feeds/[id]/test-extraction

@@ -1,5 +1,5 @@
-import { runPatternDecayJob } from "@/src/lib/jobs/pattern-decay-job";
-import { createHandler } from "@/src/lib/api-handler";
+import { runPatternDecayJob } from "@/lib/jobs/pattern-decay-job";
+import { createHandler } from "@/lib/api-handler";
 
 /**
  * POST /api/jobs/pattern-decay

@@ -3,9 +3,9 @@
  * GET /api/articles/suggestions
  */
 
-import { getSearchSuggestions } from "@/src/lib/services/semantic-search-service";
-import { createHandler } from "@/src/lib/api-handler";
-import { apiResponse } from "@/src/lib/api-response";
+import { getSearchSuggestions } from "@/lib/services/semantic-search-service";
+import { createHandler } from "@/lib/api-handler";
+import { apiResponse } from "@/lib/api-response";
 
 /**
  * GET - Get search suggestions

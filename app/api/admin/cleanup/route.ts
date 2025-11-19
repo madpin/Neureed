@@ -3,8 +3,8 @@ import { z } from "zod";
 import {
   cleanupOldArticles,
   getCleanupStats,
-} from "@/src/lib/services/article-cleanup-service";
-import { apiResponse, apiError } from "@/src/lib/api-response";
+} from "@/lib/services/article-cleanup-service";
+import { apiResponse, apiError } from "@/lib/api-response";
 
 /**
  * Request schema

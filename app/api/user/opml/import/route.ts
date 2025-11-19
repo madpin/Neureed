@@ -1,20 +1,20 @@
 import { NextRequest } from "next/server";
-import { parseOPML, validateOPMLStructure } from "@/src/lib/services/opml-service";
-import { findOrCreateCategory } from "@/src/lib/services/category-service";
+import { parseOPML, validateOPMLStructure } from "@/lib/services/opml-service";
+import { findOrCreateCategory } from "@/lib/services/category-service";
 import {
   validateAndCreateFeed,
   getFeedByUrl,
-} from "@/src/lib/services/feed-service";
+} from "@/lib/services/feed-service";
 import {
   subscribeFeed,
   isUserSubscribed,
-} from "@/src/lib/services/user-feed-service";
+} from "@/lib/services/user-feed-service";
 import {
   validateOPMLFileSize,
   validateOPMLFileType,
-} from "@/src/lib/validations/opml-validation";
-import { apiResponse, apiError } from "@/src/lib/api-response";
-import { getCurrentUser } from "@/src/lib/middleware/auth-middleware";
+} from "@/lib/validations/opml-validation";
+import { apiResponse, apiError } from "@/lib/api-response";
+import { getCurrentUser } from "@/lib/middleware/auth-middleware";
 
 /**
  * POST /api/user/opml/import
@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
             if (!isNewFeed) {
               // Optionally trigger feed refresh in background
               const { refreshFeed } = await import(
-                "@/src/lib/services/feed-refresh-service"
+                "@/lib/services/feed-refresh-service"
               );
               refreshFeed(feed.id).catch((err) => {
                 console.error(`Failed to refresh feed ${feed.id}:`, err);
@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
         if (isNewFeed) {
           try {
             const { refreshFeed } = await import(
-              "@/src/lib/services/feed-refresh-service"
+              "@/lib/services/feed-refresh-service"
             );
             // Run in background, don't wait
             refreshFeed(feed.id).catch((err) => {

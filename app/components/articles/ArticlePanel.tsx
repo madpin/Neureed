@@ -6,10 +6,10 @@ import { ArticleToolbar } from "./ArticleToolbar";
 import { ArticleSummary, ArticleSummaryRef } from "./ArticleSummary";
 import { ArticleFeedbackSection } from "./ArticleFeedbackSection";
 import { RelatedArticles } from "./RelatedArticles";
-import { processArticleContent, estimateReadingTime } from "@/src/lib/content-processor";
+import { processArticleContent, estimateReadingTime } from "@/lib/content-processor";
 import type { Article, Feed } from "@prisma/client";
 import { useRef, useCallback } from "react";
-import { formatLocalizedDateTime, toISOString as formatISOString } from "@/src/lib/date-utils";
+import { formatLocalizedDateTime, toISOString as formatISOString } from "@/lib/date-utils";
 
 interface ReadingPreferences {
   readingFontFamily: string;

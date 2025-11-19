@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { refreshFeeds, refreshAllDueFeeds, getRefreshStats } from "@/src/lib/services/feed-refresh-service";
-import { createHandler } from "@/src/lib/api-handler";
+import { refreshFeeds, refreshAllDueFeeds, getRefreshStats } from "@/lib/services/feed-refresh-service";
+import { createHandler } from "@/lib/api-handler";
 
 /**
  * Request schema

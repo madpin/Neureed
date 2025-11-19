@@ -3,8 +3,8 @@
  * Tracks API usage and costs for embedding generation
  */
 
-import { logger } from "@/src/lib/logger";
-import { OpenAIEmbeddingProvider } from "@/src/lib/embeddings/openai-provider";
+import { logger } from "@/lib/logger";
+import { OpenAIEmbeddingProvider } from "@/lib/embeddings/openai-provider";
 
 interface CostEntry {
   timestamp: Date;

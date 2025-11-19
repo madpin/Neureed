@@ -1,6 +1,6 @@
 "use client";
 
-import type { ArticleScore } from "@/src/lib/services/article-scoring-service";
+import type { ArticleScore } from "@/lib/services/article-scoring-service";
 
 interface RelevanceScoreProps {
   score: ArticleScore;

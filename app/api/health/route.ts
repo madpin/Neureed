@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
-import { checkDatabaseHealth, checkPgVectorExtension } from "@/src/lib/db";
-import { successResponse, errorResponse } from "@/src/lib/api-response";
-import { logger } from "@/src/lib/logger";
+import { checkDatabaseHealth, checkPgVectorExtension } from "@/lib/db";
+import { successResponse, errorResponse } from "@/lib/api-response";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 

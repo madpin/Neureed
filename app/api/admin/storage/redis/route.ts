@@ -4,8 +4,8 @@
  */
 
 import { NextRequest } from "next/server";
-import { getRedisClient, getRedisStatus } from "@/src/lib/cache/redis-client";
-import { apiResponse, apiError } from "@/src/lib/api-response";
+import { getRedisClient, getRedisStatus } from "@/lib/cache/redis-client";
+import { apiResponse, apiError } from "@/lib/api-response";
 
 interface RedisStats {
   connected: boolean;

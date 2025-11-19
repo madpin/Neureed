@@ -3,11 +3,11 @@
  * Handles embedding generation for articles
  */
 
-import { prisma } from "@/src/lib/db";
-import { logger } from "@/src/lib/logger";
+import { prisma } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { generateEmbedding, generateEmbeddings } from "./embedding-service";
 import type { Article } from "@prisma/client";
-import type { EmbeddingProvider } from "@/src/lib/embeddings/types";
+import type { EmbeddingProvider } from "@/lib/embeddings/types";
 
 /**
  * Prepare article text for embedding

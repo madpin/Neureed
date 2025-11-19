@@ -4,13 +4,13 @@
  */
 
 import { NextRequest } from "next/server";
-import { apiResponse, apiError } from "@/src/lib/api-response";
-import { logger } from "@/src/lib/logger";
+import { apiResponse, apiError } from "@/lib/api-response";
+import { logger } from "@/lib/logger";
 import {
   getAllAdminSettings,
   updateAdminSetting,
   getAdminSetting,
-} from "@/src/lib/services/admin-settings-service";
+} from "@/lib/services/admin-settings-service";
 import { z } from "zod";
 
 /**

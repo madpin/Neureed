@@ -1,6 +1,6 @@
-import { createHandler } from "@/src/lib/api-handler";
+import { createHandler } from "@/lib/api-handler";
 import { z } from "zod";
-import { reorderUserCategories } from "@/src/lib/services/user-category-service";
+import { reorderUserCategories } from "@/lib/services/user-category-service";
 
 const reorderSchema = z.object({
   categoryIds: z.array(z.string()).min(1),

@@ -1,5 +1,5 @@
-import { getArticle, deleteArticle } from "@/src/lib/services/article-service";
-import { createHandler } from "@/src/lib/api-handler";
+import { getArticle, deleteArticle } from "@/lib/services/article-service";
+import { createHandler } from "@/lib/api-handler";
 
 /**
  * GET /api/articles/:id

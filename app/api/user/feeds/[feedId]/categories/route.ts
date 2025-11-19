@@ -1,5 +1,5 @@
-import { createHandler } from "@/src/lib/api-handler";
-import { unassignFeedFromAllCategories } from "@/src/lib/services/user-category-service";
+import { createHandler } from "@/lib/api-handler";
+import { unassignFeedFromAllCategories } from "@/lib/services/user-category-service";
 
 /**
  * DELETE /api/user/feeds/:feedId/categories

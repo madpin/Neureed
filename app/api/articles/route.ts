@@ -1,10 +1,10 @@
-import { getRecentArticles } from "@/src/lib/services/article-service";
-import { articleQuerySchema } from "@/src/lib/validations/article-validation";
-import { createHandler } from "@/src/lib/api-handler";
-import { getCurrentUser } from "@/src/lib/middleware/auth-middleware";
-import { getUserFeedIds } from "@/src/lib/services/user-feed-service";
-import { getReadArticles } from "@/src/lib/services/read-status-service";
-import { prisma } from "@/src/lib/db";
+import { getRecentArticles } from "@/lib/services/article-service";
+import { articleQuerySchema } from "@/lib/validations/article-validation";
+import { createHandler } from "@/lib/api-handler";
+import { getCurrentUser } from "@/lib/middleware/auth-middleware";
+import { getUserFeedIds } from "@/lib/services/user-feed-service";
+import { getReadArticles } from "@/lib/services/read-status-service";
+import { prisma } from "@/lib/db";
 
 /**
  * GET /api/articles
@@ -13,14 +13,14 @@ import { prisma } from "@/src/lib/db";
  */
 export const GET = createHandler(
   async ({ query }) => {
-    const { page, limit, feedId, categoryId, sortBy, sortDirection } = query;
+    const { page = 1, limit = 20, feedId, categoryId, sortBy, sortDirection } = query as any;
 
     // Check if user is authenticated
     const user = await getCurrentUser();
     
     // Get sort preferences from user preferences if not provided in query
-    let finalSortBy: "publishedAt" | "relevance" | "title" | "feed" | "updatedAt" = sortBy || "publishedAt";
-    let finalSortDirection: "asc" | "desc" = sortDirection || "desc";
+    let finalSortBy: "publishedAt" | "relevance" | "title" | "feed" | "updatedAt" = (sortBy as any) || "publishedAt";
+    let finalSortDirection: "asc" | "desc" = (sortDirection as any) || "desc";
     
     if (user?.id && !sortBy) {
       const userPrefs = await prisma.userPreferences.findUnique({
@@ -123,14 +123,13 @@ export const GET = createHandler(
 
       // If sorting by relevance, fetch scores and sort
       if (finalSortBy === "relevance") {
-        const { getArticleScores } = await import("@/src/lib/services/article-scoring-service");
-        const scores = await getArticleScores(user.id, articleIds);
-        const scoreMap = new Map(scores.map((s) => [s.articleId, s.score]));
+        const { scoreArticleBatch } = await import("@/lib/services/article-scoring-service");
+        const scoreMap = await scoreArticleBatch(user.id, articleIds);
         
         articlesWithReadStatus = articlesWithReadStatus
           .map((article) => ({
             ...article,
-            relevanceScore: scoreMap.get(article.id) || 0,
+            relevanceScore: scoreMap.get(article.id)?.score || 0,
           }))
           .sort((a, b) => {
             const scoreA = a.relevanceScore || 0;
@@ -159,7 +158,7 @@ export const GET = createHandler(
       };
       
       if (feedId) {
-        const { getArticlesByFeed } = await import("@/src/lib/services/article-service");
+        const { getArticlesByFeed } = await import("@/lib/services/article-service");
         ({ articles, total } = await getArticlesByFeed(feedId, sortOptions));
       } else {
         ({ articles, total } = await getRecentArticles(sortOptions));

@@ -4,7 +4,7 @@
  */
 
 import { prisma } from "../db";
-import { env } from "@/src/env";
+import { env } from "@/env";
 import { logger } from "../logger";
 import { OpenAILLMProvider } from "../llm/openai-provider";
 import { OllamaLLMProvider } from "../llm/ollama-provider";

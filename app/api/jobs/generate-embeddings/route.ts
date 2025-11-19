@@ -3,14 +3,14 @@
  * POST /api/jobs/generate-embeddings
  */
 
-import { logger } from "@/src/lib/logger";
+import { logger } from "@/lib/logger";
 import {
   processArticlesWithoutEmbeddings,
   getEmbeddingJobStatus,
-} from "@/src/lib/jobs/embedding-generation-job";
-import { getEmbeddingStats } from "@/src/lib/services/article-embedding-service";
-import { createHandler } from "@/src/lib/api-handler";
-import { apiResponse } from "@/src/lib/api-response";
+} from "@/lib/jobs/embedding-generation-job";
+import { getEmbeddingStats } from "@/lib/services/article-embedding-service";
+import { createHandler } from "@/lib/api-handler";
+import { apiResponse } from "@/lib/api-response";
 
 /**
  * POST - Manually trigger embedding generation

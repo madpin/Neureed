@@ -1,7 +1,7 @@
-import { parseFeedUrl, validateFeedUrl, normalizeFeedUrl, isSafeFeedUrl } from "@/src/lib/feed-parser";
-import { validateFeedSchema } from "@/src/lib/validations/feed-validation";
-import { createHandler } from "@/src/lib/api-handler";
-import { apiResponse } from "@/src/lib/api-response";
+import { parseFeedUrl, validateFeedUrl, normalizeFeedUrl, isSafeFeedUrl } from "@/lib/feed-parser";
+import { validateFeedSchema } from "@/lib/validations/feed-validation";
+import { createHandler } from "@/lib/api-handler";
+import { apiResponse } from "@/lib/api-response";
 
 /**
  * POST /api/feeds/validate

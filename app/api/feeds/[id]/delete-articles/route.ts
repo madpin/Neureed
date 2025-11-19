@@ -1,6 +1,6 @@
-import { deleteAllArticles } from "@/src/lib/services/feed-settings-service";
-import { createHandler } from "@/src/lib/api-handler";
-import { logger } from "@/src/lib/logger";
+import { deleteAllArticles } from "@/lib/services/feed-settings-service";
+import { createHandler } from "@/lib/api-handler";
+import { logger } from "@/lib/logger";
 
 /**
  * DELETE /api/feeds/[id]/delete-articles

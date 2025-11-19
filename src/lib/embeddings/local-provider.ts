@@ -4,7 +4,7 @@
  * Note: This will be implemented when @xenova/transformers is available
  */
 
-import { logger } from "@/src/lib/logger";
+import { logger } from "@/lib/logger";
 import type {
   EmbeddingProviderInterface,
   EmbeddingResult,

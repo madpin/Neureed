@@ -3,9 +3,9 @@ import {
   getUserFeedbackForArticle,
   deleteFeedback,
   type ExplicitFeedbackValue,
-} from "@/src/lib/services/feedback-service";
-import { updateUserPatterns } from "@/src/lib/services/pattern-detection-service";
-import { createHandler } from "@/src/lib/api-handler";
+} from "@/lib/services/feedback-service";
+import { updateUserPatterns } from "@/lib/services/pattern-detection-service";
+import { createHandler } from "@/lib/api-handler";
 import { z } from "zod";
 
 /**

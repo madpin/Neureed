@@ -1,6 +1,6 @@
-import { searchArticles } from "@/src/lib/services/article-service";
-import { searchArticlesSchema } from "@/src/lib/validations/article-validation";
-import { createHandler } from "@/src/lib/api-handler";
+import { searchArticles } from "@/lib/services/article-service";
+import { searchArticlesSchema } from "@/lib/validations/article-validation";
+import { createHandler } from "@/lib/api-handler";
 
 /**
  * GET /api/articles/search
@@ -8,7 +8,7 @@ import { createHandler } from "@/src/lib/api-handler";
  */
 export const GET = createHandler(
   async ({ query }) => {
-    const { q, page, limit, feedId } = query;
+    const { q, page = 1, limit = 20, feedId } = query as any;
 
     // Search articles
     const { articles, total } = await searchArticles(q, {

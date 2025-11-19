@@ -1,5 +1,5 @@
-import { recordArticleView } from "@/src/lib/services/feedback-service";
-import { createHandler } from "@/src/lib/api-handler";
+import { recordArticleView } from "@/lib/services/feedback-service";
+import { createHandler } from "@/lib/api-handler";
 
 /**
  * POST /api/user/articles/[id]/view

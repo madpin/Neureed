@@ -1,7 +1,7 @@
-import { prisma } from "@/src/lib/db";
-import { generateContentHash } from "@/src/lib/feed-parser";
+import { prisma } from "@/lib/db";
+import { generateContentHash } from "@/lib/feed-parser";
 import type { Article } from "@prisma/client";
-import type { ParsedArticle } from "@/src/lib/feed-parser";
+import type { ParsedArticle } from "@/lib/feed-parser";
 
 /**
  * Find duplicate article by GUID, URL, or content hash

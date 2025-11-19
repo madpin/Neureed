@@ -4,9 +4,9 @@ import {
   deleteFeedWithArticles,
   getFeedStats,
   updateFeedCategories,
-} from "@/src/lib/services/feed-service";
-import { updateFeedSchema } from "@/src/lib/validations/feed-validation";
-import { createHandler } from "@/src/lib/api-handler";
+} from "@/lib/services/feed-service";
+import { updateFeedSchema } from "@/lib/validations/feed-validation";
+import { createHandler } from "@/lib/api-handler";
 
 /**
  * GET /api/feeds/:id

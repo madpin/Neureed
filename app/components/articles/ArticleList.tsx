@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { ArticleCard } from "./ArticleCard";
 import { RelevanceScore } from "./RelevanceScore";
 import type { Article, Feed } from "@prisma/client";
-import type { ArticleScore } from "@/src/lib/services/article-scoring-service";
+import type { ArticleScore } from "@/lib/services/article-scoring-service";
 
 interface ArticleWithFeed extends Article {
   feed: Feed;

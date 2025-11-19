@@ -1,8 +1,8 @@
-import { prisma } from "@/src/lib/db";
-import type { ExtractionSettings } from "@/src/lib/extractors/types";
-import { encrypt, decrypt } from "@/src/lib/services/encryption-service";
-import { testExtraction } from "@/src/lib/services/content-extraction-service";
-import { logger } from "@/src/lib/logger";
+import { prisma } from "@/lib/db";
+import type { ExtractionSettings } from "@/lib/extractors/types";
+import { encrypt, decrypt } from "@/lib/services/encryption-service";
+import { testExtraction } from "@/lib/services/content-extraction-service";
+import { logger } from "@/lib/logger";
 import type { Feed } from "@prisma/client";
 
 /**

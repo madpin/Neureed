@@ -5,7 +5,7 @@ import { SemanticSearchBar } from "@/app/components/search/SemanticSearchBar";
 import { UserMenu } from "@/app/components/auth/UserMenu";
 import { ArticleSortDropdown } from "@/app/components/articles/ArticleSortDropdown";
 import Link from "next/link";
-import type { ArticleSortOrder, ArticleSortDirection } from "@/src/lib/validations/article-validation";
+import type { ArticleSortOrder, ArticleSortDirection } from "@/lib/validations/article-validation";
 
 interface MainLayoutProps {
   sidebar: ReactNode | ((props: { isCollapsed: boolean }) => ReactNode);

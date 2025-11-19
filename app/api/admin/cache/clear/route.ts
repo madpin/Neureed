@@ -5,11 +5,11 @@
  */
 
 import { NextRequest } from "next/server";
-import { apiResponse, apiError } from "@/src/lib/api-response";
+import { apiResponse, apiError } from "@/lib/api-response";
 import {
   cacheClearAll,
   cacheDeletePattern,
-} from "@/src/lib/cache/cache-service";
+} from "@/lib/cache/cache-service";
 import { z } from "zod";
 
 const clearPatternSchema = z.object({

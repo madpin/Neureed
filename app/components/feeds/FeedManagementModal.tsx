@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { CookieGuide } from "./CookieGuide";
 import { IconPicker } from "./IconPicker";
-import { formatSmartDate, formatLocalizedDateTime } from "@/src/lib/date-utils";
+import { formatSmartDate, formatLocalizedDateTime } from "@/lib/date-utils";
 
 type ViewType = 'feed' | 'category' | 'overview';
 

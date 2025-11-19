@@ -1,15 +1,15 @@
-import { prisma } from "@/src/lib/db";
-import { generateContentHash } from "@/src/lib/feed-parser";
+import { prisma } from "@/lib/db";
+import { generateContentHash } from "@/lib/feed-parser";
 import {
   findDuplicateArticle,
   shouldUpdateArticle,
   deduplicateParsedArticles,
 } from "./article-deduplication";
-import { cacheDeletePattern } from "@/src/lib/cache/cache-service";
-import { InvalidationPatterns } from "@/src/lib/cache/cache-keys";
-import { logger } from "@/src/lib/logger";
+import { cacheDeletePattern } from "@/lib/cache/cache-service";
+import { InvalidationPatterns } from "@/lib/cache/cache-keys";
+import { logger } from "@/lib/logger";
 import type { Article, Prisma } from "@prisma/client";
-import type { ParsedArticle } from "@/src/lib/feed-parser";
+import type { ParsedArticle } from "@/lib/feed-parser";
 
 /**
  * Input types for article operations

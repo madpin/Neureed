@@ -5,8 +5,8 @@
 
 import { startFeedRefreshScheduler, stopFeedRefreshScheduler } from "./feed-refresh-job";
 import { startCleanupScheduler, stopCleanupScheduler } from "./cleanup-job";
-import { logger } from "@/src/lib/logger";
-import { env } from "@/src/env";
+import { logger } from "@/lib/logger";
+import { env } from "@/env";
 
 let isInitialized = false;
 

@@ -1,6 +1,6 @@
 import cron from "node-cron";
 import { refreshAllDueFeeds, refreshUserFeeds, getRefreshStats } from "../services/feed-refresh-service";
-import { logger } from "@/src/lib/logger";
+import { logger } from "@/lib/logger";
 
 /**
  * Cron job for refreshing feeds

@@ -4,9 +4,9 @@
  */
 
 import { NextRequest } from "next/server";
-import { apiResponse, apiError } from "@/src/lib/api-response";
-import { getCacheStats, getCacheInfo } from "@/src/lib/cache/cache-service";
-import { getRedisStatus } from "@/src/lib/cache/redis-client";
+import { apiResponse, apiError } from "@/lib/api-response";
+import { getCacheStats, getCacheInfo } from "@/lib/cache/cache-service";
+import { getRedisStatus } from "@/lib/cache/redis-client";
 
 /**
  * GET /api/admin/cache/stats

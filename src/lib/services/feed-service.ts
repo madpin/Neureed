@@ -1,5 +1,5 @@
-import { prisma } from "@/src/lib/db";
-import { parseFeedUrl, validateFeedUrl, normalizeFeedUrl, isSafeFeedUrl } from "@/src/lib/feed-parser";
+import { prisma } from "@/lib/db";
+import { parseFeedUrl, validateFeedUrl, normalizeFeedUrl, isSafeFeedUrl } from "@/lib/feed-parser";
 import type { Feed, Prisma } from "@prisma/client";
 
 /**

@@ -2,11 +2,11 @@ import {
   getExtractionSettings,
   updateExtractionSettings,
   clearExtractionSettings,
-} from "@/src/lib/services/feed-settings-service";
-import { updateExtractionSettingsSchema } from "@/src/lib/validations/extraction-validation";
-import { createHandler } from "@/src/lib/api-handler";
-import { logger } from "@/src/lib/logger";
-import type { ExtractionSettings } from "@/src/lib/extractors/types";
+} from "@/lib/services/feed-settings-service";
+import { updateExtractionSettingsSchema } from "@/lib/validations/extraction-validation";
+import { createHandler } from "@/lib/api-handler";
+import { logger } from "@/lib/logger";
+import type { ExtractionSettings } from "@/lib/extractors/types";
 
 /**
  * GET /api/feeds/[id]/settings

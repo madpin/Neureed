@@ -4,14 +4,14 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { apiResponse, apiError } from "@/src/lib/api-response";
-import { logger } from "@/src/lib/logger";
+import { apiResponse, apiError } from "@/lib/api-response";
+import { logger } from "@/lib/logger";
 import {
   getEmbeddingStats,
   clearAllEmbeddings,
   generateBatchEmbeddings,
   getArticlesWithoutEmbeddings,
-} from "@/src/lib/services/article-embedding-service";
+} from "@/lib/services/article-embedding-service";
 
 /**
  * GET - Get embedding statistics

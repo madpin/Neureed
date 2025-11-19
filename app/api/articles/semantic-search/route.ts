@@ -3,13 +3,13 @@
  * POST /api/articles/semantic-search
  */
 
-import { logger } from "@/src/lib/logger";
+import { logger } from "@/lib/logger";
 import {
   searchSimilarArticles,
   hybridSearch,
-} from "@/src/lib/services/semantic-search-service";
+} from "@/lib/services/semantic-search-service";
 import { z } from "zod";
-import { createHandler } from "@/src/lib/api-handler";
+import { createHandler } from "@/lib/api-handler";
 
 const searchSchema = z.object({
   query: z.string().min(1, "Query is required"),

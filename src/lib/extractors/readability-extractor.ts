@@ -2,8 +2,8 @@ import { Readability } from "@mozilla/readability";
 import { JSDOM } from "jsdom";
 import { BaseExtractor } from "./base-extractor";
 import type { ExtractorConfig, ExtractedContent } from "./types";
-import { sanitizeHtml } from "@/src/lib/feed-parser";
-import { logger } from "@/src/lib/logger";
+import { sanitizeHtml } from "@/lib/feed-parser";
+import { logger } from "@/lib/logger";
 
 /**
  * Readability-based content extractor

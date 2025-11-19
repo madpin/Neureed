@@ -1,7 +1,7 @@
-import { prisma } from "@/src/lib/db";
+import { prisma } from "@/lib/db";
 import type { Prisma } from "@prisma/client";
 import { getEffectiveFeedSettings } from "./feed-settings-cascade";
-import { logger } from "@/src/lib/logger";
+import { logger } from "@/lib/logger";
 
 /**
  * Cleanup options

@@ -3,10 +3,10 @@
  * Provides abstraction layer for different embedding providers
  */
 
-import { env } from "@/src/env";
-import { logger } from "@/src/lib/logger";
-import { OpenAIEmbeddingProvider } from "@/src/lib/embeddings/openai-provider";
-import { LocalEmbeddingProvider } from "@/src/lib/embeddings/local-provider";
+import { env } from "@/env";
+import { logger } from "@/lib/logger";
+import { OpenAIEmbeddingProvider } from "@/lib/embeddings/openai-provider";
+import { LocalEmbeddingProvider } from "@/lib/embeddings/local-provider";
 import { trackEmbeddingCost } from "./embedding-cost-tracker";
 import type {
   EmbeddingProvider,
@@ -14,7 +14,7 @@ import type {
   EmbeddingResult,
   BatchEmbeddingResult,
   EmbeddingConfig,
-} from "@/src/lib/embeddings/types";
+} from "@/lib/embeddings/types";
 
 /**
  * Get the configured embedding provider

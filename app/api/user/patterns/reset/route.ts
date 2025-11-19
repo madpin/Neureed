@@ -1,5 +1,5 @@
-import { resetUserPatterns } from "@/src/lib/services/pattern-detection-service";
-import { createHandler } from "@/src/lib/api-handler";
+import { resetUserPatterns } from "@/lib/services/pattern-detection-service";
+import { createHandler } from "@/lib/api-handler";
 
 /**
  * POST /api/user/patterns/reset

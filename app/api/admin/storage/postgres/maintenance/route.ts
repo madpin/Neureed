@@ -4,8 +4,8 @@
  */
 
 import { NextRequest } from "next/server";
-import { prisma } from "@/src/lib/db";
-import { apiResponse, apiError } from "@/src/lib/api-response";
+import { prisma } from "@/lib/db";
+import { apiResponse, apiError } from "@/lib/api-response";
 import { z } from "zod";
 
 const maintenanceSchema = z.object({

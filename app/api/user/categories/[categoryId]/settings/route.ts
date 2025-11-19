@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { createHandler } from "@/src/lib/api-handler";
-import { requireAuth } from "@/src/lib/middleware/auth-middleware";
-import { prisma } from "@/src/lib/db";
-import { validateFeedSettings } from "@/src/lib/services/feed-settings-cascade";
+import { createHandler } from "@/lib/api-handler";
+import { requireAuth } from "@/lib/middleware/auth-middleware";
+import { prisma } from "@/lib/db";
+import { validateFeedSettings } from "@/lib/services/feed-settings-cascade";
 
 /**
  * Category settings schema (same as feed settings)

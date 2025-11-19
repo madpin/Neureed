@@ -3,14 +3,14 @@ import {
   validateAndCreateFeed,
   searchFeeds,
   getFeedsByCategory,
-} from "@/src/lib/services/feed-service";
+} from "@/lib/services/feed-service";
 import {
   createFeedSchema,
   feedQuerySchema,
-} from "@/src/lib/validations/feed-validation";
-import { createHandler } from "@/src/lib/api-handler";
-import { getCurrentUser } from "@/src/lib/middleware/auth-middleware";
-import { subscribeFeed } from "@/src/lib/services/user-feed-service";
+} from "@/lib/validations/feed-validation";
+import { createHandler } from "@/lib/api-handler";
+import { getCurrentUser } from "@/lib/middleware/auth-middleware";
+import { subscribeFeed } from "@/lib/services/user-feed-service";
 
 /**
  * GET /api/feeds
@@ -77,7 +77,7 @@ export const POST = createHandler(
     } catch (error) {
       // If feed already exists, get it instead
       if (error instanceof Error && error.message.includes("already exists")) {
-        const { getFeedByUrl } = await import("@/src/lib/services/feed-service");
+        const { getFeedByUrl } = await import("@/lib/services/feed-service");
         feed = await getFeedByUrl(url);
         
         if (!feed) {
@@ -100,7 +100,7 @@ export const POST = createHandler(
         subscribed = true;
       } catch (subscribeError) {
         // Check if already subscribed
-        const { isUserSubscribed } = await import("@/src/lib/services/user-feed-service");
+        const { isUserSubscribed } = await import("@/lib/services/user-feed-service");
         subscribed = await isUserSubscribed(user.id, feed.id);
         
         if (!subscribed) {
@@ -112,7 +112,7 @@ export const POST = createHandler(
     // If it's a new feed, automatically fetch articles
     if (isNewFeed) {
       try {
-        const { refreshFeed } = await import("@/src/lib/services/feed-refresh-service");
+        const { refreshFeed } = await import("@/lib/services/feed-refresh-service");
         const refreshResult = await refreshFeed(feed.id);
         
         return { 

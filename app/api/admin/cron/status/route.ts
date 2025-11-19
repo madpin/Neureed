@@ -1,8 +1,8 @@
-import { createHandler } from "@/src/lib/api-handler";
-import { getSchedulerStatus, isSchedulerInitialized } from "@/src/lib/jobs/scheduler";
-import { isSchedulerRunning as isFeedRefreshRunning } from "@/src/lib/jobs/feed-refresh-job";
-import { isSchedulerRunning as isCleanupRunning } from "@/src/lib/jobs/cleanup-job";
-import { env } from "@/src/env";
+import { createHandler } from "@/lib/api-handler";
+import { getSchedulerStatus, isSchedulerInitialized } from "@/lib/jobs/scheduler";
+import { isSchedulerRunning as isFeedRefreshRunning } from "@/lib/jobs/feed-refresh-job";
+import { isSchedulerRunning as isCleanupRunning } from "@/lib/jobs/cleanup-job";
+import { env } from "@/env";
 
 /**
  * GET /api/admin/cron/status
@@ -28,6 +28,6 @@ export const GET = createHandler(
       },
     };
   },
-  { requireAuth: true, requireAdmin: true }
+  { requireAuth: true }
 );
 

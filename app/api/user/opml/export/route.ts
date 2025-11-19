@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { getUserFeeds } from "@/src/lib/services/user-feed-service";
-import { generateOPML } from "@/src/lib/services/opml-service";
-import { opmlExportQuerySchema } from "@/src/lib/validations/opml-validation";
-import { createHandler } from "@/src/lib/api-handler";
-import type { FeedWithCategories } from "@/src/lib/services/opml-service";
+import { getUserFeeds } from "@/lib/services/user-feed-service";
+import { generateOPML } from "@/lib/services/opml-service";
+import { opmlExportQuerySchema } from "@/lib/validations/opml-validation";
+import { createHandler } from "@/lib/api-handler";
+import type { FeedWithCategories } from "@/lib/services/opml-service";
 
 /**
  * GET /api/user/opml/export

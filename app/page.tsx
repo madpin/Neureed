@@ -13,9 +13,9 @@ import { FeedBrowser } from "./components/feeds/FeedBrowser";
 import { ArticleList } from "./components/articles/ArticleList";
 import { SignInWithGoogleButton, SignInWithGitHubButton } from "./components/auth/SignInButton";
 import { Tooltip } from "./components/layout/Tooltip";
-import { useInfiniteScroll } from "@/src/hooks/useInfiniteScroll";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import type { Feed, Article } from "@prisma/client";
-import type { ArticleSortOrder, ArticleSortDirection } from "@/src/lib/validations/article-validation";
+import type { ArticleSortOrder, ArticleSortDirection } from "@/lib/validations/article-validation";
 
 interface FeedWithStats extends Feed {
   articleCount?: number;

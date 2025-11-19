@@ -5,8 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { ArticlePageClient } from "@/app/components/articles/ArticlePageClient";
 import { ArticleFeedbackSection } from "@/app/components/articles/ArticleFeedbackSection";
 import { RelatedArticles } from "@/app/components/articles/RelatedArticles";
-import { processArticleContent, estimateReadingTime } from "@/src/lib/content-processor";
-import { formatLocalizedDateTime } from "@/src/lib/date-utils";
+import { processArticleContent, estimateReadingTime } from "@/lib/content-processor";
+import { formatLocalizedDateTime } from "@/lib/date-utils";
 import type { Article, Feed } from "@prisma/client";
 
 type ArticleWithFeed = Article & { feed: Feed };

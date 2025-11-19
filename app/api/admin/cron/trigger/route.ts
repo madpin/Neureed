@@ -1,6 +1,6 @@
-import { createHandler } from "@/src/lib/api-handler";
-import { executeFeedRefreshJob } from "@/src/lib/jobs/feed-refresh-job";
-import { executeCleanupJob } from "@/src/lib/jobs/cleanup-job";
+import { createHandler } from "@/lib/api-handler";
+import { executeFeedRefreshJob } from "@/lib/jobs/feed-refresh-job";
+import { executeCleanupJob } from "@/lib/jobs/cleanup-job";
 import { z } from "zod";
 
 const triggerSchema = z.object({
@@ -43,8 +43,7 @@ export const POST = createHandler(
     };
   },
   { 
-    requireAuth: true, 
-    requireAdmin: true,
+    requireAuth: true,
     bodySchema: triggerSchema,
   }
 );

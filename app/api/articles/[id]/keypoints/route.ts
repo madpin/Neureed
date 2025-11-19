@@ -3,9 +3,9 @@
  * GET /api/articles/[id]/keypoints - Get article key points
  */
 
-import { extractKeyPoints } from "@/src/lib/services/summarization-service";
-import { getCurrentUser } from "@/src/lib/middleware/auth-middleware";
-import { createHandler } from "@/src/lib/api-handler";
+import { extractKeyPoints } from "@/lib/services/summarization-service";
+import { getCurrentUser } from "@/lib/middleware/auth-middleware";
+import { createHandler } from "@/lib/api-handler";
 
 /**
  * GET /api/articles/[id]/keypoints

@@ -1,4 +1,4 @@
-import { parseFeedUrl } from "@/src/lib/feed-parser";
+import { parseFeedUrl } from "@/lib/feed-parser";
 import {
   getFeed,
   updateFeedLastFetched,
@@ -12,8 +12,8 @@ import { generateBatchEmbeddings } from "./article-embedding-service";
 import { extractContent } from "./content-extraction-service";
 import { shouldAutoGenerateEmbeddings } from "./admin-settings-service";
 import { cleanupFeedArticles } from "./article-cleanup-service";
-import { env } from "@/src/env";
-import { logger } from "@/src/lib/logger";
+import { env } from "@/env";
+import { logger } from "@/lib/logger";
 
 /**
  * Result of a feed refresh operation

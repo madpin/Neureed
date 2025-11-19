@@ -1,10 +1,10 @@
-import { createHandler } from "@/src/lib/api-handler";
+import { createHandler } from "@/lib/api-handler";
 import { z } from "zod";
 import {
   assignFeedToCategory,
   unassignFeedFromCategory,
   getCategoryFeeds,
-} from "@/src/lib/services/user-category-service";
+} from "@/lib/services/user-category-service";
 
 /**
  * GET /api/user/categories/:categoryId/feeds

@@ -8,7 +8,7 @@ import { ArticleList } from "@/app/components/articles/ArticleList";
 import { ArticleSortDropdown } from "@/app/components/articles/ArticleSortDropdown";
 import { ReadingPanelLayout } from "@/app/components/layout/ReadingPanelLayout";
 import type { Article, Feed } from "@prisma/client";
-import type { ArticleSortOrder, ArticleSortDirection } from "@/src/lib/validations/article-validation";
+import type { ArticleSortOrder, ArticleSortDirection } from "@/lib/validations/article-validation";
 
 interface ArticleWithFeed extends Article {
   feed: Feed;

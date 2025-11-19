@@ -1,5 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes, createHash } from "crypto";
-import { env } from "@/src/env";
+import { env } from "@/env";
 
 /**
  * Encryption service for secure cookie and sensitive data storage

@@ -3,7 +3,7 @@
  * Uses local Ollama instance for text generation
  */
 
-import { env } from "@/src/env";
+import { env } from "@/env";
 import { logger } from "../logger";
 import type {
   LLMProviderInterface,

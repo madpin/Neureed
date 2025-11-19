@@ -7,8 +7,8 @@
 import {
   getAllTopics,
   getArticlesByTopic,
-} from "@/src/lib/services/summarization-service";
-import { createHandler } from "@/src/lib/api-handler";
+} from "@/lib/services/summarization-service";
+import { createHandler } from "@/lib/api-handler";
 
 /**
  * GET /api/articles/topics

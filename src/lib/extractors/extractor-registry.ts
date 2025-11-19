@@ -4,7 +4,7 @@ import type {
   ExtractedContent,
   ExtractorMetrics,
 } from "./types";
-import { logger } from "@/src/lib/logger";
+import { logger } from "@/lib/logger";
 import { playwrightExtractor } from "./playwright-extractor";
 import { readabilityExtractor } from "./readability-extractor";
 

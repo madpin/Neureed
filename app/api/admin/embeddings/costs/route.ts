@@ -4,14 +4,14 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { apiResponse, apiError } from "@/src/lib/api-response";
-import { logger } from "@/src/lib/logger";
+import { apiResponse, apiError } from "@/lib/api-response";
+import { logger } from "@/lib/logger";
 import {
   getCostStats,
   getRecentCostEntries,
   getCostReport,
   clearCostHistory,
-} from "@/src/lib/services/embedding-cost-tracker";
+} from "@/lib/services/embedding-cost-tracker";
 
 /**
  * GET - Get cost statistics

@@ -1,6 +1,6 @@
-import { createHandler } from "@/src/lib/api-handler";
-import { refreshUserFeeds, getRefreshStats } from "@/src/lib/services/feed-refresh-service";
-import { requireAuth } from "@/src/lib/middleware/auth-middleware";
+import { createHandler } from "@/lib/api-handler";
+import { refreshUserFeeds, getRefreshStats } from "@/lib/services/feed-refresh-service";
+import { requireAuth } from "@/lib/middleware/auth-middleware";
 
 /**
  * POST /api/user/feeds/refresh

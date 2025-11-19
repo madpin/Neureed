@@ -4,13 +4,13 @@
  */
 
 import cron from "node-cron";
-import { logger } from "@/src/lib/logger";
+import { logger } from "@/lib/logger";
 import {
   getArticlesWithoutEmbeddings,
   generateBatchEmbeddings,
   getEmbeddingStats,
-} from "@/src/lib/services/article-embedding-service";
-import { env } from "@/src/env";
+} from "@/lib/services/article-embedding-service";
+import { env } from "@/env";
 
 let embeddingJobTask: cron.ScheduledTask | null = null;
 let isRunning = false;

@@ -1,4 +1,4 @@
-import { prisma } from "@/src/lib/db";
+import { prisma } from "@/lib/db";
 import type { UserCategory, UserFeedCategory, Feed } from "@prisma/client";
 
 export interface UserCategoryWithFeeds extends UserCategory {

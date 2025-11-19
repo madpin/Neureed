@@ -41,10 +41,12 @@ jobs:
 
       - name: Install dependencies
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        timeout-minutes: 15
         run: |
           npm ci --prefer-offline --no-audit --no-fund --omit=optional
         env:
           NODE_OPTIONS: --max-old-space-size=8192
+          CI: true
 
       - name: Cache Prisma
         uses: actions/cache@v4
@@ -53,12 +55,13 @@ jobs:
           key: ${{ runner.os }}-prisma-${{ hashFiles('prisma/schema.prisma') }}-${{ hashFiles('package-lock.json') }}
 
       - name: Generate Prisma Client
+        timeout-minutes: 5
         run: npm run db:generate
         env:
           NODE_OPTIONS: --max-old-space-size=8192
 
       - name: Validate Prisma schema
-        run: npm run db:generate -- --help > /dev/null 2>&1 && npx prisma validate
+        run: npx prisma validate
 
       - name: Run ESLint
         run: npm run lint
@@ -97,10 +100,12 @@ jobs:
 
       - name: Install dependencies
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        timeout-minutes: 15
         run: |
           npm ci --prefer-offline --no-audit --no-fund --omit=optional
         env:
           NODE_OPTIONS: --max-old-space-size=8192
+          CI: true
 
       - name: Cache Prisma
         uses: actions/cache@v4
@@ -109,6 +114,7 @@ jobs:
           key: ${{ runner.os }}-prisma-${{ hashFiles('prisma/schema.prisma') }}-${{ hashFiles('package-lock.json') }}
 
       - name: Generate Prisma Client
+        timeout-minutes: 5
         run: npm run db:generate
         env:
           NODE_OPTIONS: --max-old-space-size=8192

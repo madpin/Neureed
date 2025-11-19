@@ -3,11 +3,11 @@
  * Provides vector similarity search functionality
  */
 
-import { prisma } from "@/src/lib/db";
-import { logger } from "@/src/lib/logger";
+import { prisma } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { generateEmbedding } from "./embedding-service";
 import type { Article, Feed } from "@prisma/client";
-import type { EmbeddingProvider } from "@/src/lib/embeddings/types";
+import type { EmbeddingProvider } from "@/lib/embeddings/types";
 
 export interface SearchResult extends Article {
   similarity: number;

@@ -3,9 +3,9 @@
  * Manages system-wide admin settings with database storage and environment variable fallback
  */
 
-import { prisma } from "@/src/lib/db";
-import { env } from "@/src/env";
-import { logger } from "@/src/lib/logger";
+import { prisma } from "@/lib/db";
+import { env } from "@/env";
+import { logger } from "@/lib/logger";
 import { AdminSettings } from "@prisma/client";
 
 /**

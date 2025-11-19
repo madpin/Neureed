@@ -1,5 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
-import { env } from "@/src/env";
+import { env } from "@/env";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 16;

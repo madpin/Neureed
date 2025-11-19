@@ -75,7 +75,7 @@ Uses Mozilla's Readability library to extract clean article content from HTML pa
 
 **Implementation:**
 ```typescript
-import { ReadabilityExtractor } from '@/src/lib/extractors/readability-extractor';
+import { ReadabilityExtractor } from '@/lib/extractors/readability-extractor';
 
 const extractor = new ReadabilityExtractor();
 const result = await extractor.extract(url, {
@@ -133,7 +133,7 @@ interface ContentExtractor {
 1. **Extend BaseExtractor:**
 
 ```typescript
-import { BaseExtractor } from '@/src/lib/extractors/base-extractor';
+import { BaseExtractor } from '@/lib/extractors/base-extractor';
 
 export class CustomExtractor extends BaseExtractor {
   name = "custom";
@@ -168,7 +168,7 @@ export class CustomExtractor extends BaseExtractor {
 2. **Register the extractor:**
 
 ```typescript
-import { extractorRegistry } from '@/src/lib/extractors/extractor-registry';
+import { extractorRegistry } from '@/lib/extractors/extractor-registry';
 import { customExtractor } from './custom-extractor';
 
 extractorRegistry.registerExtractor(customExtractor);
@@ -205,7 +205,7 @@ for (const extractor of extractors) {
 Cookies are encrypted using AES-256-GCM before storage:
 
 ```typescript
-import { encrypt, decrypt } from '@/src/lib/services/encryption-service';
+import { encrypt, decrypt } from '@/lib/services/encryption-service';
 
 // Encrypt before saving
 const encrypted = encrypt(cookieString);

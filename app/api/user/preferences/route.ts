@@ -1,10 +1,10 @@
 import {
   getUserPreferences,
   updateUserPreferences,
-} from "@/src/lib/services/user-preferences-service";
+} from "@/lib/services/user-preferences-service";
 import { z } from "zod";
-import { createHandler } from "@/src/lib/api-handler";
-import { articleSortOrderSchema, articleSortDirectionSchema } from "@/src/lib/validations/article-validation";
+import { createHandler } from "@/lib/api-handler";
+import { articleSortOrderSchema, articleSortDirectionSchema } from "@/lib/validations/article-validation";
 
 /**
  * GET /api/user/preferences

@@ -3,10 +3,10 @@
  * GET /api/articles/:id/related
  */
 
-import { logger } from "@/src/lib/logger";
-import { findRelatedArticles } from "@/src/lib/services/semantic-search-service";
-import { createHandler } from "@/src/lib/api-handler";
-import { apiResponse } from "@/src/lib/api-response";
+import { logger } from "@/lib/logger";
+import { findRelatedArticles } from "@/lib/services/semantic-search-service";
+import { createHandler } from "@/lib/api-handler";
+import { apiResponse } from "@/lib/api-response";
 
 /**
  * GET - Find related articles

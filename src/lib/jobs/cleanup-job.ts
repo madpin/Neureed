@@ -1,6 +1,6 @@
 import cron from "node-cron";
 import { cleanupOldArticles, vacuumDatabase } from "../services/article-cleanup-service";
-import { logger } from "@/src/lib/logger";
+import { logger } from "@/lib/logger";
 
 /**
  * Cron job for cleaning up old articles
