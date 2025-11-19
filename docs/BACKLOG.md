@@ -50,3 +50,10 @@ Maintenance information:
 - where the user can see how much storage is being used, and apply methods to clean/compress them up
 - Installation check, with all the stats on the instalation, versions and all.
 - Application logs
+
+---
+
+## Known Issues / Technical Debt
+
+- Auto-generate embeddings on OPML import should be configurable via environment variable (default: true)
+- OPML import is not importing feed categories properly
