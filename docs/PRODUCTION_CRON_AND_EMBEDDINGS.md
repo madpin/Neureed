@@ -35,11 +35,11 @@ if (!env.ENABLE_CRON_JOBS) {
 - **Feed Refresh**: Every 30 minutes (default: `*/30 * * * *`)
 - **Cleanup**: Daily at 3 AM (default: `0 3 * * *`)
 
-### ⚠️ CRITICAL: Enable Instrumentation Hook
+### ✅ Instrumentation Hook (Automatic in Next.js 16)
 
-**Problem:** Your `next.config.ts` is **missing** the instrumentation hook configuration!
+**Good News:** In Next.js 16, `instrumentation.ts` is **enabled by default**!
 
-**Current Configuration:**
+**Your Configuration:**
 ```typescript
 const nextConfig: NextConfig = {
   output: 'standalone',
@@ -52,21 +52,9 @@ const nextConfig: NextConfig = {
 };
 ```
 
-**Required Fix:**
-```typescript
-const nextConfig: NextConfig = {
-  output: 'standalone',
-  experimental: {
-    serverActions: {
-      bodySizeLimit: '2mb',
-    },
-    staticGenerationRetryCount: 0,
-    instrumentationHook: true,  // ⚠️ ADD THIS!
-  },
-};
-```
+**No additional configuration needed!** ✅
 
-**Without this, `instrumentation.ts` will NOT be called, and cron jobs will NOT start!**
+The `instrumentation.ts` file will be called automatically when the server starts, initializing your cron jobs.
 
 ### Environment Variables for Cron
 
@@ -486,10 +474,10 @@ EXTRACTION_TIMEOUT="60000"
 
 ## Complete Production Checklist
 
-### 1. Enable Instrumentation Hook ⚠️ CRITICAL
+### 1. Instrumentation Hook ✅ AUTOMATIC
 
-- [ ] Add `instrumentationHook: true` to `next.config.ts`
-- [ ] Redeploy after making this change
+- [x] `instrumentation.ts` is enabled by default in Next.js 16
+- [x] No configuration needed - cron jobs will start automatically
 
 ### 2. Configure Cron Jobs
 
