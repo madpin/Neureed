@@ -188,10 +188,33 @@ Then add the corresponding secrets in GitHub repository settings.
 
 Both workflows use GitHub Actions cache to speed up builds:
 - Docker layer caching
-- npm package caching
+- npm package caching (with `node_modules` and `.prisma` caching)
 - Node.js setup caching
 
 This significantly reduces build times for subsequent runs.
+
+### CI Optimizations
+
+The CI pipeline includes several optimizations for speed and reliability:
+
+1. **Efficient npm install**:
+   - `--no-audit`: Skips security audit (saves ~30 seconds)
+   - `--no-fund`: Skips funding messages (cleaner output)
+   - `--omit=optional`: Skips optional dependencies like Playwright
+
+2. **Memory management**:
+   - `NODE_OPTIONS: --max-old-space-size=4096` for large dependency installations
+   - Prevents out-of-memory errors during build
+
+3. **Prisma optimization**:
+   - Uses `npm run db:generate` instead of `npx prisma generate`
+   - Ensures version consistency with package-lock.json
+   - Faster and more reliable
+
+4. **Project-level `.npmrc`**:
+   - Optimized fetch timeouts and retries
+   - Disabled progress bars for cleaner CI logs
+   - See `.npmrc` for full configuration
 
 ## Status Badges
 
@@ -203,6 +226,33 @@ Add these badges to your README.md:
 ```
 
 ## Troubleshooting
+
+### npm ci Timeout or Out of Memory
+
+**Symptoms:**
+- `npm ci` hangs for 40+ minutes
+- Exit code 217 (out of memory)
+- "Exit handler never called!" error
+
+**Solutions:**
+1. Ensure `.npmrc` is committed with optimized settings
+2. Check that `NODE_OPTIONS: --max-old-space-size=4096` is set in workflow
+3. Use `--omit=optional` to skip large optional dependencies
+4. Verify `node_modules` cache is working correctly
+
+**See:** `docs/CI_CD_FIXES.md` for detailed explanation
+
+### Prisma Version Mismatch
+
+**Symptoms:**
+- `npx prisma generate` tries to install different version than locked
+- "Error: Command failed with exit code 217: npm i @prisma/client@X.X.X"
+
+**Solutions:**
+1. Use `npm run db:generate` instead of `npx prisma generate`
+2. Ensure `@prisma/client` and `prisma` versions match in `package.json`
+3. Use caret (`^`) versions for flexibility: `^6.1.0`
+4. Regenerate `package-lock.json` if needed: `rm package-lock.json && npm install`
 
 ### Build Fails on GitHub Actions
 
