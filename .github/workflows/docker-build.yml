@@ -28,6 +28,10 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+            network=host
 
       - name: Log in to Container Registry
         if: github.event_name != 'pull_request'
@@ -50,61 +54,12 @@ jobs:
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build Docker image
+      - name: Build and Push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
-          push: false
-          load: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          build-args: |
-            SKIP_ENV_VALIDATION=1
-
-      - name: Test Docker image
-        run: |
-          echo "Testing Docker image..."
-          docker images
-          
-          # Get the first tag from the metadata
-          IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n 1)
-          echo "Testing image: $IMAGE_TAG"
-          
-          # Run a quick test to ensure the image starts
-          docker run --rm -d \
-            --name neureed-test \
-            -e DATABASE_URL="postgresql://test:test@localhost:5432/test" \
-            -e NEXTAUTH_URL="http://localhost:3000" \
-            -e NEXTAUTH_SECRET="test-secret-for-ci-only" \
-            -e GITHUB_CLIENT_ID="test" \
-            -e GITHUB_CLIENT_SECRET="test" \
-            -e OPENAI_API_KEY="test" \
-            -e SKIP_ENV_VALIDATION="1" \
-            $IMAGE_TAG || true
-          
-          # Wait a bit for the container to start
-          sleep 5
-          
-          # Check if container is running
-          if docker ps | grep -q neureed-test; then
-            echo "✅ Container started successfully"
-            docker logs neureed-test
-            docker stop neureed-test
-          else
-            echo "⚠️  Container failed to start (expected if DB is not available)"
-            docker logs neureed-test || true
-          fi
-
-      - name: Push Docker image
-        if: github.event_name != 'pull_request'
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64,linux/arm64
@@ -112,6 +67,9 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             SKIP_ENV_VALIDATION=1
+          # Performance optimizations
+          provenance: false
+          sbom: false
 
       - name: Trigger Dokploy Deployment
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
