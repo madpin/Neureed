@@ -107,10 +107,48 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
             SKIP_ENV_VALIDATION=1
+
+      - name: Trigger Dokploy Deployment
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        run: |
+          if [ -n "${{ secrets.DOKPLOY_API_KEY }}" ] && [ -n "${{ secrets.DOKPLOY_APP_ID }}" ]; then
+            echo "🚀 Triggering Dokploy deployment..."
+            RESPONSE=$(curl -s -w "\n%{http_code}" -X 'POST' \
+              'https://dokploy.madpin.dev/api/trpc/application.deploy' \
+              -H 'accept: application/json' \
+              -H 'x-api-key: ${{ secrets.DOKPLOY_API_KEY }}' \
+              -H 'Content-Type: application/json' \
+              -d '{
+                "json": {
+                  "applicationId": "${{ secrets.DOKPLOY_APP_ID }}"
+                }
+              }')
+            
+            HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+            BODY=$(echo "$RESPONSE" | sed '$d')
+            
+            if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+              echo "✅ Deployment triggered successfully"
+              echo "Response: $BODY"
+            else
+              echo "⚠️  Deployment trigger failed with HTTP $HTTP_CODE"
+              echo "Response: $BODY"
+              exit 1
+            fi
+          else
+            echo "⚠️  Dokploy secrets not configured, skipping auto-deployment"
+            echo ""
+            echo "To enable auto-deployment:"
+            echo "1. Go to https://dokploy.madpin.dev and generate an API key"
+            echo "2. Add the following secrets to your GitHub repository:"
+            echo "   - DOKPLOY_API_KEY: Your Dokploy API key"
+            echo "   - DOKPLOY_APP_ID: Your application ID from Dokploy"
+          fi
 
       - name: Generate build summary
         if: always()
@@ -126,6 +164,8 @@ jobs:
           if [ "${{ github.event_name }}" != "pull_request" ]; then
             echo "### 🚀 Published Images" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Platforms**: linux/amd64, linux/arm64 (Graviton compatible)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
@@ -135,6 +175,21 @@ jobs:
             IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n 1)
             echo "docker pull $IMAGE_TAG" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
+            
+            if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "### 🎯 Dokploy Deployment" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              if [ -n "${{ secrets.DOKPLOY_API_KEY }}" ]; then
+                echo "✅ Auto-deployment triggered to https://dokploy.madpin.dev" >> $GITHUB_STEP_SUMMARY
+              else
+                echo "⚠️  Auto-deployment not configured" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "To enable, add these secrets:" >> $GITHUB_STEP_SUMMARY
+                echo "- \`DOKPLOY_API_KEY\`" >> $GITHUB_STEP_SUMMARY
+                echo "- \`DOKPLOY_APP_ID\`" >> $GITHUB_STEP_SUMMARY
+              fi
+            fi
           else
             echo "### ℹ️ Build Only (PR)" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY

@@ -106,15 +106,51 @@ volumes:
 
 ## Using in Dokploy
 
-You can configure Dokploy to pull from GitHub Container Registry instead of building:
+Following [Dokploy's production best practices](https://docs.dokploy.com/docs/core/applications/going-production), we use GitHub Actions to build and push images, then Dokploy pulls and deploys them.
 
-1. **Set up authentication** in Dokploy for GitHub Container Registry
-2. **Configure the application** to use the pre-built image:
+### Setup Steps:
+
+1. **Configure Dokploy Application**:
+   - Source Type: **Docker** (not Git)
    - Image: `ghcr.io/madpin/neureed:latest`
    - Pull policy: Always
-3. **Set environment variables** as needed
 
-This approach is faster than building on Dokploy since the image is pre-built by GitHub Actions.
+2. **Enable Auto-Deployment**:
+   - Generate API key in Dokploy
+   - Add secrets to GitHub repository:
+     - `DOKPLOY_API_KEY`: Your Dokploy API key
+     - `DOKPLOY_APP_ID`: Your application ID
+   - Deployments trigger automatically on push to main
+
+3. **Configure Health Checks** (for zero-downtime & rollbacks):
+   ```json
+   {
+     "Test": ["CMD", "curl", "-f", "http://localhost:3000/api/health"],
+     "Interval": 30000000000,
+     "Timeout": 10000000000,
+     "StartPeriod": 30000000000,
+     "Retries": 3
+   }
+   ```
+
+4. **Configure Update Policy**:
+   ```json
+   {
+     "Parallelism": 1,
+     "Delay": 10000000000,
+     "FailureAction": "rollback",
+     "Order": "start-first"
+   }
+   ```
+
+### Benefits:
+- ✅ **No server resource issues** - Building happens on GitHub's infrastructure
+- ✅ **Multi-architecture support** - Works on ARM64 (Graviton) and AMD64
+- ✅ **Zero downtime** - New container starts before old one stops
+- ✅ **Automatic rollbacks** - If health checks fail, automatically reverts
+- ✅ **Faster deployments** - Pulling pre-built images is much faster
+
+See [DOKPLOY_SETUP_GUIDE.md](../DOKPLOY_SETUP_GUIDE.md) for detailed instructions.
 
 ## Manual Workflow Dispatch
 
