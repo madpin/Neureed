@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
   
   // Disable static page generation for pages that use authentication
   experimental: {
+    // Enable instrumentation hook for cron jobs
+    instrumentationHook: true,
     // Ensure client components work properly during build
     serverActions: {
       bodySizeLimit: '2mb',
