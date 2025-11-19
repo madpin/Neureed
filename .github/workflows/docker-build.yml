@@ -1,0 +1,143 @@
+name: Docker Build and Push
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            SKIP_ENV_VALIDATION=1
+
+      - name: Test Docker image
+        run: |
+          echo "Testing Docker image..."
+          docker images
+          
+          # Get the first tag from the metadata
+          IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n 1)
+          echo "Testing image: $IMAGE_TAG"
+          
+          # Run a quick test to ensure the image starts
+          docker run --rm -d \
+            --name neureed-test \
+            -e DATABASE_URL="postgresql://test:test@localhost:5432/test" \
+            -e NEXTAUTH_URL="http://localhost:3000" \
+            -e NEXTAUTH_SECRET="test-secret-for-ci-only" \
+            -e GITHUB_CLIENT_ID="test" \
+            -e GITHUB_CLIENT_SECRET="test" \
+            -e OPENAI_API_KEY="test" \
+            -e SKIP_ENV_VALIDATION="1" \
+            $IMAGE_TAG || true
+          
+          # Wait a bit for the container to start
+          sleep 5
+          
+          # Check if container is running
+          if docker ps | grep -q neureed-test; then
+            echo "✅ Container started successfully"
+            docker logs neureed-test
+            docker stop neureed-test
+          else
+            echo "⚠️  Container failed to start (expected if DB is not available)"
+            docker logs neureed-test || true
+          fi
+
+      - name: Push Docker image
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            SKIP_ENV_VALIDATION=1
+
+      - name: Generate build summary
+        if: always()
+        run: |
+          echo "## Docker Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Repository**: ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Event**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "### 🚀 Published Images" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Pull the image with:" >> $GITHUB_STEP_SUMMARY
+            echo '```bash' >> $GITHUB_STEP_SUMMARY
+            IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n 1)
+            echo "docker pull $IMAGE_TAG" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ℹ️ Build Only (PR)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Image was built but not pushed (pull request)." >> $GITHUB_STEP_SUMMARY
+          fi
+

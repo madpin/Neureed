@@ -1,5 +1,9 @@
 # NeuReed - Intelligent RSS Reader
 
+![CI](https://github.com/madpin/Neureed/workflows/CI/badge.svg)
+![Docker Build](https://github.com/madpin/Neureed/workflows/Docker%20Build%20and%20Push/badge.svg)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 NeuReed is a highly customizable, LLM-focused RSS reader with semantic search capabilities, built on Next.js with PostgreSQL/pgvector for intelligent content discovery and personalization.
 
 ## Features
@@ -394,12 +398,56 @@ curl http://localhost:3000/api/articles/ARTICLE_ID/related?limit=5
 curl http://localhost:3000/api/admin/embeddings
 ```
 
+## Deployment
+
+### Docker
+
+Pre-built Docker images are available via GitHub Container Registry:
+
+```bash
+# Pull the latest image
+docker pull ghcr.io/madpin/neureed:latest
+
+# Run the container
+docker run -d \
+  --name neureed \
+  -p 3000:3000 \
+  -e DATABASE_URL="postgresql://user:pass@host:5432/neureed" \
+  -e NEXTAUTH_URL="https://your-domain.com" \
+  -e NEXTAUTH_SECRET="your-secret" \
+  -e GITHUB_CLIENT_ID="your-id" \
+  -e GITHUB_CLIENT_SECRET="your-secret" \
+  -e OPENAI_API_KEY="your-key" \
+  ghcr.io/madpin/neureed:latest
+```
+
+### Dokploy
+
+For Dokploy deployment instructions, see:
+- [Dokploy Deployment Guide](DOKPLOY_FIX.md) - Comprehensive deployment guide
+- [Deployment Fix Summary](DEPLOYMENT_FIX_SUMMARY.md) - Quick reference
+
+### CI/CD
+
+GitHub Actions workflows automatically:
+- ✅ Run tests and linting on every PR
+- ✅ Build Docker images on every push
+- ✅ Push images to GitHub Container Registry
+- ✅ Create releases with changelogs
+
+See [.github/workflows/README.md](.github/workflows/README.md) for details.
+
 ## Documentation
 
 ### User Guides
 - [Content Extraction Guide](docs/guides/CONTENT_EXTRACTION.md) - Configure content extraction methods
 - [Cookie Extraction Guide](docs/guides/COOKIE_EXTRACTION_GUIDE.md) - Extract cookies for authenticated feeds
 - [Storage Management Guide](docs/guides/STORAGE_MANAGEMENT_GUIDE.md) - Monitor and manage database/cache storage
+
+### Deployment Guides
+- [Dokploy Deployment](DOKPLOY_FIX.md) - Deploy to Dokploy
+- [Deployment Summary](DEPLOYMENT_FIX_SUMMARY.md) - Quick deployment reference
+- [CI/CD Workflows](.github/workflows/README.md) - GitHub Actions setup
 
 ### Implementation Details
 - [Cron System Implementation](docs/implementation/CRON_IMPLEMENTATION_SUMMARY.md) - Automated feed refresh and cleanup
