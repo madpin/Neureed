@@ -156,7 +156,7 @@ document.cookie.split(';').map(c => {
       <div className="space-y-2">
         <h4 className="text-xs font-semibold">Tips</h4>
         <ul className="text-xs space-y-1 text-foreground/70">
-          <li>• Make sure you're logged in before extracting cookies</li>
+          <li>• Make sure you&apos;re logged in before extracting cookies</li>
           <li>• Test the extraction after saving to verify it works</li>
           <li>• Update cookies if you see authentication errors</li>
           <li>• Some sites require specific cookies - include all of them</li>

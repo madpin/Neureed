@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 /**
  * Custom 404 Not Found page
  * This is a server component by default, which prevents SSR issues during build
@@ -11,12 +13,12 @@ export default function NotFound() {
         <p className="mb-8 text-foreground/70">
           The page you&apos;re looking for doesn&apos;t exist.
         </p>
-        <a
+        <Link
           href="/"
           className="inline-block rounded-lg bg-blue-600 px-6 py-3 text-white hover:bg-blue-700 transition-colors"
         >
           Go Home
-        </a>
+        </Link>
       </div>
     </div>
   );

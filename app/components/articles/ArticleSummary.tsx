@@ -197,7 +197,7 @@ function ArticleSummaryComponent(
 
       {summary && !isExpanded && (
         <p className="mt-4 text-sm text-foreground/70">
-          Click "Expand" to view the AI-generated summary
+          Click &quot;Expand&quot; to view the AI-generated summary
         </p>
       )}
 

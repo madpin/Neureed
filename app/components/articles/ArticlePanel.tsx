@@ -27,9 +27,9 @@ function getReadingStyles(preferences: ReadingPreferences | null): React.CSSProp
     fontFamily: preferences.readingFontFamily,
     fontSize: `${preferences.readingFontSize}px`,
     lineHeight: preferences.readingLineHeight,
-    // @ts-ignore - CSS custom properties
+    // @ts-expect-error - CSS custom properties
     '--paragraph-spacing': `${preferences.readingParagraphSpacing}rem`,
-    // @ts-ignore - CSS custom properties
+    // @ts-expect-error - CSS custom properties
     '--break-line-spacing': `${preferences.breakLineSpacing}rem`,
   };
 }

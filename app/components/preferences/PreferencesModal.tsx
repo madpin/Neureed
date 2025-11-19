@@ -1187,7 +1187,7 @@ function FeedsView({
               <h3 className="mb-2 text-lg font-semibold">Import Feeds</h3>
               <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
                 Import feeds from an OPML file. New feeds will be created automatically,
-                and you'll be subscribed to all imported feeds. Categories will be created if needed.
+                and you&apos;ll be subscribed to all imported feeds. Categories will be created if needed.
               </p>
             </div>
             <button

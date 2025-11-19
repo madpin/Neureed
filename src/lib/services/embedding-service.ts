@@ -271,6 +271,7 @@ export async function testEmbeddingProvider(
   provider: string;
   dimensions: number;
   testTime: number;
+  available: boolean;
   error?: string;
 }> {
   const startTime = Date.now();
@@ -286,6 +287,7 @@ export async function testEmbeddingProvider(
       provider: embeddingProvider.getModelName(),
       dimensions: result.embedding.length,
       testTime: Date.now() - startTime,
+      available: true,
     };
   } catch (error) {
     return {
@@ -293,6 +295,7 @@ export async function testEmbeddingProvider(
       provider: provider || "unknown",
       dimensions: 0,
       testTime: Date.now() - startTime,
+      available: false,
       error: error instanceof Error ? error.message : String(error),
     };
   }

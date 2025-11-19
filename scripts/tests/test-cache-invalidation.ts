@@ -3,18 +3,18 @@
  * Tests that cache is properly invalidated when data changes
  */
 
-import { prisma } from "../src/lib/db";
+import { prisma } from "../../src/lib/db";
 import {
   cacheGet,
   cacheSet,
   getCacheStats,
   resetCacheStats,
-} from "../src/lib/cache/cache-service";
-import { CacheKeys } from "../src/lib/cache/cache-keys";
-import { updateUserPatterns } from "../src/lib/services/pattern-detection-service";
-import { scoreArticle } from "../src/lib/services/article-scoring-service";
-import { updateArticle, deleteArticle } from "../src/lib/services/article-service";
-import { getRedisClient } from "../src/lib/cache/redis-client";
+} from "../../src/lib/cache/cache-service";
+import { CacheKeys } from "../../src/lib/cache/cache-keys";
+import { updateUserPatterns } from "../../src/lib/services/pattern-detection-service";
+import { scoreArticle } from "../../src/lib/services/article-scoring-service";
+import { updateArticle, deleteArticle } from "../../src/lib/services/article-service";
+import { getRedisClient } from "../../src/lib/cache/redis-client";
 
 async function testUserPatternInvalidation() {
   console.log("\n=== Testing User Pattern Cache Invalidation ===");

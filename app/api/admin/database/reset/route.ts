@@ -1,4 +1,3 @@
-import { NextRequest } from "next/server";
 import { createHandler } from "@/lib/api-handler";
 import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";

@@ -166,7 +166,7 @@ export default function AnalyticsPage() {
             </div>
             <p className="mt-3 text-xs text-blue-600 dark:text-blue-400">
               💡 Keep rating articles! Once you reach {MIN_FEEDBACK_FOR_PERSONALIZATION} ratings, 
-              we'll start showing relevance scores and personalizing your feed.
+              we&apos;ll start showing relevance scores and personalizing your feed.
             </p>
           </div>
         )}

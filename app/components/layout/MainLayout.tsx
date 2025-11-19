@@ -27,11 +27,6 @@ export function MainLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  // Load sidebar collapsed state from preferences
-  useEffect(() => {
-    loadSidebarState();
-  }, []);
-
   const loadSidebarState = async () => {
     try {
       const response = await fetch("/api/user/preferences");
@@ -44,6 +39,12 @@ export function MainLayout({
       console.error("Failed to load sidebar state:", error);
     }
   };
+
+  // Load sidebar collapsed state from preferences
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadSidebarState();
+  }, []);
 
   const toggleSidebarCollapse = async () => {
     const newCollapsed = !isSidebarCollapsed;

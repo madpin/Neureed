@@ -5,9 +5,9 @@
  */
 
 import { PrismaClient } from "@prisma/client";
-import { refreshFeed } from "../src/lib/services/feed-refresh-service";
-import { getFeedsToRefresh, getUserFeedsToRefresh } from "../src/lib/services/feed-service";
-import { getSchedulerStatus } from "../src/lib/jobs/scheduler";
+import { refreshFeed } from "../../src/lib/services/feed-refresh-service";
+import { getFeedsToRefresh, getUserFeedsToRefresh } from "../../src/lib/services/feed-service";
+import { getSchedulerStatus } from "../../src/lib/jobs/scheduler";
 
 const prisma = new PrismaClient();
 

@@ -7,7 +7,7 @@ import type { Session } from "next-auth";
 /**
  * Context passed to API handlers
  */
-export interface HandlerContext<TBody = any, TQuery = any> {
+export interface HandlerContext<TBody = unknown, TQuery = unknown> {
   body: TBody;
   query: TQuery;
   session: Session | null;
@@ -18,14 +18,14 @@ export interface HandlerContext<TBody = any, TQuery = any> {
 /**
  * Handler function type
  */
-type Handler<TBody = any, TQuery = any, TResult = any> = (
+type Handler<TBody = unknown, TQuery = unknown, TResult = unknown> = (
   ctx: HandlerContext<TBody, TQuery>
 ) => Promise<TResult>;
 
 /**
  * Options for createHandler
  */
-export interface HandlerOptions<TBody = any, TQuery = any> {
+export interface HandlerOptions<TBody = unknown, TQuery = unknown> {
   /**
    * Zod schema for validating request body (POST/PUT/PATCH)
    */
@@ -84,7 +84,7 @@ function parseQueryParams<T>(
  * );
  * ```
  */
-export function createHandler<TBody = any, TQuery = any, TResult = any>(
+export function createHandler<TBody = unknown, TQuery = unknown, TResult = unknown>(
   handler: Handler<TBody, TQuery, TResult>,
   options: HandlerOptions<TBody, TQuery> = {}
 ) {
@@ -128,7 +128,7 @@ export function createHandler<TBody = any, TQuery = any, TResult = any>(
           } else {
             body = json as TBody;
           }
-        } catch (error) {
+        } catch {
           // If JSON parsing fails and we have a body schema, that's an error
           if (options.bodySchema) {
             return apiError("Invalid JSON in request body", 400);

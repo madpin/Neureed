@@ -183,7 +183,7 @@ export function ArticleList({
       {!hasMore && articles.length > 0 && (
         <div className="flex justify-center py-8">
           <p className="text-sm text-foreground/60">
-            You've reached the end of the list
+            You&apos;ve reached the end of the list
           </p>
         </div>
       )}

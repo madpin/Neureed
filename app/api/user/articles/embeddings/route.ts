@@ -9,7 +9,7 @@ import {
   generateBatchEmbeddings,
   getArticlesWithoutEmbeddings,
 } from "@/lib/services/article-embedding-service";
-import { getEmbeddingStats } from "@/lib/services/article-service";
+import { getEmbeddingStats } from "@/lib/services/article-embedding-service";
 import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";

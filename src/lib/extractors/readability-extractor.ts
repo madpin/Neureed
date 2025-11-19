@@ -1,5 +1,5 @@
 import { Readability } from "@mozilla/readability";
-import { JSDOM } from "jsdom";
+import { JSDOM, VirtualConsole } from "jsdom";
 import { BaseExtractor } from "./base-extractor";
 import type { ExtractorConfig, ExtractedContent } from "./types";
 import { sanitizeHtml } from "@/lib/feed-parser";
@@ -80,7 +80,7 @@ export class ReadabilityExtractor extends BaseExtractor {
       // Parse with JSDOM (suppress CSS errors - they don't affect content extraction)
       const dom = new JSDOM(html, {
         url,
-        virtualConsole: new (require('jsdom').VirtualConsole)(),
+        virtualConsole: new VirtualConsole(),
       });
       const document = dom.window.document;
 

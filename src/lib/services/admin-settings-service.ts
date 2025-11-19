@@ -249,10 +249,10 @@ export interface SystemLLMCredentials {
 export async function getSystemLLMCredentials(
   maskKey: boolean = true
 ): Promise<SystemLLMCredentials> {
-  const provider = await getAdminSetting<string>("system_llm_provider", null);
-  const apiKey = await getAdminSetting<string>("system_llm_api_key", null);
-  const baseUrl = await getAdminSetting<string>("system_llm_base_url", null);
-  const model = await getAdminSetting<string>("system_llm_model", null);
+  const provider = await getAdminSetting<string>("system_llm_provider");
+  const apiKey = await getAdminSetting<string>("system_llm_api_key");
+  const baseUrl = await getAdminSetting<string>("system_llm_base_url");
+  const model = await getAdminSetting<string>("system_llm_model");
 
   let decryptedKey: string | null = null;
   if (apiKey) {

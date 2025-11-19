@@ -24,7 +24,7 @@ const clearPatternSchema = z.object({
  * POST /api/admin/cache/clear
  * Clear all cache
  */
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const success = await cacheClearAll();
 

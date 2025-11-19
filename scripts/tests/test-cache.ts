@@ -3,7 +3,7 @@
  * Tests Redis cache functionality and identifies issues
  */
 
-import { prisma } from "../src/lib/db";
+import { prisma } from "../../src/lib/db";
 import {
   cacheGet,
   cacheSet,
@@ -13,12 +13,12 @@ import {
   getCacheStats,
   resetCacheStats,
   cacheGetOrSet,
-} from "../src/lib/cache/cache-service";
-import { getRedisClient, isRedisAvailable, getRedisStatus } from "../src/lib/cache/redis-client";
-import { CacheKeys, CacheTTL } from "../src/lib/cache/cache-keys";
-import { summarizeArticle } from "../src/lib/services/summarization-service";
-import { scoreArticle, scoreArticleBatch } from "../src/lib/services/article-scoring-service";
-import { logger } from "../src/lib/logger";
+} from "../../src/lib/cache/cache-service";
+import { getRedisClient, isRedisAvailable, getRedisStatus } from "../../src/lib/cache/redis-client";
+import { CacheKeys, CacheTTL } from "../../src/lib/cache/cache-keys";
+import { summarizeArticle } from "../../src/lib/services/summarization-service";
+import { scoreArticle, scoreArticleBatch } from "../../src/lib/services/article-scoring-service";
+import { logger } from "../../src/lib/logger";
 
 async function testRedisConnection() {
   console.log("\n=== Testing Redis Connection ===");

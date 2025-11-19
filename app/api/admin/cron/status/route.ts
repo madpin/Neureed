@@ -1,5 +1,5 @@
 import { createHandler } from "@/lib/api-handler";
-import { getSchedulerStatus, isSchedulerInitialized } from "@/lib/jobs/scheduler";
+import { getSchedulerStatus } from "@/lib/jobs/scheduler";
 import { isSchedulerRunning as isFeedRefreshRunning } from "@/lib/jobs/feed-refresh-job";
 import { isSchedulerRunning as isCleanupRunning } from "@/lib/jobs/cleanup-job";
 import { env } from "@/env";

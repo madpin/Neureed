@@ -40,7 +40,7 @@ export async function cleanupOldArticles(
   } = options;
 
   let totalDeleted = 0;
-  let totalPreserved = 0;
+  const totalPreserved = 0;
   let deletedByAge = 0;
   let deletedByCount = 0;
 

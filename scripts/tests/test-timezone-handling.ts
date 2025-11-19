@@ -5,7 +5,7 @@
  * specifically addressing the Brazilian timezone issue (UTC-3).
  */
 
-import { formatRelativeTime, formatLocalizedDate, formatSmartDate, toISOString } from "../src/lib/date-utils";
+import { formatRelativeTime, formatLocalizedDate, formatSmartDate, toISOString } from "../../src/lib/date-utils";
 
 console.log("=== Testing Timezone Handling ===\n");
 

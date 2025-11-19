@@ -21,23 +21,6 @@ function maskSensitiveValue(value: string | undefined | null): string {
   return `${first}${middle}${last}`;
 }
 
-// Helper function to check if a key is sensitive
-function isSensitiveKey(key: string): boolean {
-  const sensitivePatterns = [
-    "secret",
-    "password",
-    "key",
-    "token",
-    "client_id",
-    "client_secret",
-    "database_url",
-    "encryption",
-  ];
-  
-  const lowerKey = key.toLowerCase();
-  return sensitivePatterns.some(pattern => lowerKey.includes(pattern));
-}
-
 // Get Node.js version
 function getNodeVersion(): string {
   return process.version;
@@ -49,7 +32,7 @@ function getNextVersion(): string {
     const packageJsonPath = path.join(process.cwd(), "package.json");
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
     return packageJson.dependencies.next || "Unknown";
-  } catch (error) {
+  } catch {
     return "Unknown";
   }
 }
@@ -60,7 +43,7 @@ function getPrismaVersion(): string {
     const packageJsonPath = path.join(process.cwd(), "package.json");
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
     return packageJson.dependencies["@prisma/client"] || "Unknown";
-  } catch (error) {
+  } catch {
     return "Unknown";
   }
 }
@@ -71,7 +54,7 @@ function getReactVersion(): string {
     const packageJsonPath = path.join(process.cwd(), "package.json");
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
     return packageJson.dependencies.react || "Unknown";
-  } catch (error) {
+  } catch {
     return "Unknown";
   }
 }
@@ -82,7 +65,7 @@ function getTypeScriptVersion(): string {
     const packageJsonPath = path.join(process.cwd(), "package.json");
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
     return packageJson.devDependencies.typescript || "Unknown";
-  } catch (error) {
+  } catch {
     return "Unknown";
   }
 }
