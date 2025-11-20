@@ -185,6 +185,12 @@ export async function generateBatchEmbeddings(
     }
 
     const texts = validArticles.map((item) => item.text);
+    
+    logger.info("Calling generateEmbeddings service", { 
+      validArticlesCount: validArticles.length,
+      textsCount: texts.length,
+      firstTextPreview: texts[0]?.substring(0, 20)
+    });
 
     // Generate embeddings (this will check user preferences if userId is provided)
     const result = await generateEmbeddings(texts, provider, userId);
