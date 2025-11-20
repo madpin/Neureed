@@ -3,6 +3,7 @@
  * POST /api/jobs/generate-embeddings
  */
 
+import { z } from "zod";
 import { logger } from "@/lib/logger";
 import {
   processArticlesWithoutEmbeddings,
@@ -15,56 +16,70 @@ import { apiResponse } from "@/lib/api-response";
 export const dynamic = "force-dynamic";
 
 /**
+ * Schema for embedding generation request
+ */
+const embeddingGenerationSchema = z.object({
+  batchSize: z.number().int().positive().optional(),
+  maxBatches: z.number().int().positive().optional(),
+  dryRun: z.boolean().optional(),
+});
+
+type EmbeddingGenerationRequest = z.infer<typeof embeddingGenerationSchema>;
+
+/**
  * POST - Manually trigger embedding generation
  */
-export const POST = createHandler(async ({ body }) => {
-  const batchSize = body?.batchSize || 50;
-  const maxBatches = body?.maxBatches || 10;
-  const dryRun = body?.dryRun || false;
+export const POST = createHandler<EmbeddingGenerationRequest>(
+  async ({ body }) => {
+    const batchSize = body.batchSize ?? 50;
+    const maxBatches = body.maxBatches ?? 10;
+    const dryRun = body.dryRun ?? false;
 
-  logger.info("Manual embedding generation triggered", {
-    batchSize,
-    maxBatches,
-    dryRun,
-  });
+    logger.info("Manual embedding generation triggered", {
+      batchSize,
+      maxBatches,
+      dryRun,
+    });
 
-  if (dryRun) {
-    // Just return stats without processing
-    const stats = await getEmbeddingStats();
-    return {
-      dryRun: true,
-      stats,
-      message: "Dry run - no embeddings generated",
-    };
-  }
+    if (dryRun) {
+      // Just return stats without processing
+      const stats = await getEmbeddingStats();
+      return {
+        dryRun: true,
+        stats,
+        message: "Dry run - no embeddings generated",
+      };
+    }
 
-  // Check if job is already running
-  const status = getEmbeddingJobStatus();
-  if (status.running) {
-    return apiResponse(
-      {
-        message: "Embedding generation job is already running",
-        status,
-      },
-      409
+    // Check if job is already running
+    const status = getEmbeddingJobStatus();
+    if (status.running) {
+      return apiResponse(
+        {
+          message: "Embedding generation job is already running",
+          status,
+        },
+        409
+      );
+    }
+
+    // Process articles
+    const result = await processArticlesWithoutEmbeddings(
+      batchSize,
+      maxBatches
     );
-  }
 
-  // Process articles
-  const result = await processArticlesWithoutEmbeddings(
-    batchSize,
-    maxBatches
-  );
+    // Get updated stats
+    const stats = await getEmbeddingStats();
 
-  // Get updated stats
-  const stats = await getEmbeddingStats();
-
-  return {
-    ...result,
-    stats,
-    message: `Processed ${result.processed} articles, ${result.failed} failed`,
-  };
-});
+    return {
+      ...result,
+      stats,
+      message: `Processed ${result.processed} articles, ${result.failed} failed`,
+    };
+  },
+  { bodySchema: embeddingGenerationSchema }
+);
 
 /**
  * GET - Get embedding generation status

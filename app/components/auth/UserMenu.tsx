@@ -11,7 +11,7 @@ export function UserMenu() {
   const { data: session, status } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const [preferencesModalOpen, setPreferencesModalOpen] = useState(false);
-  const [preferencesView, setPreferencesView] = useState<'profile' | 'appearance' | 'reading' | 'learning' | 'llm' | 'feeds'>('profile');
+  const [preferencesView, setPreferencesView] = useState<'profile' | 'appearance' | 'reading' | 'learning' | 'llm'>('profile');
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close menu when clicking outside
@@ -197,19 +197,6 @@ export function UserMenu() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
                 </svg>
                 LLM Settings
-              </button>
-              <button
-                onClick={() => {
-                  setPreferencesView('feeds');
-                  setPreferencesModalOpen(true);
-                  setIsOpen(false);
-                }}
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-muted"
-              >
-                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                </svg>
-                Feeds & OPML
               </button>
             </div>
 

@@ -39,8 +39,7 @@ export class LocalEmbeddingProvider implements EmbeddingProviderInterface {
       
       // Disable native ONNX backend completely
       if (transformersEnv.backends.onnx) {
-        // @ts-expect-error - Force disable native backend
-        transformersEnv.backends.onnx.executionProviders = ['wasm'];
+        (transformersEnv.backends.onnx as any).executionProviders = ['wasm'];
       }
       
       transformersEnv.allowLocalModels = false;

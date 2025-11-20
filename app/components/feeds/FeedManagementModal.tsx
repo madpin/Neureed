@@ -619,6 +619,17 @@ function ManagementOverview({
           </div>
         )}
       </div>
+
+      {/* OPML Modals */}
+      {showExportModal && (
+        <OpmlExportModal onClose={() => setShowExportModal(false)} />
+      )}
+      {showImportModal && (
+        <OpmlImportModal
+          onClose={() => setShowImportModal(false)}
+          onSuccess={handleImportSuccess}
+        />
+      )}
     </div>
   );
 }
@@ -655,12 +666,19 @@ function CategorySettingsView({
   const [autoApplyToExisting, setAutoApplyToExisting] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   
+  // Category override settings
+  const [categoryRefreshInterval, setCategoryRefreshInterval] = useState<number | null>(null);
+  const [categoryMaxArticles, setCategoryMaxArticles] = useState<number | null>(null);
+  const [categoryMaxArticleAge, setCategoryMaxArticleAge] = useState<number | null>(null);
+  const [isSavingOverrides, setIsSavingOverrides] = useState(false);
+  
   // Icon picker state
   const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
 
   useEffect(() => {
     loadCategory();
     loadAllFeeds();
+    loadCategoryOverrides();
   }, [categoryId]);
 
   const formatLastRefresh = (date: Date | string | null | undefined) => {
@@ -713,6 +731,22 @@ function CategorySettingsView({
       }
     } catch (err) {
       console.error("Failed to load feeds:", err);
+    }
+  };
+
+  const loadCategoryOverrides = async () => {
+    try {
+      const response = await fetch(`/api/user/categories/${categoryId}/settings`);
+      if (response.ok) {
+        const data = await response.json();
+        const settings = data.data?.settings;
+        
+        setCategoryRefreshInterval(settings?.refreshInterval ?? null);
+        setCategoryMaxArticles(settings?.maxArticlesPerFeed ?? null);
+        setCategoryMaxArticleAge(settings?.maxArticleAge ?? null);
+      }
+    } catch (err) {
+      console.error("Failed to load category override settings:", err);
     }
   };
 
@@ -890,6 +924,35 @@ function CategorySettingsView({
       setError(err instanceof Error ? err.message : "Failed to save settings");
     } finally {
       setIsSavingSettings(false);
+    }
+  };
+
+  const handleSaveCategoryOverrides = async () => {
+    try {
+      setIsSavingOverrides(true);
+      setError(null);
+
+      const response = await fetch(`/api/user/categories/${categoryId}/settings`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          refreshInterval: categoryRefreshInterval,
+          maxArticlesPerFeed: categoryMaxArticles,
+          maxArticleAge: categoryMaxArticleAge,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save category override settings");
+      }
+
+      await loadCategoryOverrides();
+      onRefreshData?.();
+      toast.success("Category override settings saved successfully!");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save category override settings");
+    } finally {
+      setIsSavingOverrides(false);
     }
   };
 
@@ -1167,6 +1230,86 @@ function CategorySettingsView({
         </div>
       </div>
 
+      {/* Category Override Settings */}
+      <div className="mb-6">
+        <h2 className="mb-4 text-lg font-semibold">Category Override Settings</h2>
+        <div className="rounded-lg border border-border bg-background p-4 border-border bg-background">
+          <div className="rounded-lg bg-blue-50 p-3 mb-4 dark:bg-blue-900/20">
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+              Override default refresh and cleanup settings for all feeds in this category. 
+              Leave empty to use user defaults. Individual feed settings will override these.
+            </p>
+          </div>
+          
+          <div className="space-y-4">
+            {/* Refresh Interval Override */}
+            <div>
+              <label className="mb-1 block text-sm font-medium">
+                Refresh Interval (minutes)
+              </label>
+              <input
+                type="number"
+                min="15"
+                max="1440"
+                value={categoryRefreshInterval ?? ''}
+                onChange={(e) => setCategoryRefreshInterval(e.target.value ? parseInt(e.target.value) : null)}
+                placeholder="Leave empty to use user default"
+                className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                How often to check for new articles (15-1440 minutes)
+              </p>
+            </div>
+
+            {/* Max Articles Override */}
+            <div>
+              <label className="mb-1 block text-sm font-medium">
+                Max Articles Per Feed
+              </label>
+              <input
+                type="number"
+                min="50"
+                max="5000"
+                value={categoryMaxArticles ?? ''}
+                onChange={(e) => setCategoryMaxArticles(e.target.value ? parseInt(e.target.value) : null)}
+                placeholder="Leave empty to use user default"
+                className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Maximum number of articles to keep per feed (50-5000)
+              </p>
+            </div>
+
+            {/* Max Article Age Override */}
+            <div>
+              <label className="mb-1 block text-sm font-medium">
+                Max Article Age (days)
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="365"
+                value={categoryMaxArticleAge ?? ''}
+                onChange={(e) => setCategoryMaxArticleAge(e.target.value ? parseInt(e.target.value) : null)}
+                placeholder="Leave empty to use user default"
+                className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Articles older than this will be automatically deleted (1-365 days)
+              </p>
+            </div>
+
+            <button
+              onClick={handleSaveCategoryOverrides}
+              disabled={isSavingOverrides}
+              className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              {isSavingOverrides ? "Saving..." : "Save Override Settings"}
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Feeds in Category */}
       <div>
         <h2 className="mb-4 text-lg font-semibold">Feeds in Category</h2>
@@ -1289,9 +1432,18 @@ function FeedSettingsView({
   // Categories for dropdown
   const [categories, setCategories] = useState<Category[]>([]);
 
+  // Feed override settings
+  const [showOverrideSettings, setShowOverrideSettings] = useState(false);
+  const [overrideRefreshInterval, setOverrideRefreshInterval] = useState<number | null>(null);
+  const [overrideMaxArticles, setOverrideMaxArticles] = useState<number | null>(null);
+  const [overrideMaxArticleAge, setOverrideMaxArticleAge] = useState<number | null>(null);
+  const [effectiveSettings, setEffectiveSettings] = useState<any>(null);
+  const [isSavingOverrides, setIsSavingOverrides] = useState(false);
+
   useEffect(() => {
     loadFeed();
     loadCategories();
+    loadFeedOverrides();
   }, [feedId]);
 
   const loadFeed = async () => {
@@ -1349,6 +1501,23 @@ function FeedSettingsView({
     }
   };
 
+  const loadFeedOverrides = async () => {
+    try {
+      const response = await fetch(`/api/user/feeds/${feedId}/settings`);
+      if (response.ok) {
+        const data = await response.json();
+        const settings = data.data;
+        
+        setOverrideRefreshInterval(settings.overrides?.refreshInterval ?? null);
+        setOverrideMaxArticles(settings.overrides?.maxArticlesPerFeed ?? null);
+        setOverrideMaxArticleAge(settings.overrides?.maxArticleAge ?? null);
+        setEffectiveSettings(settings.effective);
+      }
+    } catch (err) {
+      console.error("Failed to load feed override settings:", err);
+    }
+  };
+
   const handleSave = async () => {
     try {
       setIsSaving(true);
@@ -1392,6 +1561,35 @@ function FeedSettingsView({
       setError(err instanceof Error ? err.message : "Failed to save settings");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSaveOverrides = async () => {
+    try {
+      setIsSavingOverrides(true);
+      setError(null);
+
+      const response = await fetch(`/api/user/feeds/${feedId}/settings`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          refreshInterval: overrideRefreshInterval,
+          maxArticlesPerFeed: overrideMaxArticles,
+          maxArticleAge: overrideMaxArticleAge,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save override settings");
+      }
+
+      await loadFeedOverrides();
+      onRefreshData?.();
+      toast.success("Override settings saved successfully!");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save override settings");
+    } finally {
+      setIsSavingOverrides(false);
     }
   };
 
@@ -1743,6 +1941,114 @@ function FeedSettingsView({
                 className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
               />
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Feed Override Settings (Expandable) */}
+      <div className="mb-6">
+        <button
+          onClick={() => setShowOverrideSettings(!showOverrideSettings)}
+          className="mb-4 flex w-full items-center justify-between rounded-lg border border-border bg-muted px-4 py-3 text-left font-semibold hover:bg-muted border-border bg-background dark:hover:bg-muted"
+        >
+          <span>Feed Override Settings</span>
+          <svg
+            className={`h-5 w-5 transition-transform ${showOverrideSettings ? "rotate-180" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {showOverrideSettings && (
+          <div className="space-y-4 rounded-lg border border-border bg-background p-4">
+            <div className="rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                Override default refresh and cleanup settings for this specific feed. 
+                Leave empty to use category or user defaults.
+                {effectiveSettings && (
+                  <span className="block mt-2 text-xs">
+                    Current hierarchy: Feed → Category → User Default
+                  </span>
+                )}
+              </p>
+            </div>
+
+            {/* Refresh Interval Override */}
+            <div>
+              <label className="mb-1 block text-sm font-medium">
+                Refresh Interval (minutes)
+              </label>
+              <input
+                type="number"
+                min="15"
+                max="1440"
+                value={overrideRefreshInterval ?? ''}
+                onChange={(e) => setOverrideRefreshInterval(e.target.value ? parseInt(e.target.value) : null)}
+                placeholder={effectiveSettings?.refreshInterval ? `Default: ${effectiveSettings.refreshInterval}` : 'Default: 60'}
+                className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
+              />
+              {effectiveSettings && (
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Currently using: {effectiveSettings.refreshInterval || 60} minutes 
+                  {effectiveSettings.source?.refreshInterval && ` (from ${effectiveSettings.source.refreshInterval})`}
+                </p>
+              )}
+            </div>
+
+            {/* Max Articles Override */}
+            <div>
+              <label className="mb-1 block text-sm font-medium">
+                Max Articles Per Feed
+              </label>
+              <input
+                type="number"
+                min="50"
+                max="5000"
+                value={overrideMaxArticles ?? ''}
+                onChange={(e) => setOverrideMaxArticles(e.target.value ? parseInt(e.target.value) : null)}
+                placeholder={effectiveSettings?.maxArticlesPerFeed ? `Default: ${effectiveSettings.maxArticlesPerFeed}` : 'Default: 500'}
+                className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
+              />
+              {effectiveSettings && (
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Currently using: {effectiveSettings.maxArticlesPerFeed || 500} articles 
+                  {effectiveSettings.source?.maxArticlesPerFeed && ` (from ${effectiveSettings.source.maxArticlesPerFeed})`}
+                </p>
+              )}
+            </div>
+
+            {/* Max Article Age Override */}
+            <div>
+              <label className="mb-1 block text-sm font-medium">
+                Max Article Age (days)
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="365"
+                value={overrideMaxArticleAge ?? ''}
+                onChange={(e) => setOverrideMaxArticleAge(e.target.value ? parseInt(e.target.value) : null)}
+                placeholder={effectiveSettings?.maxArticleAge ? `Default: ${effectiveSettings.maxArticleAge}` : 'Default: 90'}
+                className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
+              />
+              {effectiveSettings && (
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Currently using: {effectiveSettings.maxArticleAge || 90} days 
+                  {effectiveSettings.source?.maxArticleAge && ` (from ${effectiveSettings.source.maxArticleAge})`}
+                </p>
+              )}
+            </div>
+
+            <button
+              onClick={handleSaveOverrides}
+              disabled={isSavingOverrides}
+              className="w-full rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              {isSavingOverrides ? "Saving..." : "Save Override Settings"}
+            </button>
           </div>
         )}
       </div>
