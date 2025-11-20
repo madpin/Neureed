@@ -20,27 +20,48 @@ process.env.TRANSFORMERS_CACHE = process.env.TRANSFORMERS_CACHE || './.cache/tra
 console.log('[Preload] Environment variables set:');
 console.log('  TRANSFORMERS_BACKEND:', process.env.TRANSFORMERS_BACKEND);
 
-// 2. Redirect 'onnxruntime-node' imports to 'onnxruntime-web'
-// This forces the library to use the Web/WASM version instead of the Native one
+// 2. Pre-resolve onnxruntime-web path
+let onnxWebPath = null;
+try {
+  // Resolve from current module's perspective
+  onnxWebPath = require.resolve('onnxruntime-web');
+  console.log('[Preload] Resolved onnxruntime-web to:', onnxWebPath);
+} catch (e) {
+  console.error('[Preload] Could not resolve onnxruntime-web:', e.message);
+}
+
+// 3. Redirect 'onnxruntime-node' imports to 'onnxruntime-web'
 const originalResolveFilename = Module._resolveFilename;
 
 Module._resolveFilename = function(request, parent, isMain, options) {
   if (request === 'onnxruntime-node' || request.endsWith('/onnxruntime-node')) {
-    console.log(`[Preload] Redirecting require('${request}') to 'onnxruntime-web'`);
-    try {
-      // Try to resolve onnxruntime-web instead
-      return originalResolveFilename.call(this, 'onnxruntime-web', parent, isMain, options);
-    } catch (e) {
-      console.warn('[Preload] Failed to redirect to onnxruntime-web (not found?), falling back to mock');
-      // If web version is missing, fall through to original (which might fail or load native)
-      // But we have a backup mock in require.cache below
+    console.log(`[Preload] Intercepted require('${request}')`);
+    
+    if (onnxWebPath) {
+      console.log(`[Preload] Redirecting to onnxruntime-web at ${onnxWebPath}`);
+      return onnxWebPath;
+    } else {
+      console.warn('[Preload] onnxruntime-web not available, attempting fallback resolution');
+      try {
+        // Try to resolve with proper parent handling
+        if (parent && parent.filename) {
+          return originalResolveFilename.call(this, 'onnxruntime-web', parent, isMain, options);
+        } else {
+          // If no parent, resolve from current working directory
+          return originalResolveFilename.call(this, 'onnxruntime-web', 
+            { id: '.', filename: path.join(process.cwd(), 'index.js'), paths: Module._nodeModulePaths(process.cwd()) },
+            isMain, options);
+        }
+      } catch (e) {
+        console.error('[Preload] Failed to redirect:', e.message);
+        // Fall through to original resolution which will likely fail
+      }
     }
   }
   return originalResolveFilename.apply(this, arguments);
 };
 
-// 3. Backup: Mock onnxruntime-node in cache if redirection fails
-// This ensures we never load the native binary
+// 4. Backup: Mock onnxruntime-node in cache if redirection fails
 const mockOnnxRuntime = {
   backend: { name: 'wasm-mock' },
   env: { wasm: {} },
@@ -53,26 +74,13 @@ const mockOnnxRuntime = {
 };
 
 try {
-  // Try to mock by name
+  // Try to mock by name in cache
   require.cache['onnxruntime-node'] = {
     id: 'onnxruntime-node',
     filename: 'mock-onnxruntime-node',
     loaded: true,
     exports: mockOnnxRuntime
   };
-  
-  // Also try to mock by path if resolvable
-  try {
-    const pkgPath = require.resolve('onnxruntime-node');
-    require.cache[pkgPath] = {
-      id: pkgPath,
-      filename: pkgPath,
-      loaded: true,
-      exports: mockOnnxRuntime
-    };
-  } catch (e) {
-    // Expected if module is missing or redirected
-  }
 } catch (e) {
   console.error('[Preload] Error setting up cache mocks:', e);
 }
