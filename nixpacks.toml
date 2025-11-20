@@ -37,7 +37,7 @@ cmds = [
   "npx prisma generate --schema=./prisma/schema.prisma",
   "echo '✅ Prisma Client generated'",
   "echo '🧹 Cleaning previous build artifacts...'",
-  "rm -rf .next",
+  "find .next -mindepth 1 -maxdepth 1 ! -name 'cache' -exec rm -rf {} + 2>/dev/null || true",
   "echo '🏗️  Building Next.js application...'",
   "npm run build",
   "echo '✅ Build completed'",
