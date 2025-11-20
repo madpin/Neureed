@@ -66,10 +66,10 @@ model articles {
   title            String
   content          String
   url              String                 @unique
-  publishedAt      DateTime?
+  publishedAt      DateTime?              @db.Timestamptz
   embedding        Unsupported("vector")?
-  createdAt        DateTime               @default(now())
-  updatedAt        DateTime
+  createdAt        DateTime               @default(now()) @db.Timestamptz
+  updatedAt        DateTime               @db.Timestamptz
   author           String?
   contentHash      String?
   excerpt          String?

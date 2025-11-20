@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { formatLocalizedDate } from "@/lib/date-utils";
 import { Tooltip } from "@/app/components/admin/Tooltip";
@@ -112,7 +113,14 @@ interface CronStatus {
 }
 
 export default function AdminDashboardPage() {
-  const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Get initial tab from URL or use "overview" as default
+  const initialTab = (searchParams.get("tab") as TabId) || "overview";
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
+  const [favoriteTabs, setFavoriteTabs] = useState<TabId[]>([]);
+
   const [cacheStats, setCacheStats] = useState<CacheStats | null>(null);
   const [cacheStatus, setCacheStatus] = useState<CacheStatus | null>(null);
   const [embeddingStats, setEmbeddingStats] = useState<EmbeddingStats | null>(null);
@@ -190,6 +198,48 @@ export default function AdminDashboardPage() {
       ),
     },
   ];
+
+  // Load favorite tabs from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem("admin-favorite-tabs");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          setFavoriteTabs(parsed);
+        }
+      } catch (e) {
+        console.error("Failed to parse favorite tabs:", e);
+      }
+    }
+  }, []);
+
+  // Sync activeTab with URL parameter
+  useEffect(() => {
+    const tabFromUrl = searchParams.get("tab") as TabId;
+    if (tabFromUrl && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams]);
+
+  // Update URL when activeTab changes
+  const handleTabChange = (tabId: TabId) => {
+    setActiveTab(tabId);
+    const params = new URLSearchParams(searchParams);
+    params.set("tab", tabId);
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
+
+  // Toggle favorite status for a tab
+  const toggleFavorite = (tabId: TabId) => {
+    setFavoriteTabs((prev) => {
+      const newFavorites = prev.includes(tabId)
+        ? prev.filter((id) => id !== tabId)
+        : [...prev, tabId];
+      localStorage.setItem("admin-favorite-tabs", JSON.stringify(newFavorites));
+      return newFavorites;
+    });
+  };
 
   useEffect(() => {
     loadMetrics();
@@ -416,19 +466,88 @@ export default function AdminDashboardPage() {
             {/* Vertical Tab Navigation */}
             <div className="w-56 flex-shrink-0">
               <nav className="space-y-1 rounded-lg border border-border bg-background p-2 border-border bg-background">
+                {/* Favorite tabs section */}
+                {favoriteTabs.length > 0 && (
+                  <>
+                    <div className="px-4 py-2 text-xs font-semibold text-foreground/50 uppercase tracking-wider">
+                      Favorites
+                    </div>
+                    {tabs
+                      .filter((tab) => favoriteTabs.includes(tab.id))
+                      .map((tab) => (
+                        <div key={`fav-${tab.id}`} className="relative group">
+                          <button
+                            onClick={() => handleTabChange(tab.id)}
+                            className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium transition-colors ${
+                              activeTab === tab.id
+                                ? "bg-blue-600 text-white"
+                                : "text-foreground/80 hover:bg-muted"
+                            }`}
+                          >
+                            {tab.icon}
+                            {tab.label}
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleFavorite(tab.id);
+                            }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Remove from favorites"
+                          >
+                            <svg className="h-4 w-4 text-yellow-500 fill-current" viewBox="0 0 24 24">
+                              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    <div className="my-2 border-t border-border" />
+                  </>
+                )}
+
+                {/* All tabs section */}
                 {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium transition-colors ${
-                      activeTab === tab.id
-                        ? "bg-blue-600 text-white"
-                        : "text-foreground/80 hover:bg-muted"
-                    }`}
-                  >
-                    {tab.icon}
-                    {tab.label}
-                  </button>
+                  <div key={tab.id} className="relative group">
+                    <button
+                      onClick={() => handleTabChange(tab.id)}
+                      className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium transition-colors ${
+                        activeTab === tab.id
+                          ? "bg-blue-600 text-white"
+                          : "text-foreground/80 hover:bg-muted"
+                      }`}
+                    >
+                      {tab.icon}
+                      {tab.label}
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(tab.id);
+                      }}
+                      className={`absolute right-2 top-1/2 -translate-y-1/2 transition-opacity ${
+                        favoriteTabs.includes(tab.id) ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                      }`}
+                      title={favoriteTabs.includes(tab.id) ? "Remove from favorites" : "Add to favorites"}
+                    >
+                      <svg className="h-4 w-4" viewBox="0 0 24 24">
+                        <path
+                          className={
+                            favoriteTabs.includes(tab.id)
+                              ? activeTab === tab.id
+                                ? "text-yellow-300 fill-current"
+                                : "text-yellow-500 fill-current"
+                              : activeTab === tab.id
+                              ? "text-white/40"
+                              : "text-foreground/40"
+                          }
+                          fill={favoriteTabs.includes(tab.id) ? "currentColor" : "none"}
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
+                        />
+                      </svg>
+                    </button>
+                  </div>
                 ))}
               </nav>
             </div>

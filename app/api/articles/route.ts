@@ -81,13 +81,15 @@ export const GET = createHandler(
         : { feedId: { in: subscribedFeedIds } };
 
       // Build orderBy clause based on sort option
-      // Note: We use COALESCE to fallback to createdAt when publishedAt is NULL
       let orderBy: any;
-      
+
       if (finalSortBy === "relevance") {
         // For relevance sorting, we'll fetch scores and sort in memory
-        // Use createdAt as primary sort (since we need something concrete)
-        orderBy = { createdAt: "desc" };
+        // Use publishedAt as primary sort (fallback to createdAt for articles without publishedAt)
+        orderBy = [
+          { publishedAt: { sort: "desc", nulls: "last" } },
+          { createdAt: "desc" }
+        ];
       } else if (finalSortBy === "title") {
         orderBy = { title: finalSortDirection };
       } else if (finalSortBy === "updatedAt") {
@@ -95,12 +97,16 @@ export const GET = createHandler(
       } else if (finalSortBy === "feed") {
         orderBy = [
           { feeds: { name: finalSortDirection } },
-          { createdAt: "desc" }  // Use createdAt to avoid NULL issues
+          { publishedAt: { sort: "desc", nulls: "last" } },
+          { createdAt: "desc" }
         ];
       } else {
-        // Default: Use createdAt instead of publishedAt to avoid NULL sorting issues
-        // This ensures newest articles (by creation time) appear first
-        orderBy = { createdAt: finalSortDirection };
+        // Default: Sort by publishedAt (the actual publication date from the feed)
+        // NULL values go last, then fallback to createdAt for secondary sorting
+        orderBy = [
+          { publishedAt: { sort: finalSortDirection, nulls: finalSortDirection === "desc" ? "last" : "first" } },
+          { createdAt: finalSortDirection }
+        ];
       }
 
       [articles, total] = await Promise.all([
