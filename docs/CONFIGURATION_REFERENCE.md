@@ -223,7 +223,7 @@ These settings allow users to override system-wide LLM configuration with their 
 
 ### 6. Feed & OPML Management
 
-**UI Location:** Preferences Modal → Feeds & OPML Tab
+**UI Location:** Feed Management Modal (accessible from sidebar)
 
 #### OPML Operations
 
@@ -231,6 +231,8 @@ These settings allow users to override system-wide LLM configuration with their 
 |--------|-----------|--------------|-------------|
 | Export OPML | Export button → Modal | `GET /api/user/opml/export` | Download feeds as OPML file |
 | Import OPML | Import button → Modal | `POST /api/user/opml/import` | Upload and import OPML file |
+
+**UI Location:** Feed Management Modal → Overview Tab
 
 #### Feed Refresh & Cleanup Settings (User Defaults)
 
@@ -245,11 +247,26 @@ These settings allow users to override system-wide LLM configuration with their 
 
 **Note:** These are user-level defaults. They can be overridden at the category or individual feed level.
 
-#### Per-Feed Settings
+#### Category Override Settings
 
-**UI Location:** Preferences Modal → Feeds & OPML Tab → Expand category → Click feed
+**UI Location:** Feed Management Modal → Category Settings View → Category Override Settings Section
 
-Each subscribed feed can override the default settings:
+Each category can override user default settings for all feeds in that category:
+
+| Setting | Type | Range | Description |
+|---------|------|-------|-------------|
+| Refresh Interval | Integer (nullable) | 15-1440 minutes | Override user default refresh interval |
+| Max Articles | Integer (nullable) | 50-5000 | Override user default max articles to keep |
+| Max Article Age | Integer (nullable) | 1-365 days | Override user default max article age |
+
+**Database Field:** `UserCategory.settings` (JSON)  
+**API Endpoint:** `PUT /api/user/categories/{categoryId}/settings`
+
+#### Per-Feed Override Settings
+
+**UI Location:** Feed Management Modal → Feed Settings View → Feed Override Settings Section
+
+Each subscribed feed can override category or user default settings:
 
 | Setting | Type | Range | Description |
 |---------|------|-------|-------------|
@@ -261,6 +278,8 @@ Each subscribed feed can override the default settings:
 **API Endpoint:** `PUT /api/user/feeds/{feedId}/settings`
 
 **Settings Hierarchy:** Feed Settings → Category Settings → User Defaults
+
+**Note:** All feed management functionality (OPML operations, category management, feed settings, and override settings) is now consolidated in the Feed Management Modal for a unified experience.
 
 ---
 
@@ -1443,23 +1462,29 @@ Admins can disable specific providers system-wide:
 
 Based on comprehensive codebase analysis, the following inconsistencies have been identified:
 
-### 1. Settings Hierarchy Confusion
+### 1. Settings Hierarchy Confusion ✅ RESOLVED
 
-**Issue:** Feed settings can be configured at 3 levels (user default, category, feed) but the UI shows this in two different places:
+**Issue:** Feed settings could be configured at 3 levels (user default, category, feed) but the UI showed this in two different places:
 - **Preferences Modal → Feeds Tab:** User defaults + per-feed overrides
 - **Feed Management Modal:** Category settings + per-feed overrides
 
-**Impact:** Users may not understand where to configure settings or which settings take precedence.
+**Resolution:** All feed management functionality has been consolidated into the Feed Management Modal:
+- **OPML Operations:** Import/Export moved to Feed Management Modal → Overview Tab
+- **Category Override Settings:** Available in Feed Management Modal → Category Settings View
+- **Feed Override Settings:** Available in Feed Management Modal → Feed Settings View
+- **Visual Indicators:** Each override setting now shows the effective value and its source
+- **Settings Hierarchy:** Clearly displayed as Feed → Category → User Default
 
-**Recommendation:**
-- Consolidate all feed settings into Feed Management Modal
-- Add clear visual indicators showing which level a setting comes from
-- Display effective settings with source (e.g., "Using 60 minutes from category settings")
-- Add tooltip explaining hierarchy: Feed → Category → User Default
+**Changes Made:**
+- Removed "Feeds & OPML" tab from Preferences Modal
+- Added OPML import/export to Feed Management Modal Overview
+- Added Category Override Settings section to CategorySettingsView
+- Added Feed Override Settings section to FeedSettingsView
+- All settings now show effective values with source attribution
 
 **Affected Files:**
-- `app/components/preferences/PreferencesModal.tsx`
-- `app/components/feeds/FeedManagementModal.tsx`
+- `app/components/preferences/PreferencesModal.tsx` - Removed feeds tab
+- `app/components/feeds/FeedManagementModal.tsx` - Added OPML operations and override settings
 
 ---
 

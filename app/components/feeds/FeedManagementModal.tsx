@@ -272,6 +272,8 @@ function ManagementOverview({
   const [newCategoryDescription, setNewCategoryDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -424,6 +426,57 @@ function ManagementOverview({
         <div className="rounded-lg border border-border bg-muted p-4 border-border dark:bg-background">
           <div className="text-sm text-gray-600 dark:text-gray-400">Total Articles</div>
           <div className="text-2xl font-bold">-</div>
+        </div>
+      </div>
+
+      {/* OPML Import/Export Section */}
+      <div className="mb-6 space-y-4">
+        {/* Info Section */}
+        <div className="rounded-lg bg-primary/10 p-4 dark:bg-primary/20">
+          <h3 className="mb-2 font-semibold text-primary dark:text-primary">
+            OPML Import & Export
+          </h3>
+          <p className="text-sm text-primary/80 dark:text-primary/90">
+            OPML (Outline Processor Markup Language) is a standard format for exchanging lists of RSS feeds.
+            Use it to backup your feeds or transfer them between applications.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          {/* Export Section */}
+          <div className="rounded-lg border border-border p-4">
+            <h3 className="mb-2 text-base font-semibold">Export Feeds</h3>
+            <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+              Download your feed subscriptions as an OPML file.
+            </p>
+            <button
+              onClick={() => setShowExportModal(true)}
+              disabled={statistics.totalFeeds === 0}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+              </svg>
+              Export OPML
+            </button>
+          </div>
+
+          {/* Import Section */}
+          <div className="rounded-lg border border-border p-4">
+            <h3 className="mb-2 text-base font-semibold">Import Feeds</h3>
+            <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+              Import feeds from an OPML file.
+            </p>
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-primary bg-background px-4 py-2 text-sm font-medium text-primary hover:bg-primary/10 dark:border-primary dark:text-primary"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              Import OPML
+            </button>
+          </div>
         </div>
       </div>
 
