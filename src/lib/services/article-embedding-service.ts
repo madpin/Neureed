@@ -148,8 +148,43 @@ export async function generateBatchEmbeddings(
       return { processed: 0, failed: 0, skipped, totalTokens: 0, errors: [] };
     }
 
-    // Prepare texts
-    const texts = articles.map(prepareTextForEmbedding);
+    // Prepare texts and filter out empty ones
+    const prepared = articles.map((article) => ({
+      article,
+      text: prepareTextForEmbedding(article).trim(),
+    }));
+
+    const validArticles = prepared.filter(({ article, text }) => {
+      if (!text) {
+        logger.warn("Skipping article with no content for embedding", {
+          articleId: article.id,
+        });
+        return false;
+      }
+      return true;
+    });
+
+    const skippedDueToContent = prepared.length - validArticles.length;
+    if (skippedDueToContent > 0) {
+      logger.info("Articles skipped due to missing content", {
+        skippedDueToContent,
+      });
+    }
+
+    if (validArticles.length === 0) {
+      logger.warn("All articles skipped due to missing content", {
+        attempted: articles.length,
+      });
+      return {
+        processed: 0,
+        failed: 0,
+        skipped: skipped + articles.length,
+        totalTokens: 0,
+        errors: [],
+      };
+    }
+
+    const texts = validArticles.map((item) => item.text);
 
     // Generate embeddings (this will check user preferences if userId is provided)
     const result = await generateEmbeddings(texts, provider, userId);
@@ -159,18 +194,19 @@ export async function generateBatchEmbeddings(
     let failed = 0;
     const errors: Array<{ articleId: string; error: string }> = [];
 
-    for (let i = 0; i < articles.length; i++) {
+    for (let i = 0; i < validArticles.length; i++) {
       try {
+        const targetArticle = validArticles[i].article;
         await prisma.$executeRaw`
           UPDATE articles 
           SET embedding = ${JSON.stringify(result.embeddings[i])}::vector
-          WHERE id = ${articles[i].id}
+          WHERE id = ${targetArticle.id}
         `;
         processed++;
       } catch (error) {
         failed++;
         errors.push({
-          articleId: articles[i].id,
+          articleId: validArticles[i].article.id,
           error: error instanceof Error ? error.message : String(error),
         });
       }
@@ -179,7 +215,7 @@ export async function generateBatchEmbeddings(
     logger.info("Generated batch article embeddings", {
       processed,
       failed,
-      skipped,
+      skipped: skipped + skippedDueToContent,
       totalTokens: result.totalTokens,
       userId,
     });
@@ -187,7 +223,7 @@ export async function generateBatchEmbeddings(
     return {
       processed,
       failed,
-      skipped,
+      skipped: skipped + skippedDueToContent,
       totalTokens: result.totalTokens,
       errors,
     };
