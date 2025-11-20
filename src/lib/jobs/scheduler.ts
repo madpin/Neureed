@@ -3,10 +3,11 @@
  * Initializes and manages all scheduled jobs
  */
 
-import { startFeedRefreshScheduler, stopFeedRefreshScheduler } from "./feed-refresh-job";
-import { startCleanupScheduler, stopCleanupScheduler } from "./cleanup-job";
+import { startFeedRefreshScheduler, stopFeedRefreshScheduler, isSchedulerRunning as isFeedRefreshRunning } from "./feed-refresh-job";
+import { startCleanupScheduler, stopCleanupScheduler, isSchedulerRunning as isCleanupRunning } from "./cleanup-job";
 import { logger } from "@/lib/logger";
 import { env } from "@/env";
+import { getNextRunTime, getCronDescription } from "./cron-utils";
 
 let isInitialized = false;
 
@@ -89,6 +90,41 @@ export function getSchedulerStatus(): {
   return {
     initialized: isInitialized,
     enabled: env.ENABLE_CRON_JOBS,
+  };
+}
+
+/**
+ * Get detailed status for all cron jobs
+ */
+export function getCronJobStatus() {
+  const feedRefreshNextRun = getNextRunTime(env.FEED_REFRESH_SCHEDULE);
+  const cleanupNextRun = getNextRunTime(env.CLEANUP_SCHEDULE);
+
+  return {
+    enabled: env.ENABLE_CRON_JOBS,
+    initialized: isInitialized,
+    jobs: [
+      {
+        name: "feed-refresh",
+        displayName: "Feed Refresh",
+        description: "Refreshes RSS feeds and fetches new articles",
+        enabled: env.ENABLE_CRON_JOBS,
+        running: isFeedRefreshRunning(),
+        schedule: env.FEED_REFRESH_SCHEDULE,
+        scheduleDescription: getCronDescription(env.FEED_REFRESH_SCHEDULE),
+        nextRun: feedRefreshNextRun,
+      },
+      {
+        name: "cleanup",
+        displayName: "Article Cleanup",
+        description: "Removes old articles and performs database maintenance",
+        enabled: env.ENABLE_CRON_JOBS,
+        running: isCleanupRunning(),
+        schedule: env.CLEANUP_SCHEDULE,
+        scheduleDescription: getCronDescription(env.CLEANUP_SCHEDULE),
+        nextRun: cleanupNextRun,
+      },
+    ],
   };
 }
 

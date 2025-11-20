@@ -64,6 +64,35 @@ interface User {
   };
 }
 
+interface CronJobRun {
+  id: string;
+  status: string;
+  startedAt: string;
+  completedAt: string | null;
+  duration: number | null;
+  result: any;
+  error: string | null;
+}
+
+interface CronJob {
+  name: string;
+  displayName: string;
+  description: string;
+  enabled: boolean;
+  running: boolean;
+  schedule: string;
+  scheduleDescription: string;
+  nextRun: string | null;
+  lastRun: CronJobRun | null;
+  recentRuns: CronJobRun[];
+}
+
+interface CronStatus {
+  enabled: boolean;
+  initialized: boolean;
+  jobs: CronJob[];
+}
+
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [cacheStats, setCacheStats] = useState<CacheStats | null>(null);
@@ -1540,8 +1569,237 @@ function JobsTab({
   onGenerateEmbeddings: () => void;
   onCleanup: () => void;
 }) {
+  const [cronStatus, setCronStatus] = useState<CronStatus | null>(null);
+  const [isLoadingCron, setIsLoadingCron] = useState(true);
+  const [expandedRun, setExpandedRun] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadCronStatus();
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(loadCronStatus, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  async function loadCronStatus() {
+    try {
+      const response = await fetch("/api/admin/cron/history");
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Cron status response:", data);
+        
+        // Handle success response format { success: true, data: { ... } }
+        if (data.success && data.data && data.data.jobs) {
+          setCronStatus(data.data);
+        } else if (data.data && data.data.jobs) {
+          // Fallback for direct data format
+          setCronStatus(data.data);
+        } else if (data.jobs) {
+          // Fallback for unwrapped format
+          setCronStatus(data);
+        } else {
+          console.error("Invalid cron status response structure:", data);
+          setCronStatus(null);
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Failed to fetch cron status:", response.status, errorData);
+        toast.error(`Failed to load cron status: ${errorData.error || response.statusText}`);
+        setCronStatus(null);
+      }
+    } catch (error) {
+      console.error("Failed to load cron status:", error);
+      toast.error("Failed to load cron status");
+      setCronStatus(null);
+    } finally {
+      setIsLoadingCron(false);
+    }
+  }
+
+  const getStatusBadge = (status: string, running: boolean) => {
+    if (running) {
+      return (
+        <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+          <span className="mr-1 h-2 w-2 rounded-full bg-blue-600 animate-pulse"></span>
+          Running
+        </span>
+      );
+    }
+    
+    if (status === "success") {
+      return (
+        <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-200">
+          ✓ Success
+        </span>
+      );
+    }
+    
+    if (status === "failed") {
+      return (
+        <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900 dark:text-red-200">
+          ✗ Failed
+        </span>
+      );
+    }
+    
+    return (
+      <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-800 dark:text-gray-200">
+        {status}
+      </span>
+    );
+  };
+
+  const formatDuration = (ms: number | null) => {
+    if (!ms) return "N/A";
+    if (ms < 1000) return `${ms}ms`;
+    if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+    return `${(ms / 60000).toFixed(1)}m`;
+  };
+
+  const formatRelativeTime = (date: string | null) => {
+    if (!date) return "Never";
+    const now = new Date().getTime();
+    const then = new Date(date).getTime();
+    const diff = now - then;
+    
+    if (diff < 60000) return "Just now";
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    return `${Math.floor(diff / 86400000)}d ago`;
+  };
+
+  const formatNextRunTime = (nextRun: string | null) => {
+    if (!nextRun) return "N/A";
+    const now = new Date().getTime();
+    const then = new Date(nextRun).getTime();
+    const diff = then - now;
+    
+    if (diff < 0) return "Overdue";
+    if (diff < 60000) return `in ${Math.floor(diff / 1000)}s`;
+    if (diff < 3600000) return `in ${Math.floor(diff / 60000)}m`;
+    if (diff < 86400000) return `in ${Math.floor(diff / 3600000)}h`;
+    return `in ${Math.floor(diff / 86400000)}d`;
+  };
+
   return (
     <div className="space-y-6">
+      {/* Scheduled Tasks Status */}
+      <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
+        <h2 className="mb-4 text-xl font-semibold text-foreground">
+          Scheduled Tasks Status
+        </h2>
+        
+        {isLoadingCron ? (
+          <div className="text-center py-8 text-foreground/70">Loading...</div>
+        ) : !cronStatus || !cronStatus.jobs ? (
+          <div className="text-center py-8 text-red-600">Failed to load cron status</div>
+        ) : (
+          <div className="space-y-6">
+            {cronStatus.jobs.map((job) => (
+              <div key={job.name} className="rounded-lg border border-border p-4">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-foreground">{job.displayName}</h3>
+                      {getStatusBadge(job.lastRun?.status || "unknown", job.running)}
+                      {!job.enabled && (
+                        <span className="text-xs text-foreground/50">(Disabled)</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-foreground/70 mt-1">{job.description}</p>
+                    <p className="text-xs text-foreground/50 mt-1">
+                      Schedule: {job.scheduleDescription}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <div className="text-xs text-foreground/50 mb-1">Last Run</div>
+                    <div className="text-sm font-medium text-foreground">
+                      {job.lastRun ? formatRelativeTime(job.lastRun.startedAt) : "Never"}
+                    </div>
+                    {job.lastRun && (
+                      <div className="text-xs text-foreground/50">
+                        Duration: {formatDuration(job.lastRun.duration)}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-xs text-foreground/50 mb-1">Next Run</div>
+                    <div className="text-sm font-medium text-foreground">
+                      {job.enabled ? formatNextRunTime(job.nextRun) : "Disabled"}
+                    </div>
+                    {job.nextRun && job.enabled && (
+                      <div className="text-xs text-foreground/50">
+                        {new Date(job.nextRun).toLocaleString()}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-xs text-foreground/50 mb-1">Stats</div>
+                    {job.lastRun?.result && (
+                      <div className="text-xs text-foreground">
+                        {job.name === "feed-refresh" && (
+                          <>
+                            {job.lastRun.result.newArticles || 0} new articles
+                            {job.lastRun.result.articlesCleanedUp ? `, ${job.lastRun.result.articlesCleanedUp} cleaned` : ""}
+                          </>
+                        )}
+                        {job.name === "cleanup" && (
+                          <>
+                            {job.lastRun.result.deleted || 0} deleted
+                            {job.lastRun.result.vacuumRun && ", vacuum run"}
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Recent Runs */}
+                {job.recentRuns && job.recentRuns.length > 0 && (
+                  <div className="mt-4">
+                    <div className="text-xs text-foreground/50 mb-2">Recent Executions</div>
+                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                      {job.recentRuns.slice(0, 10).map((run) => (
+                        <div
+                          key={run.id}
+                          className="flex items-center justify-between py-2 px-3 rounded bg-background/50 hover:bg-background border border-border/50 cursor-pointer"
+                          onClick={() => setExpandedRun(expandedRun === run.id ? null : run.id)}
+                        >
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className="min-w-0 flex-1">
+                              <div className="text-xs text-foreground/70">
+                                {new Date(run.startedAt).toLocaleString()}
+                              </div>
+                              {expandedRun === run.id && run.result && (
+                                <div className="text-xs text-foreground/50 mt-1 font-mono">
+                                  {JSON.stringify(run.result, null, 2)}
+                                </div>
+                              )}
+                              {expandedRun === run.id && run.error && (
+                                <div className="text-xs text-red-600 mt-1">
+                                  Error: {run.error}
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-xs text-foreground/50">
+                              {formatDuration(run.duration)}
+                            </div>
+                            <div>{getStatusBadge(run.status, false)}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Manual Job Execution */}
       <div className="rounded-lg border border-border bg-background p-6 shadow-sm border-border bg-background">
         <h2 className="mb-4 text-xl font-semibold text-foreground">
           Manual Job Execution

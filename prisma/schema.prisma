@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
@@ -12,347 +9,315 @@ datasource db {
   extensions = [vector]
 }
 
-model Feed {
-  id            String    @id @default(cuid())
-  name          String
-  url           String    @unique
-  description   String?   @db.Text
-  siteUrl       String?
-  imageUrl      String?
-  lastFetched   DateTime?
-  etag          String?
-  lastModified  String?
-  fetchInterval Int       @default(60) // in minutes
-  errorCount    Int       @default(0)
-  lastError     String?   @db.Text
-  settings      Json?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  articles        Article[]
-  feedCategories  FeedCategory[]
-  userFeeds       UserFeed[]
-
-  @@index([url])
-  @@index([lastFetched])
-  @@index([errorCount])
-  @@map("feeds")
-}
-
-model Article {
-  id          String    @id @default(cuid())
-  feedId      String
-  title       String
-  content     String    @db.Text
-  url         String    @unique
-  guid        String?
-  author      String?
-  excerpt     String?   @db.Text
-  imageUrl    String?
-  contentHash String?
-  publishedAt DateTime?
-  embedding   Unsupported("vector(1536)")?
-  summary     String?   @db.Text // LLM-generated summary
-  keyPoints   Json?     // LLM-extracted key points
-  topics      String[]  // Detected topics/tags
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  feed            Feed              @relation(fields: [feedId], references: [id], onDelete: Cascade)
-  readArticles    ReadArticle[]
-  articleFeedback ArticleFeedback[]
-
-  @@index([feedId])
-  @@index([publishedAt])
-  @@index([url])
-  @@index([feedId, publishedAt])
-  @@index([guid])
-  @@index([contentHash])
-  @@map("articles")
-}
-
-model Category {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  feedCategories FeedCategory[]
-
-  @@map("categories")
-}
-
-model FeedCategory {
-  feedId     String
-  categoryId String
-  createdAt  DateTime @default(now())
-
-  feed     Feed     @relation(fields: [feedId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-
-  @@id([feedId, categoryId])
-  @@map("feed_categories")
-}
-
-// NextAuth.js Models
-model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  accounts        Account[]
-  sessions        Session[]
-  userFeeds       UserFeed[]
-  readArticles    ReadArticle[]
-  preferences     UserPreferences?
-  articleFeedback ArticleFeedback[]
-  userPatterns    UserPattern[]
-  userCategories  UserCategory[]
-
-  @@map("users")
-}
-
-model Account {
-  id                String  @id @default(cuid())
+model accounts {
+  id                String  @id
   userId            String
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  users             users   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@index([userId])
-  @@map("accounts")
 }
 
-model Session {
-  id           String   @id @default(cuid())
+model admin_settings {
+  id          String   @id
+  key         String   @unique
+  value       Json
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+
+  @@index([key])
+}
+
+model article_feedback {
+  id            String   @id
+  userId        String
+  articleId     String
+  feedbackType  String
+  feedbackValue Float
+  timeSpent     Int?
+  estimatedTime Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime
+  articles      articles @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  users         users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, articleId])
+  @@index([articleId])
+  @@index([feedbackType])
+  @@index([userId, createdAt])
+  @@index([userId])
+}
+
+model articles {
+  id               String                 @id
+  feedId           String
+  title            String
+  content          String
+  url              String                 @unique
+  publishedAt      DateTime?
+  embedding        Unsupported("vector")?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime
+  author           String?
+  contentHash      String?
+  excerpt          String?
+  guid             String?
+  imageUrl         String?
+  keyPoints        Json?
+  summary          String?
+  topics           String[]
+  article_feedback article_feedback[]
+  feeds            feeds                  @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  read_articles    read_articles[]
+
+  @@index([contentHash])
+  @@index([feedId])
+  @@index([feedId, publishedAt])
+  @@index([guid])
+  @@index([publishedAt])
+  @@index([url])
+}
+
+model categories {
+  id              String            @id
+  name            String            @unique
+  description     String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime
+  feed_categories feed_categories[]
+}
+
+model CronJobRun {
+  id           String         @id @default(cuid())
+  jobName      String
+  status       CronJobStatus
+  triggeredBy  CronJobTrigger
+  startedAt    DateTime       @default(now())
+  completedAt  DateTime?
+  durationMs   Int?
+  stats        Json?
+  metadata     Json?
+  errorMessage String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([jobName, startedAt])
+  @@index([jobName, status])
+  @@map("cron_job_runs")
+}
+
+model feed_categories {
+  feedId     String
+  categoryId String
+  createdAt  DateTime   @default(now())
+  categories categories @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  feeds      feeds      @relation(fields: [feedId], references: [id], onDelete: Cascade)
+
+  @@id([feedId, categoryId])
+}
+
+model feeds {
+  id              String            @id
+  name            String
+  url             String            @unique
+  lastFetched     DateTime?
+  settings        Json?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime
+  description     String?
+  errorCount      Int               @default(0)
+  etag            String?
+  fetchInterval   Int               @default(60)
+  imageUrl        String?
+  lastError       String?
+  lastModified    String?
+  siteUrl         String?
+  articles        articles[]
+  feed_categories feed_categories[]
+  user_feeds      user_feeds[]
+
+  @@index([errorCount])
+  @@index([lastFetched])
+  @@index([url])
+}
+
+model read_articles {
+  id        String   @id
+  userId    String
+  articleId String
+  readAt    DateTime @default(now())
+  articles  articles @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  users     users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, articleId])
+  @@index([articleId])
+  @@index([userId])
+  @@index([userId, readAt])
+}
+
+model sessions {
+  id           String   @id
   sessionToken String   @unique
   userId       String
   expires      DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  users        users    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@map("sessions")
 }
 
-model VerificationToken {
+model user_categories {
+  id                   String                 @id
+  userId               String
+  name                 String
+  description          String?
+  order                Int                    @default(0)
+  settings             Json?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime
+  icon                 String?                @default("📁")
+  users                users                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user_feed_categories user_feed_categories[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@index([userId, order])
+}
+
+model user_feed_categories {
+  id              String          @id
+  userFeedId      String
+  userCategoryId  String
+  createdAt       DateTime        @default(now())
+  user_categories user_categories @relation(fields: [userCategoryId], references: [id], onDelete: Cascade)
+  user_feeds      user_feeds      @relation(fields: [userFeedId], references: [id], onDelete: Cascade)
+
+  @@unique([userFeedId, userCategoryId])
+  @@index([userCategoryId])
+  @@index([userFeedId])
+}
+
+model user_feeds {
+  id                   String                 @id
+  userId               String
+  feedId               String
+  customName           String?
+  settings             Json?
+  subscribedAt         DateTime               @default(now())
+  updatedAt            DateTime
+  user_feed_categories user_feed_categories[]
+  feeds                feeds                  @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  users                users                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, feedId])
+  @@index([feedId])
+  @@index([userId])
+}
+
+model user_patterns {
+  id            String   @id
+  userId        String
+  keyword       String
+  weight        Float
+  feedbackCount Int      @default(1)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime
+  users         users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, keyword])
+  @@index([updatedAt])
+  @@index([userId])
+  @@index([userId, weight])
+}
+
+model user_preferences {
+  id                        String   @id
+  userId                    String   @unique
+  theme                     String   @default("system")
+  fontSize                  String   @default("medium")
+  articlesPerPage           Int      @default(20)
+  defaultView               String   @default("expanded")
+  showReadArticles          Boolean  @default(true)
+  autoMarkAsRead            Boolean  @default(false)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime
+  showRelatedExcerpts       Boolean  @default(false)
+  bounceThreshold           Float    @default(0.25)
+  showLowRelevanceArticles  Boolean  @default(true)
+  llmApiKey                 String?
+  llmBaseUrl                String?
+  llmProvider               String?
+  readingPanelEnabled       Boolean  @default(false)
+  readingPanelPosition      String   @default("right")
+  readingPanelSize          Int      @default(50)
+  categoryStates            Json?
+  sidebarCollapsed          Boolean  @default(false)
+  readingFontFamily         String   @default("Georgia")
+  readingFontSize           Int      @default(18)
+  readingLineHeight         Float    @default(1.7)
+  readingParagraphSpacing   Float    @default(1.5)
+  showReadingTime           Boolean  @default(true)
+  breakLineSpacing          Float    @default(0.75)
+  defaultMaxArticleAge      Int      @default(90)
+  defaultMaxArticlesPerFeed Int      @default(500)
+  defaultRefreshInterval    Int      @default(60)
+  articleSortDirection      String   @default("desc")
+  articleSortOrder          String   @default("publishedAt")
+  infiniteScrollMode        String   @default("both")
+  searchRecencyDecayDays    Int      @default(30)
+  searchRecencyWeight       Float    @default(0.3)
+  embeddingsEnabled         Boolean  @default(false)
+  llmSummaryModel           String?
+  llmEmbeddingModel         String?
+  llmDigestModel            String?
+  users                     users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model users {
+  id               String             @id
+  name             String?
+  email            String             @unique
+  emailVerified    DateTime?
+  image            String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime
+  accounts         accounts[]
+  article_feedback article_feedback[]
+  read_articles    read_articles[]
+  sessions         sessions[]
+  user_categories  user_categories[]
+  user_feeds       user_feeds[]
+  user_patterns    user_patterns[]
+  user_preferences user_preferences?
+}
+
+model verification_tokens {
   identifier String
   token      String   @unique
   expires    DateTime
 
   @@unique([identifier, token])
-  @@map("verification_tokens")
 }
 
-// User Feed Subscriptions
-model UserFeed {
-  id           String   @id @default(cuid())
-  userId       String
-  feedId       String
-  customName   String?
-  settings     Json?    // Feed-level settings: { refreshInterval?: number, maxArticlesPerFeed?: number, maxArticleAge?: number }
-  subscribedAt DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  feed                 Feed                  @relation(fields: [feedId], references: [id], onDelete: Cascade)
-  userFeedCategories   UserFeedCategory[]
-
-  @@unique([userId, feedId])
-  @@index([userId])
-  @@index([feedId])
-  @@map("user_feeds")
+enum CronJobStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
 }
 
-// User Categories (user-specific feed organization)
-model UserCategory {
-  id          String   @id @default(cuid())
-  userId      String
-  name        String
-  description String?
-  icon        String?  @default("📁") // Category icon (emoji or predefined icon)
-  order       Int      @default(0) // For drag-and-drop ordering
-  settings    Json?    // Category-level feed settings: { refreshInterval?: number, maxArticlesPerFeed?: number, maxArticleAge?: number }
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userFeedCategories UserFeedCategory[]
-
-  @@unique([userId, name])
-  @@index([userId])
-  @@index([userId, order])
-  @@map("user_categories")
+enum CronJobTrigger {
+  SCHEDULER
+  MANUAL
+  SYSTEM
 }
-
-// User Feed Category Assignment
-model UserFeedCategory {
-  id             String   @id @default(cuid())
-  userFeedId     String
-  userCategoryId String
-  createdAt      DateTime @default(now())
-
-  userFeed     UserFeed     @relation(fields: [userFeedId], references: [id], onDelete: Cascade)
-  userCategory UserCategory @relation(fields: [userCategoryId], references: [id], onDelete: Cascade)
-
-  @@unique([userFeedId, userCategoryId])
-  @@index([userFeedId])
-  @@index([userCategoryId])
-  @@map("user_feed_categories")
-}
-
-// Read Article Tracking
-model ReadArticle {
-  id        String   @id @default(cuid())
-  userId    String
-  articleId String
-  readAt    DateTime @default(now())
-
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, articleId])
-  @@index([userId])
-  @@index([articleId])
-  @@index([userId, readAt])
-  @@map("read_articles")
-}
-
-// User Preferences
-model UserPreferences {
-  id                       String   @id @default(cuid())
-  userId                   String   @unique
-  theme                    String   @default("system") // "light", "dark", "system"
-  fontSize                 String   @default("medium") // "small", "medium", "large"
-  articlesPerPage          Int      @default(20)
-  defaultView              String   @default("expanded") // "compact", "expanded"
-  showReadArticles         Boolean  @default(true)
-  autoMarkAsRead           Boolean  @default(false)
-  showRelatedExcerpts      Boolean  @default(false) // Show excerpts in related articles
-  bounceThreshold          Float    @default(0.25) // 25% of reading time to trigger bounce
-  showLowRelevanceArticles Boolean  @default(true) // Show dimmed vs hide completely
-  
-  // LLM Settings - Shared
-  llmProvider              String?  // "openai", "ollama", null (use system default)
-  llmApiKey                String?  @db.Text // Encrypted API key for OpenAI
-  llmBaseUrl               String?  // Base URL for Ollama or custom endpoints
-  
-  // LLM Settings - Feature-specific Models
-  llmSummaryModel          String?  // Model for article summarization (e.g., "gpt-4o-mini", "llama2")
-  llmEmbeddingModel        String?  // Model for embeddings (e.g., "text-embedding-3-small")
-  llmDigestModel           String?  // Model for digest generation (future use)
-  
-  // Embedding Settings
-  embeddingsEnabled        Boolean  @default(false) // Enable embedding generation for semantic search
-  
-  // Reading Panel Settings
-  readingPanelEnabled      Boolean  @default(false) // Enable split-pane reading panel
-  readingPanelPosition     String   @default("right") // "right", "left", "top", "bottom"
-  readingPanelSize         Int      @default(50) // Percentage of viewport (30-70)
-  
-  // Sidebar Settings
-  sidebarCollapsed         Boolean  @default(false) // Sidebar collapsed to icon-only mode
-  categoryStates           Json?    // Object mapping categoryId to expanded state { [categoryId]: boolean }
-  
-  // Reading Typography Settings
-  readingFontFamily        String   @default("Georgia") // Font family for article content
-  readingFontSize          Int      @default(18) // Font size in pixels
-  readingLineHeight        Float    @default(1.7) // Line height multiplier
-  readingParagraphSpacing  Float    @default(1.5) // Paragraph spacing in rem
-  breakLineSpacing         Float    @default(0.75) // Break line (<br>) spacing in rem
-  showReadingTime          Boolean  @default(true) // Show reading time estimation
-  
-  // Feed Refresh & Cleanup Settings
-  defaultRefreshInterval   Int      @default(60) // Default feed refresh interval in minutes
-  defaultMaxArticlesPerFeed Int     @default(500) // Default max articles to keep per feed
-  defaultMaxArticleAge     Int      @default(90) // Default max article age in days
-  
-  // Article Sorting Settings
-  articleSortOrder         String   @default("publishedAt") // "publishedAt", "relevance", "title", "feed", "updatedAt"
-  articleSortDirection     String   @default("desc") // "asc", "desc"
-  
-  // Infinite Scroll Settings
-  infiniteScrollMode       String   @default("both") // "auto", "button", "both"
-  
-  // Semantic Search Recency Settings
-  searchRecencyWeight      Float    @default(0.3) // 0-1, how much to weight recency vs semantic similarity
-  searchRecencyDecayDays   Int      @default(30) // Number of days for recency to decay to ~37%
-  
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("user_preferences")
-}
-
-// Article Feedback (explicit and implicit)
-model ArticleFeedback {
-  id              String   @id @default(cuid())
-  userId          String
-  articleId       String
-  feedbackType    String   // "explicit" or "implicit"
-  feedbackValue   Float    // 1.0 (thumbs up), -1.0 (thumbs down), -0.5 (bounce)
-  timeSpent       Int?     // Time spent in seconds (for implicit feedback)
-  estimatedTime   Int?     // Estimated reading time in seconds
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, articleId])
-  @@index([userId])
-  @@index([articleId])
-  @@index([userId, createdAt])
-  @@index([feedbackType])
-  @@map("article_feedback")
-}
-
-// User Pattern Learning
-model UserPattern {
-  id            String   @id @default(cuid())
-  userId        String
-  keyword       String
-  weight        Float    // -1.0 to 1.0
-  feedbackCount Int      @default(1)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, keyword])
-  @@index([userId])
-  @@index([userId, weight])
-  @@index([updatedAt])
-  @@map("user_patterns")
-}
-
-// Admin Settings
-model AdminSettings {
-  id          String   @id @default(cuid())
-  key         String   @unique
-  value       Json
-  description String?  @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([key])
-  @@map("admin_settings")
-}
-
