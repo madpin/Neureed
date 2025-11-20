@@ -90,11 +90,22 @@ export function ArticleCard({ article, variant = "compact", onReadStatusChange, 
   };
 
   return (
-    <article className={`group rounded-lg border p-4 transition-all ${
+    <article className={`group rounded-lg border p-4 transition-all relative ${
       isRead
         ? "border-border bg-muted opacity-75"
         : "border-border bg-background hover:shadow-md"
     }`}>
+      {/* Reading Panel Indicator */}
+      {onArticleClick && (
+        <div className="absolute top-2 right-2 z-10" title="Opens in reading panel (Ctrl/Cmd+Click for new tab)">
+          <div className="rounded-full bg-primary/10 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <svg className="h-3 w-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+        </div>
+      )}
+      
       <div className="flex gap-4">
         {/* Image */}
         {variant === "expanded" && article.imageUrl && (

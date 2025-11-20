@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import { ThemePalette } from "./ThemePalette";
 
-type ViewType = 'profile' | 'appearance' | 'reading' | 'learning' | 'llm';
+type ViewType = 'profile' | 'appearance' | 'reading' | 'learning' | 'llm' | 'feeds';
 
 interface PreferencesModalProps {
   onClose: () => void;
@@ -430,14 +431,14 @@ export function PreferencesModal({
             <div className="flex justify-end gap-3">
               <button
                 onClick={handleClose}
-                className="rounded-lg border border-border px-6 py-2 font-medium hover:bg-muted"
+                className="btn btn-outline"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="rounded-lg bg-primary px-6 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                className="btn btn-primary"
               >
                 {isSaving ? "Saving..." : "Save Preferences"}
               </button>
@@ -489,36 +490,16 @@ function AppearanceView({
       <div className="space-y-6">
         {/* Theme Selection */}
         <div>
-          <label className="mb-2 block text-sm font-medium">Theme</label>
-          <select
-            value={preferences.theme}
-            onChange={(e) => {
-              updatePreference("theme", e.target.value);
+          <label className="mb-3 block text-sm font-medium">Theme</label>
+          <ThemePalette
+            selectedTheme={preferences.theme}
+            onThemeChange={(theme) => {
+              updatePreference("theme", theme);
               window.dispatchEvent(new CustomEvent("preferencesUpdated", {
-                detail: { theme: e.target.value }
+                detail: { theme }
               }));
             }}
-            className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-            <option value="nord-light">Nord Light</option>
-            <option value="nord-dark">Nord Dark</option>
-            <option value="solarized-light">Solarized Light</option>
-            <option value="solarized-dark">Solarized Dark</option>
-            <option value="barbie-light">Barbie Light</option>
-            <option value="barbie-dark">Barbie Dark</option>
-            <option value="purple-light">Purple Light</option>
-            <option value="purple-dark">Purple Dark</option>
-            <option value="orange-light">Orange Light</option>
-            <option value="orange-dark">Orange Dark</option>
-            <option value="rainbow-light">🌈 Rainbow Light</option>
-            <option value="rainbow-dark">🌈 Rainbow Dark</option>
-            <option value="system">System (Auto)</option>
-          </select>
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            System theme automatically switches between light and dark based on your device settings
-          </p>
+          />
         </div>
 
         {/* Font Size */}
@@ -811,7 +792,7 @@ function LearningView({
                 }
               }
             }}
-            className="rounded-lg border border-red-300 bg-background px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+            className="btn btn-danger btn-sm"
           >
             Reset Learning
           </button>

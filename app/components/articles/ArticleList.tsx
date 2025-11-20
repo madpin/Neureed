@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { ArticleCard } from "./ArticleCard";
 import { RelevanceScore } from "./RelevanceScore";
+import { LoadingSpinner, LoadingSkeleton } from "@/app/components/layout/LoadingSpinner";
+import { EmptyState } from "@/app/components/layout/EmptyState";
 import type { Article, Feed } from "@prisma/client";
 import type { ArticleScore } from "@/lib/services/article-scoring-service";
 
@@ -79,41 +81,30 @@ export function ArticleList({
   }, [session, articles]);
 
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {[...Array(5)].map((_, i) => (
-          <div
-            key={i}
-            className="h-32 animate-pulse rounded-lg bg-muted bg-background"
-          />
-        ))}
-      </div>
-    );
+    return <LoadingSkeleton count={5} />;
   }
 
   if (articles.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <svg
-          className="mb-4 h-16 w-16 text-foreground/50"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
-          />
-        </svg>
-        <h3 className="mb-2 text-lg font-semibold text-foreground">
-          No articles yet
-        </h3>
-        <p className="text-sm text-foreground/60">
-          Add some feeds to start reading articles
-        </p>
-      </div>
+      <EmptyState
+        icon={
+          <svg
+            className="h-16 w-16"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
+            />
+          </svg>
+        }
+        title="No articles yet"
+        description="Add some feeds to start reading articles"
+      />
     );
   }
 
@@ -156,9 +147,8 @@ export function ArticleList({
 
       {/* Loading more indicator */}
       {isLoadingMore && (
-        <div className="flex items-center justify-center py-8">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
-          <span className="ml-3 text-sm text-foreground/70">Loading more articles...</span>
+        <div className="py-8">
+          <LoadingSpinner size="md" text="Loading more articles..." />
         </div>
       )}
 

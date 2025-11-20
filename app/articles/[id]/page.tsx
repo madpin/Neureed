@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArticlePageClient } from "@/app/components/articles/ArticlePageClient";
 import { ArticleFeedbackSection } from "@/app/components/articles/ArticleFeedbackSection";
 import { RelatedArticles } from "@/app/components/articles/RelatedArticles";
+import { LoadingSpinner } from "@/app/components/layout/LoadingSpinner";
 import { processArticleContent, estimateReadingTime } from "@/lib/content-processor";
 import { formatLocalizedDateTime, toISOString } from "@/lib/date-utils";
 import type { Article, Feed } from "@prisma/client";
@@ -48,10 +49,7 @@ export default function ArticlePage() {
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
-          <p className="text-foreground/70">Loading article...</p>
-        </div>
+        <LoadingSpinner size="lg" text="Loading article..." />
       </div>
     );
   }

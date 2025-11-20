@@ -204,21 +204,11 @@ export function ReadingPanelLayout({ children, onArticleReadStatusChange }: Read
         size={preferences.readingPanelSize}
         onResize={handleResize}
         panel={
-          <div className="relative h-full">
-            <ArticlePanel 
-              articleId={selectedArticleId} 
-              onClose={handleClosePanel}
-              onReadStatusChange={onArticleReadStatusChange}
-            />
-            
-            {/* Position switcher */}
-            <div className="absolute bottom-4 right-4 z-10">
-              <PositionSwitcher
-                currentPosition={preferences.readingPanelPosition}
-                onChange={handlePositionChange}
-              />
-            </div>
-          </div>
+          <ArticlePanel 
+            articleId={selectedArticleId} 
+            onClose={handleClosePanel}
+            onReadStatusChange={onArticleReadStatusChange}
+          />
         }
       >
         {renderChildren()}
@@ -227,112 +217,4 @@ export function ReadingPanelLayout({ children, onArticleReadStatusChange }: Read
   );
 }
 
-interface PositionSwitcherProps {
-  currentPosition: Position;
-  onChange: (position: Position) => void;
-}
-
-function PositionSwitcher({ currentPosition, onChange }: PositionSwitcherProps) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const positions: { value: Position; label: string; icon: ReactNode }[] = [
-    {
-      value: "right",
-      label: "Right",
-      icon: (
-        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-          <rect x="2" y="4" width="10" height="16" rx="1" />
-          <rect x="14" y="4" width="8" height="16" rx="1" opacity="0.5" />
-        </svg>
-      ),
-    },
-    {
-      value: "left",
-      label: "Left",
-      icon: (
-        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-          <rect x="2" y="4" width="8" height="16" rx="1" opacity="0.5" />
-          <rect x="12" y="4" width="10" height="16" rx="1" />
-        </svg>
-      ),
-    },
-    {
-      value: "top",
-      label: "Top",
-      icon: (
-        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-          <rect x="2" y="2" width="20" height="8" rx="1" opacity="0.5" />
-          <rect x="2" y="12" width="20" height="10" rx="1" />
-        </svg>
-      ),
-    },
-    {
-      value: "bottom",
-      label: "Bottom",
-      icon: (
-        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-          <rect x="2" y="2" width="20" height="10" rx="1" />
-          <rect x="2" y="14" width="20" height="8" rx="1" opacity="0.5" />
-        </svg>
-      ),
-    },
-  ];
-
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="rounded-lg border border-border bg-background p-2 shadow-lg hover:bg-muted"
-        title="Change panel position"
-      >
-        <svg
-          className="h-5 w-5 text-foreground/70"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M4 6h16M4 12h16M4 18h16"
-          />
-        </svg>
-      </button>
-
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setIsOpen(false)}
-          />
-          
-          {/* Menu */}
-          <div className="absolute bottom-full right-0 mb-2 z-50 w-40 rounded-lg border border-border bg-background shadow-xl">
-            <div className="p-1">
-              {positions.map((pos) => (
-                <button
-                  key={pos.value}
-                  onClick={() => {
-                    onChange(pos.value);
-                    setIsOpen(false);
-                  }}
-                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-muted ${
-                    currentPosition === pos.value
-                      ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
-                      : "text-foreground/70"
-                  }`}
-                >
-                  {pos.icon}
-                  <span>{pos.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
 

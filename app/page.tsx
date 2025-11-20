@@ -13,6 +13,7 @@ import { FeedBrowser } from "./components/feeds/FeedBrowser";
 import { ArticleList } from "./components/articles/ArticleList";
 import { SignInWithGoogleButton, SignInWithGitHubButton } from "./components/auth/SignInButton";
 import { Tooltip } from "./components/layout/Tooltip";
+import { LoadingSpinner } from "./components/layout/LoadingSpinner";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import type { Feed, Article } from "@prisma/client";
 import type { ArticleSortOrder, ArticleSortDirection } from "@/lib/validations/article-validation";
@@ -416,10 +417,7 @@ export default function Home() {
   if (status === "loading") {
     return (
       <div className="flex h-screen items-center justify-center bg-background text-foreground">
-        <div className="text-center">
-          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
-          <p className="text-foreground/70">Loading...</p>
-        </div>
+        <LoadingSpinner size="lg" text="Loading..." />
       </div>
     );
   }
@@ -458,49 +456,9 @@ export default function Home() {
         <div className="flex flex-col gap-4">
           {!isCollapsed && (
             <div className="space-y-2">
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setIsAddFeedOpen(true)}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                >
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                  Add
-                </button>
-                <button
-                  onClick={() => setIsFeedBrowserOpen(true)}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
-                >
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                  Browse
-                </button>
-              </div>
               <button
                 onClick={() => setIsManagementModalOpen(true)}
-                className="flex w-full items-center justify-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
+                className="btn btn-primary w-full"
               >
                 <svg
                   className="h-4 w-4"
@@ -515,60 +473,18 @@ export default function Home() {
                     d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
                   />
                 </svg>
-                Manage Categories
+                Manage Feeds
               </button>
             </div>
           )}
 
           {isCollapsed && (
             <div className="flex flex-col gap-2">
-              <Tooltip content="Add Feed">
-                <button
-                  onClick={() => setIsAddFeedOpen(true)}
-                  className="flex items-center justify-center rounded-lg bg-primary p-3 text-primary-foreground hover:bg-primary/90"
-                  title="Add Feed"
-                >
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                </button>
-              </Tooltip>
-              <Tooltip content="Browse Feeds">
-                <button
-                  onClick={() => setIsFeedBrowserOpen(true)}
-                  className="flex items-center justify-center rounded-lg border border-border p-3 hover:bg-muted"
-                  title="Browse Feeds"
-                >
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                </button>
-              </Tooltip>
-              <Tooltip content="Manage Categories">
+              <Tooltip content="Manage Feeds">
                 <button
                   onClick={() => setIsManagementModalOpen(true)}
-                  className="flex items-center justify-center rounded-lg border border-border p-3 hover:bg-muted"
-                  title="Manage Categories"
+                  className="flex items-center justify-center rounded-lg bg-primary p-3 text-primary-foreground hover:bg-primary/90"
+                  title="Manage Feeds"
                 >
                   <svg
                     className="h-5 w-5"
@@ -619,6 +535,22 @@ export default function Home() {
             {/* Search Form - Show when search param is present */}
             {searchQuery && (
               <div className="space-y-4">
+                {/* Info Banner */}
+                <div className="rounded-lg border border-primary/20 bg-primary/10 p-4">
+                  <div className="flex gap-3">
+                    <svg className="h-5 w-5 flex-shrink-0 text-primary mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="flex-1 text-sm">
+                      <p className="font-medium text-primary mb-1">Semantic Search</p>
+                      <p className="text-foreground/80">
+                        This search uses AI to understand the meaning of your query, not just keywords. 
+                        Try searching for concepts, questions, or topics to find relevant articles even if they don't contain your exact words.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
                 <form onSubmit={handleSearchSubmit} className="space-y-4">
                   <div className="flex gap-4">
                     <div className="flex-1">
@@ -633,14 +565,14 @@ export default function Home() {
                     <button
                       type="submit"
                       disabled={isLoadingArticles || searchQuery.length < 2}
-                      className="rounded-lg bg-primary px-8 py-3 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                      className="btn btn-primary px-8"
                     >
                       {isLoadingArticles ? "Searching..." : "Search"}
                     </button>
                     <button
                       type="button"
                       onClick={handleClearSearch}
-                      className="rounded-lg border border-border px-4 py-3 hover:bg-muted"
+                      className="btn btn-outline"
                       title="Clear search"
                     >
                       <svg
@@ -660,7 +592,7 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={() => setShowSearchFilters(!showSearchFilters)}
-                      className="rounded-lg border border-border px-4 py-3 hover:bg-muted"
+                      className="btn btn-outline"
                     >
                       <svg
                         className="h-5 w-5"
@@ -791,6 +723,14 @@ export default function Home() {
           onClose={() => setIsManagementModalOpen(false)}
           initialView="overview"
           onRefreshData={() => loadFeeds()}
+          onAddFeed={() => {
+            setIsManagementModalOpen(false);
+            setIsAddFeedOpen(true);
+          }}
+          onBrowseFeeds={() => {
+            setIsManagementModalOpen(false);
+            setIsFeedBrowserOpen(true);
+          }}
         />
       )}
     </MainLayout>

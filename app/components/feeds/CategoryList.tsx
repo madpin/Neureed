@@ -7,6 +7,7 @@ import type { Feed } from "@prisma/client";
 import { FeedManagementModal } from "./FeedManagementModal";
 import { Tooltip } from "../layout/Tooltip";
 import { IconPicker } from "./IconPicker";
+import { EmptyState } from "../layout/EmptyState";
 
 interface FeedInfo {
   id: string;
@@ -430,7 +431,7 @@ export function CategoryList({
     const isDraggingFeed = draggedFeedId === feed.id;
     
     return (
-      <div key={feed.id} className="relative">
+      <div key={feed.id} className="relative group">
         <div
           className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 transition-colors ${
             isSelected ? "bg-accent/10 text-primary" : "hover:bg-muted"
@@ -479,11 +480,7 @@ export function CategoryList({
 
         {/* Feed Actions Menu */}
         {expandedFeedId === feed.id && (
-          <div className="fixed z-50 mt-1 w-48 rounded-lg border border-border bg-background shadow-lg"
-            style={{
-              top: `${(document.getElementById(`feed-menu-${feed.id}`)?.getBoundingClientRect().bottom || 0) + 4}px`,
-              left: `${(document.getElementById(`feed-menu-${feed.id}`)?.getBoundingClientRect().right || 0) - 192}px`,
-            }}
+          <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-border bg-background shadow-lg"
           >
             <button
               onClick={() => {
@@ -657,11 +654,7 @@ export function CategoryList({
 
         {/* Category Actions Menu - Same style as feed menu */}
         {categoryActionsId === category.id && (
-          <div className="fixed z-50 mt-1 w-48 rounded-lg border border-border bg-background shadow-lg"
-            style={{
-              top: `${(document.getElementById(`category-menu-${category.id}`)?.getBoundingClientRect().bottom || 0) + 4}px`,
-              left: `${(document.getElementById(`category-menu-${category.id}`)?.getBoundingClientRect().right || 0) - 192}px`,
-            }}
+          <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-border bg-background shadow-lg"
           >
             <button
               onClick={() => {
@@ -848,9 +841,26 @@ export function CategoryList({
       )}
 
       {categories.length === 0 && uncategorizedFeeds.length === 0 && (
-        <div className="px-4 py-8 text-center text-sm text-secondary">
-          No feeds yet. Add your first feed to get started!
-        </div>
+        <EmptyState
+          icon={
+            <svg
+              className="h-12 w-12"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 5c7.18 0 13 5.82 13 13M6 11a7 7 0 017 7m-6 0a1 1 0 11-2 0 1 1 0 012 0z"
+              />
+            </svg>
+          }
+          title="No feeds yet"
+          description="Add your first feed to get started!"
+          className="py-8"
+        />
       )}
 
       {/* Feed Management Modal */}

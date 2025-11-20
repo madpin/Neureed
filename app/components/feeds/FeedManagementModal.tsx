@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { CookieGuide } from "./CookieGuide";
 import { IconPicker } from "./IconPicker";
+import { OpmlExportModal } from "./OpmlExportModal";
+import { OpmlImportModal } from "./OpmlImportModal";
 import { formatSmartDate, formatLocalizedDateTime } from "@/lib/date-utils";
 
 type ViewType = 'feed' | 'category' | 'overview';
@@ -14,6 +16,8 @@ interface FeedManagementModalProps {
   feedId?: string;
   categoryId?: string;
   onRefreshData?: () => void;
+  onAddFeed?: () => void;
+  onBrowseFeeds?: () => void;
 }
 
 interface Category {
@@ -69,6 +73,8 @@ export function FeedManagementModal({
   feedId: initialFeedId,
   categoryId: initialCategoryId,
   onRefreshData,
+  onAddFeed,
+  onBrowseFeeds,
 }: FeedManagementModalProps) {
   const [currentView, setCurrentView] = useState<ViewType>(initialView);
   const [feedId, setFeedId] = useState<string | undefined>(initialFeedId);
@@ -222,6 +228,8 @@ export function FeedManagementModal({
               onNavigateToCategory={(catId) => navigateToView('category', undefined, catId)}
               onNavigateToFeed={(fId) => navigateToView('feed', fId, undefined)}
                 onRefreshData={onRefreshData}
+                onAddFeed={onAddFeed}
+                onBrowseFeeds={onBrowseFeeds}
               />
             )}
           {currentView === 'category' && categoryId && (
@@ -250,10 +258,14 @@ function ManagementOverview({
   onNavigateToCategory,
   onNavigateToFeed,
   onRefreshData,
+  onAddFeed,
+  onBrowseFeeds,
 }: {
   onNavigateToCategory: (categoryId: string) => void;
   onNavigateToFeed: (feedId: string) => void;
   onRefreshData?: () => void;
+  onAddFeed?: () => void;
+  onBrowseFeeds?: () => void;
 }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [allFeedsGrouped, setAllFeedsGrouped] = useState<{
@@ -386,6 +398,12 @@ function ManagementOverview({
     }
   };
 
+  const handleImportSuccess = async () => {
+    setShowImportModal(false);
+    await loadData();
+    onRefreshData?.();
+  };
+
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -398,15 +416,39 @@ function ManagementOverview({
     <div className="p-6">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Feed & Category Management</h1>
+        <div className="flex items-center gap-2">
+          {onAddFeed && (
+            <button
+              onClick={onAddFeed}
+              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Feed
+            </button>
+          )}
+          {onBrowseFeeds && (
+            <button
+              onClick={onBrowseFeeds}
+              className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              Browse Feeds
+            </button>
+          )}
           <button
             onClick={() => setIsCreating(true)}
-          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             Create Category
           </button>
+        </div>
       </div>
 
       {/* Statistics Panel */}

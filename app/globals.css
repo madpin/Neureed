@@ -282,3 +282,91 @@ body {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--foreground) 15%, transparent) transparent;
 }
+
+/* Button Utilities - Modern, consistent button styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: colors 0.2s;
+  outline: none;
+}
+
+.btn:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  ring: 2px;
+  ring-offset: 2px;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--primary) 90%, black);
+}
+
+.btn-primary:focus {
+  ring-color: var(--primary);
+}
+
+.btn-secondary {
+  background-color: var(--muted);
+  color: var(--foreground);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--muted) 80%, black);
+}
+
+.btn-outline {
+  border: 1px solid var(--border);
+  background-color: var(--background);
+}
+
+.btn-outline:hover:not(:disabled) {
+  background-color: var(--muted);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background-color: var(--muted);
+}
+
+.btn-danger {
+  background-color: #dc2626;
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #b91c1c;
+}
+
+:root.dark .btn-danger {
+  background-color: #b91c1c;
+}
+
+:root.dark .btn-danger:hover:not(:disabled) {
+  background-color: #991b1b;
+}
+
+.btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+.btn-lg {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}

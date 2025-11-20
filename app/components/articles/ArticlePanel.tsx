@@ -6,6 +6,7 @@ import { ArticleToolbar } from "./ArticleToolbar";
 import { ArticleSummary, ArticleSummaryRef } from "./ArticleSummary";
 import { ArticleFeedbackSection } from "./ArticleFeedbackSection";
 import { RelatedArticles } from "./RelatedArticles";
+import { LoadingSpinner } from "@/app/components/layout/LoadingSpinner";
 import { processArticleContent, estimateReadingTime } from "@/lib/content-processor";
 import type { Article, Feed } from "@prisma/client";
 import { useRef, useCallback } from "react";
@@ -151,10 +152,7 @@ export function ArticlePanel({ articleId, onClose, onReadStatusChange }: Article
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-blue-600 border-t-transparent mx-auto"></div>
-          <p className="text-foreground/70">Loading article...</p>
-        </div>
+        <LoadingSpinner size="lg" text="Loading article..." />
       </div>
     );
   }
@@ -232,6 +230,26 @@ export function ArticlePanel({ articleId, onClose, onReadStatusChange }: Article
             <span className="text-sm font-medium text-foreground/70 truncate">
               Reading Panel
             </span>
+            <div className="group relative">
+              <svg
+                className="h-4 w-4 text-foreground/50 cursor-help"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <div className="absolute left-0 top-full mt-2 hidden group-hover:block z-50 w-64 rounded-lg border border-border bg-background p-3 shadow-lg text-xs">
+                <p className="text-foreground/80">
+                  Customize panel position, size, and other settings in <strong>Preferences → Reading</strong>
+                </p>
+              </div>
+            </div>
           </div>
           <a
             href={`/articles/${article.id}`}

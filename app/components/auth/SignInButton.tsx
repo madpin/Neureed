@@ -10,7 +10,7 @@ interface SignInButtonProps {
 
 export function SignInButton({
   provider,
-  className = "rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90 transition-colors",
+  className = "btn-primary",
   children = "Sign In",
 }: SignInButtonProps) {
   const handleSignIn = () => {
@@ -28,7 +28,7 @@ export function SignInWithGoogleButton() {
   return (
     <SignInButton
       provider="google"
-      className="flex items-center justify-center gap-2 rounded-lg border border-border bg-white px-4 py-2 font-medium text-gray-700 hover:bg-gray-50 transition-colors dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+      className="btn btn-outline bg-white dark:bg-gray-800"
     >
       <svg className="h-5 w-5" viewBox="0 0 24 24">
         <path
@@ -57,7 +57,7 @@ export function SignInWithGitHubButton() {
   return (
     <SignInButton
       provider="github"
-      className="flex items-center justify-center gap-2 rounded-lg border border-border bg-gray-900 px-4 py-2 font-medium text-white hover:bg-gray-800 transition-colors"
+      className="btn bg-gray-900 text-white hover:bg-gray-800 border-0"
     >
       <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
         <path
