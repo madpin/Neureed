@@ -27,26 +27,39 @@ export class LocalEmbeddingProvider implements EmbeddingProviderInterface {
     if (this.pipeline) return;
 
     try {
-      logger.info("Initializing local embedding model", { model: this.model });
+      // Verify WASM backend is configured before importing
+      const wasmBackend = process.env.TRANSFORMERS_BACKEND === 'wasm' || 
+                         process.env.USE_ONNX_WASM === '1';
+      
+      logger.info("Initializing local embedding model", { 
+        model: this.model,
+        wasmConfigured: wasmBackend,
+        transformersBackend: process.env.TRANSFORMERS_BACKEND,
+        onnxProviders: process.env.ONNXRUNTIME_EXECUTION_PROVIDERS,
+      });
       
       // Dynamic import to avoid loading if not needed
       const { pipeline, env: transformersEnv } = await import("@xenova/transformers");
 
       // CRITICAL: Force WASM backend ONLY to avoid native library dependencies
-      // This MUST be set before loading any models
-      transformersEnv.backends.onnx.wasm.numThreads = 1;
-      transformersEnv.backends.onnx.wasm.wasmPaths = undefined; // Use default CDN paths
+      // Environment variables should already be set, but we enforce them here too
       
-      // Disable native ONNX backend completely
-      if (transformersEnv.backends.onnx) {
+      // Explicitly set WASM backend configuration
+      if (transformersEnv.backends?.onnx?.wasm) {
+        transformersEnv.backends.onnx.wasm.numThreads = 1;
+        transformersEnv.backends.onnx.wasm.wasmPaths = undefined; // Use default CDN paths
+      }
+      
+      // Force WASM execution provider only
+      if (transformersEnv.backends?.onnx) {
         (transformersEnv.backends.onnx as any).executionProviders = ['wasm'];
       }
       
+      // Disable local models, only use remote (HuggingFace)
       transformersEnv.allowLocalModels = false;
       transformersEnv.allowRemoteModels = true;
       
-      // Only use browser cache in browser environments
-      // In Node.js, use file system cache instead
+      // Configure caching
       const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
       transformersEnv.useBrowserCache = isBrowser;
       
@@ -55,22 +68,23 @@ export class LocalEmbeddingProvider implements EmbeddingProviderInterface {
         transformersEnv.cacheDir = process.env.TRANSFORMERS_CACHE || './.cache/transformers';
       }
 
-      logger.info("Loading local embedding model (this may take a few minutes on first use)", { 
+      logger.info("Loading local embedding model with WASM backend (this may take a few minutes on first use)", { 
         model: this.model,
-        backend: 'wasm-only'
+        backend: 'wasm-only',
+        cacheDir: transformersEnv.cacheDir,
       });
 
       this.pipeline = await pipeline("feature-extraction", this.model, {
         quantized: true, // Use quantized model for better performance
       });
 
-      logger.info("Local embedding model loaded successfully", {
+      logger.info("Local embedding model loaded successfully with WASM backend", {
         model: this.model,
         dimensions: this.dimensions,
-        backend: 'wasm'
+        backend: 'wasm',
       });
     } catch (error) {
-      // Check if it's a dependency/library issue (expected in some environments)
+      // Check if it's a native library dependency issue
       const isDependencyError = error instanceof Error && 
         (error.message.includes("libonnxruntime") || 
          error.message.includes("ERR_DLOPEN_FAILED") ||
@@ -78,10 +92,15 @@ export class LocalEmbeddingProvider implements EmbeddingProviderInterface {
          error.message.includes("Failed to load external module"));
       
       if (isDependencyError) {
-        logger.debug("Local embedding model unavailable (missing native dependencies)", { 
+        logger.error("Local embedding model failed due to native library issue - WASM backend not properly configured", { 
           error: error instanceof Error ? error.message : String(error),
           model: this.model,
-          hint: "Install ONNX Runtime or use OpenAI provider"
+          envVars: {
+            TRANSFORMERS_BACKEND: process.env.TRANSFORMERS_BACKEND,
+            ONNXRUNTIME_EXECUTION_PROVIDERS: process.env.ONNXRUNTIME_EXECUTION_PROVIDERS,
+            USE_ONNX_WASM: process.env.USE_ONNX_WASM,
+          },
+          hint: "Ensure TRANSFORMERS_BACKEND=wasm is set before Node.js starts, or use OpenAI provider"
         });
       } else {
         logger.error("Failed to load local embedding model", { 
@@ -93,7 +112,7 @@ export class LocalEmbeddingProvider implements EmbeddingProviderInterface {
       }
       
       throw new Error(
-        `Local embedding model not available: ${error instanceof Error ? error.message : String(error)}. Install @xenova/transformers or use OpenAI provider.`
+        `Local embedding model not available: ${error instanceof Error ? error.message : String(error)}. Use OpenAI provider or ensure WASM backend is configured.`
       );
     }
   }

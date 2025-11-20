@@ -1,14 +1,12 @@
 [phases.setup]
 # nodejs_20 provides Node.js runtime
 # openssl for SSL/TLS support
-# onnxruntime for @xenova/transformers native backend support
-nixPkgs = ["nodejs_20", "openssl", "onnxruntime"]
+# Note: onnxruntime removed - using WASM backend only for portability
+nixPkgs = ["nodejs_20", "openssl"]
 cmds = [
-  "echo '🔧 Setting up ONNX Runtime library paths...'",
-  # Find where onnxruntime libraries are installed by Nix
-  "mkdir -p /app/.onnx-libs",
-  # Create a symlink or set up library cache
-  "echo 'ONNX Runtime setup complete'"
+  "echo '🔧 Setting up for WASM-only transformers backend...'",
+  "mkdir -p /app/.cache/transformers",
+  "echo 'WASM backend setup complete'"
 ]
 
 [staticAssets]
@@ -59,7 +57,7 @@ cmds = [
 ]
 
 [start]
-cmd = "cd .next/standalone && export LD_LIBRARY_PATH=/nix/store/*-onnxruntime-*/lib:$LD_LIBRARY_PATH && npx prisma migrate deploy --schema=./prisma/schema.prisma && node server.js"
+cmd = "cd .next/standalone && npx prisma migrate deploy --schema=./prisma/schema.prisma && node server.js"
 
 [variables]
 PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
@@ -72,8 +70,10 @@ NPM_CONFIG_MAXSOCKETS = "5"
 NPM_CONFIG_LEGACY_PEER_DEPS = "true"
 NPM_CONFIG_PROGRESS = "false"
 CI = "true"
-# Transformers.js configuration for WASM backend
+# Transformers.js configuration for WASM backend only
 TRANSFORMERS_CACHE = "./.cache/transformers"
-# Force WASM backend for @xenova/transformers
+# Force WASM backend for @xenova/transformers (no native libraries)
+TRANSFORMERS_BACKEND = "wasm"
+ONNXRUNTIME_EXECUTION_PROVIDERS = "wasm"
 USE_ONNX_WASM = "1"
 

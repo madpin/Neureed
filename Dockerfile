@@ -1,7 +1,7 @@
 # Multi-stage build for optimal image size
 FROM node:20-slim AS base
 
-# Install dependencies for native modules and ONNX Runtime
+# Install dependencies for native modules (openssl for Prisma)
 RUN apt-get update && apt-get install -y \
     openssl \
     ca-certificates \
@@ -51,9 +51,13 @@ RUN npm run build
 # Production stage
 FROM base AS runner
 
-# Set to production environment
+# Set to production environment with WASM-only transformers backend
 ENV NODE_ENV=production \
-    PORT=3000
+    PORT=3000 \
+    TRANSFORMERS_BACKEND=wasm \
+    ONNXRUNTIME_EXECUTION_PROVIDERS=wasm \
+    USE_ONNX_WASM=1 \
+    TRANSFORMERS_CACHE=./.cache/transformers
 
 # Create non-root user
 RUN groupadd --system --gid 1001 nodejs && \
