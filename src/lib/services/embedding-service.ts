@@ -194,7 +194,18 @@ export async function generateEmbeddings(
   }
 
   const embeddingProvider = await getEmbeddingProvider(provider, userId);
-  const batchSize = env.EMBEDDING_BATCH_SIZE;
+  const configuredBatchSize = env.EMBEDDING_BATCH_SIZE;
+  const batchSize =
+    typeof configuredBatchSize === "number" && configuredBatchSize > 0
+      ? configuredBatchSize
+      : 10;
+
+  if (batchSize !== configuredBatchSize) {
+    logger.warn("Invalid EMBEDDING_BATCH_SIZE detected, falling back to default", {
+      configuredBatchSize,
+      fallbackBatchSize: batchSize,
+    });
+  }
 
   try {
     // Process in configured batch sizes
