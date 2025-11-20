@@ -64,7 +64,7 @@ export async function executeTrackedJob<T>(
           durationMs: duration,
           updatedAt: new Date(),
           stats: result.stats || {},
-          logs: result.logs || [],
+          logs: (result.logs || []) as any,
         },
       });
     } else {
@@ -79,7 +79,7 @@ export async function executeTrackedJob<T>(
           durationMs: duration,
           updatedAt: new Date(),
           errorMessage: result.error,
-          logs: result.logs || [],
+          logs: (result.logs || []) as any,
         },
       });
     }
@@ -98,7 +98,7 @@ export async function executeTrackedJob<T>(
         durationMs: duration,
         updatedAt: new Date(),
         errorMessage,
-        logs: [], // No logs captured if exception thrown before handler completes
+        logs: [] as any, // No logs captured if exception thrown before handler completes
       },
     });
   }

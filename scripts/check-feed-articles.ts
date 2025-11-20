@@ -14,7 +14,7 @@ async function main() {
   console.log("\nFeed Article Counts:\n");
   
   for (const feed of feeds) {
-    console.log(`Feed: ${feed.title || feed.url}`);
+    console.log(`Feed: ${feed.name || feed.url}`);
     console.log(`  Articles: ${feed._count.articles}`);
     console.log(`  Last fetched: ${feed.lastFetched}`);
     console.log(`  Error count: ${feed.errorCount}`);
