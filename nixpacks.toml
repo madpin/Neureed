@@ -53,11 +53,13 @@ cmds = [
   "cp -r .next/static .next/standalone/.next/",
   "echo '📁 Copying public folder to standalone...'",
   "cp -r public .next/standalone/",
+  "echo '📄 Copying WASM preload script...'",
+  "cp preload-wasm.js .next/standalone/",
   "echo '✅ All files copied'"
 ]
 
 [start]
-cmd = "cd .next/standalone && npx prisma migrate deploy --schema=./prisma/schema.prisma && node server.js"
+cmd = "cd .next/standalone && export TRANSFORMERS_BACKEND=wasm && export ONNXRUNTIME_EXECUTION_PROVIDERS=wasm && export USE_ONNX_WASM=1 && export TRANSFORMERS_CACHE=./.cache/transformers && npx prisma migrate deploy --schema=./prisma/schema.prisma && node --require ./preload-wasm.js server.js"
 
 [variables]
 PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
