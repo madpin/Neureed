@@ -59,7 +59,10 @@ cmds = [
   "mkdir -p .next/standalone/node_modules",
   "cp -r node_modules/onnxruntime-web .next/standalone/node_modules/ 2>/dev/null || echo 'Warning: onnxruntime-web not found'",
   "cp -r node_modules/onnxruntime-common .next/standalone/node_modules/ 2>/dev/null || echo 'Warning: onnxruntime-common not found'",
-  "ls -la .next/standalone/node_modules/ | grep onnx || echo 'No onnx packages copied'",
+  "echo '🗑️  Removing native onnxruntime-node to force WASM backend...'",
+  "rm -rf .next/standalone/node_modules/onnxruntime-node",
+  "echo '📋 Final onnxruntime packages in standalone:'",
+  "ls -la .next/standalone/node_modules/ | grep onnx || echo 'No onnx packages found'",
   "echo '✅ All files copied'"
 ]
 
