@@ -5,11 +5,13 @@
 import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import type { CronJobStatus, CronJobTrigger } from "@prisma/client";
+import type { LogEntry } from "./job-logger";
 
 export interface JobResult<T = unknown> {
   success: boolean;
   stats?: T;
   error?: string;
+  logs?: LogEntry[]; // Optional logs captured during execution
 }
 
 export interface JobExecutorOptions {
@@ -62,6 +64,7 @@ export async function executeTrackedJob<T>(
           durationMs: duration,
           updatedAt: new Date(),
           stats: result.stats || {},
+          logs: result.logs || [],
         },
       });
     } else {
@@ -76,6 +79,7 @@ export async function executeTrackedJob<T>(
           durationMs: duration,
           updatedAt: new Date(),
           errorMessage: result.error,
+          logs: result.logs || [],
         },
       });
     }
@@ -94,6 +98,7 @@ export async function executeTrackedJob<T>(
         durationMs: duration,
         updatedAt: new Date(),
         errorMessage,
+        logs: [], // No logs captured if exception thrown before handler completes
       },
     });
   }

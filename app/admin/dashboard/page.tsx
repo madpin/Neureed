@@ -74,6 +74,13 @@ interface User {
   };
 }
 
+interface LogEntry {
+  timestamp: string;
+  level: "info" | "warn" | "error" | "debug";
+  message: string;
+  data?: any;
+}
+
 interface CronJobRun {
   id: string;
   status: string;
@@ -82,6 +89,7 @@ interface CronJobRun {
   duration: number | null;
   result: any;
   error: string | null;
+  logs?: LogEntry[];
 }
 
 interface CronJob {
@@ -1782,14 +1790,58 @@ function JobsTab({
                               <div className="text-xs text-foreground/70">
                                 {new Date(run.startedAt).toLocaleString()}
                               </div>
-                              {expandedRun === run.id && run.result && (
-                                <div className="text-xs text-foreground/50 mt-1 font-mono">
-                                  {JSON.stringify(run.result, null, 2)}
-                                </div>
-                              )}
-                              {expandedRun === run.id && run.error && (
-                                <div className="text-xs text-red-600 mt-1">
-                                  Error: {run.error}
+                              {expandedRun === run.id && (
+                                <div className="mt-2 space-y-2">
+                                  {run.result && (
+                                    <div>
+                                      <div className="text-xs font-semibold text-foreground/70 mb-1">Result:</div>
+                                      <div className="text-xs text-foreground/50 font-mono bg-background/50 p-2 rounded">
+                                        {JSON.stringify(run.result, null, 2)}
+                                      </div>
+                                    </div>
+                                  )}
+                                  {run.error && (
+                                    <div>
+                                      <div className="text-xs font-semibold text-red-600 mb-1">Error:</div>
+                                      <div className="text-xs text-red-600">
+                                        {run.error}
+                                      </div>
+                                    </div>
+                                  )}
+                                  {run.logs && run.logs.length > 0 && (
+                                    <div>
+                                      <div className="text-xs font-semibold text-foreground/70 mb-1">
+                                        Logs ({run.logs.length} entries):
+                                      </div>
+                                      <div className="text-xs font-mono bg-background/50 p-2 rounded max-h-64 overflow-y-auto space-y-1">
+                                        {run.logs.map((log, idx) => (
+                                          <div
+                                            key={idx}
+                                            className={`${
+                                              log.level === "error"
+                                                ? "text-red-600"
+                                                : log.level === "warn"
+                                                ? "text-yellow-600"
+                                                : log.level === "debug"
+                                                ? "text-gray-500"
+                                                : "text-foreground/70"
+                                            }`}
+                                          >
+                                            <span className="text-foreground/50">
+                                              [{new Date(log.timestamp).toLocaleTimeString()}]
+                                            </span>{" "}
+                                            <span className="font-semibold uppercase">[{log.level}]</span>{" "}
+                                            {log.message}
+                                            {log.data && (
+                                              <div className="ml-4 text-foreground/50">
+                                                {JSON.stringify(log.data)}
+                                              </div>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>

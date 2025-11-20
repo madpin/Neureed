@@ -47,6 +47,7 @@ export const GET = createHandler(
                 duration: lastRun.durationMs,
                 result: lastRun.stats,
                 error: lastRun.errorMessage,
+                logs: lastRun.logs,
               }
             : null,
           recentRuns: runs.map((run) => ({
@@ -57,6 +58,7 @@ export const GET = createHandler(
             duration: run.durationMs,
             result: run.stats,
             error: run.errorMessage,
+            logs: run.logs,
           })),
         };
       });

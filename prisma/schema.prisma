@@ -110,6 +110,7 @@ model CronJobRun {
   stats        Json?
   metadata     Json?
   errorMessage String?
+  logs         Json?          // Array of log entries with timestamp, level, message
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
