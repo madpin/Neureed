@@ -32,7 +32,18 @@ export function prepareTextForEmbedding(article: Article): string {
     parts.push(contentPreview);
   }
 
-  return parts.join("\n\n");
+  const text = parts.join("\n\n");
+  
+  if (!text || text.trim().length === 0) {
+    logger.warn("Article has no text for embedding", {
+      articleId: article.id,
+      hasTitle: !!article.title,
+      hasExcerpt: !!article.excerpt,
+      hasContent: !!article.content,
+    });
+  }
+  
+  return text;
 }
 
 /**

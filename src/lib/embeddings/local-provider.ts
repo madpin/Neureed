@@ -142,13 +142,35 @@ export class LocalEmbeddingProvider implements EmbeddingProviderInterface {
     await this.initializePipeline();
 
     try {
+      // Validate text is not empty
+      if (!text || text.trim().length === 0) {
+        logger.warn("Attempted to generate embedding for empty text");
+        // Return a zero embedding to avoid errors
+        return {
+          embedding: new Array(1536).fill(0),
+          tokens: 0,
+          model: this.model,
+        };
+      }
+      
+      logger.debug("Generating embedding", { textLength: text.length, textPreview: text.substring(0, 50) });
+      
       const output = await this.pipeline(text, {
         pooling: "mean",
         normalize: true,
       });
 
+      logger.debug("Pipeline output received", { 
+        hasOutput: !!output, 
+        hasData: !!output?.data,
+        dataLength: output?.data?.length,
+        dataType: typeof output?.data
+      });
+
       // Convert tensor to array
       const embedding = Array.from(output.data) as number[];
+      logger.debug("Embedding converted", { embeddingLength: embedding.length });
+      
       const normalizedEmbedding = this.normalizeEmbedding(embedding);
 
       return {
@@ -178,7 +200,13 @@ export class LocalEmbeddingProvider implements EmbeddingProviderInterface {
    * Generate embeddings for multiple texts in batch
    */
   async generateEmbeddings(texts: string[]): Promise<BatchEmbeddingResult> {
+    logger.debug("generateEmbeddings called", { 
+      count: texts.length,
+      sampleLengths: texts.slice(0, 3).map(t => t?.length || 0)
+    });
+    
     if (texts.length === 0) {
+      logger.warn("generateEmbeddings called with empty texts array");
       return { embeddings: [], totalTokens: 0, model: this.model };
     }
 
