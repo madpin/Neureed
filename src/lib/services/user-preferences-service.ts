@@ -1,5 +1,5 @@
 import { prisma } from "../db";
-import type { UserPreferences } from "@prisma/client";
+import type { user_preferences } from "@prisma/client";
 import { encrypt, decrypt, maskApiKey } from "../crypto";
 import { logger } from "../logger";
 import {
@@ -11,8 +11,8 @@ import {
 /**
  * Get user preferences (with decrypted API key masked for security)
  */
-export async function getUserPreferences(userId: string): Promise<UserPreferences | null> {
-  const prefs = await prisma.userPreferences.findUnique({
+export async function getUserPreferences(userId: string): Promise<user_preferences | null> {
+  const prefs = await prisma.user_preferences.findUnique({
     where: { userId },
   });
 
@@ -30,7 +30,7 @@ export async function getUserPreferences(userId: string): Promise<UserPreference
       // If decryption fails (e.g., encryption key changed), clear the invalid key
       // User will need to re-enter their API key
       logger.warn("Failed to decrypt API key, clearing invalid value", { userId, error });
-      await prisma.userPreferences.update({
+      await prisma.user_preferences.update({
         where: { userId },
         data: { llmApiKey: null },
       });
@@ -47,8 +47,8 @@ export async function getUserPreferences(userId: string): Promise<UserPreference
 /**
  * Get user preferences with decrypted API key (for internal use only)
  */
-export async function getUserPreferencesWithDecryptedKey(userId: string): Promise<UserPreferences | null> {
-  const prefs = await prisma.userPreferences.findUnique({
+export async function getUserPreferencesWithDecryptedKey(userId: string): Promise<user_preferences | null> {
+  const prefs = await prisma.user_preferences.findUnique({
     where: { userId },
   });
 
@@ -65,7 +65,7 @@ export async function getUserPreferencesWithDecryptedKey(userId: string): Promis
     } catch (error) {
       // If decryption fails (e.g., encryption key changed), clear the invalid key
       logger.warn("Failed to decrypt API key for internal use, clearing invalid value", { userId, error });
-      await prisma.userPreferences.update({
+      await prisma.user_preferences.update({
         where: { userId },
         data: { llmApiKey: null },
       });
@@ -84,8 +84,8 @@ export async function getUserPreferencesWithDecryptedKey(userId: string): Promis
  */
 export async function updateUserPreferences(
   userId: string,
-  data: Partial<Omit<UserPreferences, "id" | "userId" | "createdAt" | "updatedAt">>
-): Promise<UserPreferences> {
+  data: Partial<Omit<user_preferences, "id" | "userId" | "createdAt" | "updatedAt">>
+): Promise<user_preferences> {
   // Validate user preferences against admin constraints
   if (data.defaultRefreshInterval !== undefined) {
     const validation = await validateUserPreferenceValue(
@@ -134,20 +134,20 @@ export async function updateUserPreferences(
   }
 
   // Check if preferences exist
-  const existing = await prisma.userPreferences.findUnique({
+  const existing = await prisma.user_preferences.findUnique({
     where: { userId },
   });
 
-  let updated: UserPreferences;
+  let updated: user_preferences;
   if (existing) {
-    updated = await prisma.userPreferences.update({
+    updated = await prisma.user_preferences.update({
       where: { userId },
       data: processedData as any,
     });
   } else {
     // Create with defaults if doesn't exist (inherit from admin defaults)
     const defaults = await getDefaultPreferences();
-    updated = await prisma.userPreferences.create({
+    updated = await prisma.user_preferences.create({
       data: {
         userId,
         ...defaults,
@@ -172,7 +172,7 @@ export async function updateUserPreferences(
  * Get default preferences (inherit from admin defaults where applicable)
  */
 export async function getDefaultPreferences(): Promise<
-  Omit<UserPreferences, "id" | "userId" | "createdAt" | "updatedAt">
+  Omit<user_preferences, "id" | "userId" | "createdAt" | "updatedAt">
 > {
   // Get admin-defined defaults
   const adminDefaults = await getAdminDefaults();
@@ -222,7 +222,7 @@ export async function getDefaultPreferences(): Promise<
  */
 export async function getUserPreferencesWithSystemFallback(
   userId: string
-): Promise<UserPreferences | null> {
+): Promise<user_preferences | null> {
   const userPrefs = await getUserPreferencesWithDecryptedKey(userId);
   if (!userPrefs) return null;
 
@@ -248,8 +248,8 @@ export async function getUserPreferencesWithSystemFallback(
 /**
  * Reset user preferences to defaults
  */
-export async function resetUserPreferences(userId: string): Promise<UserPreferences> {
-  return await prisma.userPreferences.update({
+export async function resetUserPreferences(userId: string): Promise<user_preferences> {
+  return await prisma.user_preferences.update({
     where: { userId },
     data: getDefaultPreferences() as any,
   });

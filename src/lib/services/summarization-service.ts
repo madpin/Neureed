@@ -16,7 +16,7 @@ import {
   type LLMProviderConfig,
 } from "../llm/types";
 import { getUserPreferencesWithDecryptedKey } from "./user-preferences-service";
-import type { UserPreferences } from "@prisma/client";
+import type { user_preferences } from "@prisma/client";
 
 /**
  * Get LLM provider instance
@@ -64,7 +64,7 @@ async function resolveLLMConfig(userId?: string): Promise<LLMProviderConfig> {
 
 async function safeGetUserPreferences(
   userId: string
-): Promise<UserPreferences | null> {
+): Promise<user_preferences | null> {
   try {
     return await getUserPreferencesWithDecryptedKey(userId);
   } catch (error) {
@@ -99,7 +99,7 @@ export async function summarizeArticle(
     cacheKey,
     async () => {
       // Get article from database
-      const article = await prisma.article.findUnique({
+      const article = await prisma.articles.findUnique({
         where: { id: articleId },
         select: {
           id: true,
@@ -129,7 +129,7 @@ export async function summarizeArticle(
       const result = await llm.summarizeArticle(article.title, article.content);
 
       // Store in database
-      await prisma.article.update({
+      await prisma.articles.update({
         where: { id: articleId },
         data: {
           summary: result.summary,
@@ -164,7 +164,7 @@ export async function extractKeyPoints(
     cacheKey,
     async () => {
       // Get article from database
-      const article = await prisma.article.findUnique({
+      const article = await prisma.articles.findUnique({
         where: { id: articleId },
         select: {
           id: true,
@@ -187,7 +187,7 @@ export async function extractKeyPoints(
       const keyPoints = await llm.extractKeyPoints(article.content, count);
 
       // Store in database
-      await prisma.article.update({
+      await prisma.articles.update({
         where: { id: articleId },
         data: {
           keyPoints,
@@ -225,7 +225,7 @@ export async function detectTopics(
     cacheKey,
     async () => {
       // Get article from database
-      const article = await prisma.article.findUnique({
+      const article = await prisma.articles.findUnique({
         where: { id: articleId },
         select: {
           id: true,
@@ -249,7 +249,7 @@ export async function detectTopics(
       const topics = await llm.detectTopics(article.title, article.content);
 
       // Store in database
-      await prisma.article.update({
+      await prisma.articles.update({
         where: { id: articleId },
         data: {
           topics,
@@ -278,7 +278,7 @@ export async function detectTopics(
  */
 export async function getAllTopics(limit = 50): Promise<Array<{ topic: string; count: number }>> {
   // Get all articles with topics
-  const articles = await prisma.article.findMany({
+  const articles = await prisma.articles.findMany({
     where: {
       topics: {
         isEmpty: false,
@@ -332,7 +332,7 @@ export async function getArticlesByTopic(
       break;
     case "feed":
       orderBy = [
-        { feed: { name: sortDirection } },
+        { feeds: { name: sortDirection } },
         { publishedAt: "desc" }
       ];
       break;
@@ -346,14 +346,14 @@ export async function getArticlesByTopic(
       break;
   }
 
-  const articles = await prisma.article.findMany({
+  const articles = await prisma.articles.findMany({
     where: {
       topics: {
         has: topic,
       },
     },
     include: {
-      feed: true,
+      feeds: true,
     },
     take: limit,
     orderBy,

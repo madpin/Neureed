@@ -418,7 +418,7 @@ async function testSummary(
  */
 async function getAdminSetting<T = any>(key: string): Promise<T | null> {
   try {
-    const setting = await prisma.adminSettings.findUnique({
+    const setting = await prisma.admin_settings.findUnique({
       where: { key },
     });
 
@@ -438,7 +438,7 @@ async function updateAdminSetting(
   description?: string
 ): Promise<void> {
   try {
-    await prisma.adminSettings.upsert({
+    await prisma.admin_settings.upsert({
       where: { key },
       update: {
         value,
@@ -446,9 +446,11 @@ async function updateAdminSetting(
         updatedAt: new Date(),
       },
       create: {
+        id: `admin_${key}_${Date.now()}`,
         key,
         value,
         description,
+        updatedAt: new Date(),
       },
     });
   } catch (error) {

@@ -48,7 +48,7 @@ export async function getEffectiveFeedSettings(
 ): Promise<EffectiveFeedSettings> {
   try {
     // Get user's feed subscription with categories
-    const userFeed = await prisma.userFeed.findUnique({
+    const userFeed = await prisma.user_feeds.findUnique({
       where: {
         userId_feedId: {
           userId,
@@ -56,10 +56,10 @@ export async function getEffectiveFeedSettings(
         },
       },
       include: {
-        feed: true,
-        userFeedCategories: {
+        feeds: true,
+        user_feed_categories: {
           include: {
-            userCategory: true,
+            user_categories: true,
           },
         },
       },
@@ -84,7 +84,7 @@ export async function getEffectiveFeedSettings(
     }
 
     // Get user preferences
-    const userPreferences = await prisma.userPreferences.findUnique({
+    const userPreferences = await prisma.user_preferences.findUnique({
       where: { userId },
     });
 
@@ -121,8 +121,8 @@ export async function getEffectiveFeedSettings(
 
     // Apply category settings (if feed is in a category)
     // Note: If feed is in multiple categories, use the first one
-    if (userFeed.userFeedCategories.length > 0) {
-      const categorySettings = userFeed.userFeedCategories[0].userCategory
+    if (userFeed.user_feed_categories.length > 0) {
+      const categorySettings = userFeed.user_feed_categories[0].user_categories
         .settings as FeedSettingsJson | null;
 
       if (categorySettings) {
@@ -208,7 +208,7 @@ export async function getEffectiveFeedSettings(
 export async function getAllUserFeedSettings(
   userId: string
 ): Promise<Map<string, EffectiveFeedSettings>> {
-  const userFeeds = await prisma.userFeed.findMany({
+  const userFeeds = await prisma.user_feeds.findMany({
     where: { userId },
     select: { feedId: true },
   });

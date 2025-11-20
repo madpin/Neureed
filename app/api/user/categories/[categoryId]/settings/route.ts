@@ -23,17 +23,17 @@ export const GET = createHandler(
     const { categoryId } = params;
 
     // Check if category belongs to user
-    const category = await prisma.userCategory.findUnique({
+    const category = await prisma.user_categories.findUnique({
       where: {
         id: categoryId as string,
         userId: session!.user!.id,
       },
       include: {
-        userFeedCategories: {
+        user_feed_categories: {
           include: {
-            userFeed: {
+            user_feeds: {
               include: {
-                feed: true,
+                feeds: true,
               },
             },
           },
@@ -54,10 +54,10 @@ export const GET = createHandler(
         maxArticlesPerFeed: categorySettings.maxArticlesPerFeed ?? null,
         maxArticleAge: categorySettings.maxArticleAge ?? null,
       },
-      feedCount: category.userFeedCategories.length,
-      feeds: category.userFeedCategories.map((ufc) => ({
-        id: ufc.userFeed.feed.id,
-        name: ufc.userFeed.customName || ufc.userFeed.feed.name,
+      feedCount: category.user_feed_categories.length,
+      feeds: category.user_feed_categories.map((ufc) => ({
+        id: ufc.user_feeds.feeds.id,
+        name: ufc.user_feeds.customName || ufc.user_feeds.feeds.name,
       })),
     };
   },
@@ -87,7 +87,7 @@ export const PUT = createHandler(
     }
 
     // Check if category belongs to user
-    const category = await prisma.userCategory.findUnique({
+    const category = await prisma.user_categories.findUnique({
       where: {
         id: categoryId as string,
         userId: session!.user!.id,
@@ -123,7 +123,7 @@ export const PUT = createHandler(
     });
 
     // Update category settings
-    const updatedCategory = await prisma.userCategory.update({
+    const updatedCategory = await prisma.user_categories.update({
       where: {
         id: categoryId as string,
         userId: session!.user!.id,

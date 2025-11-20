@@ -1,5 +1,5 @@
 import { prisma } from "../db";
-import type { ArticleFeedback } from "@prisma/client";
+import type { article_feedback } from "@prisma/client";
 import { estimateReadingTime } from "../content-processor";
 
 /**
@@ -16,9 +16,9 @@ export async function recordExplicitFeedback(
   userId: string,
   articleId: string,
   feedbackValue: ExplicitFeedbackValue
-): Promise<ArticleFeedback> {
+): Promise<article_feedback> {
   // Get article to calculate estimated reading time
-  const article = await prisma.article.findUnique({
+  const article = await prisma.articles.findUnique({
     where: { id: articleId },
     select: { content: true },
   });
@@ -29,7 +29,7 @@ export async function recordExplicitFeedback(
 
   const estimatedTime = estimateReadingTime(article.content) * 60; // Convert to seconds
 
-  return await prisma.articleFeedback.upsert({
+  return await prisma.article_feedback.upsert({
     where: {
       userId_articleId: {
         userId,
@@ -37,11 +37,13 @@ export async function recordExplicitFeedback(
       },
     },
     create: {
+      id: `feedback_${Date.now()}_${Math.random().toString(36).substring(7)}`,
       userId,
       articleId,
       feedbackType: "explicit",
       feedbackValue,
       estimatedTime,
+      updatedAt: new Date(),
     },
     update: {
       feedbackType: "explicit",
@@ -60,7 +62,7 @@ export async function recordArticleView(
   articleId: string
 ): Promise<{ viewedAt: Date; estimatedTime: number }> {
   // Get article to calculate estimated reading time
-  const article = await prisma.article.findUnique({
+  const article = await prisma.articles.findUnique({
     where: { id: articleId },
     select: { content: true },
   });
@@ -86,9 +88,9 @@ export async function recordArticleExit(
   articleId: string,
   timeSpent: number, // in seconds
   estimatedTime: number // in seconds
-): Promise<ArticleFeedback | null> {
+): Promise<article_feedback | null> {
   // Get user's bounce threshold preference
-  const preferences = await prisma.userPreferences.findUnique({
+  const preferences = await prisma.user_preferences.findUnique({
     where: { userId },
     select: { bounceThreshold: true },
   });
@@ -100,7 +102,7 @@ export async function recordArticleExit(
   const readingPercentage = timeSpent / estimatedTime;
 
   // Check if user already gave explicit feedback
-  const existingFeedback = await prisma.articleFeedback.findUnique({
+  const existingFeedback = await prisma.article_feedback.findUnique({
     where: {
       userId_articleId: {
         userId,
@@ -134,7 +136,7 @@ export async function recordArticleExit(
   }
 
   // Record implicit feedback
-  return await prisma.articleFeedback.upsert({
+  return await prisma.article_feedback.upsert({
     where: {
       userId_articleId: {
         userId,
@@ -142,12 +144,14 @@ export async function recordArticleExit(
       },
     },
     create: {
+      id: `feedback_${Date.now()}_${Math.random().toString(36).substring(7)}`,
       userId,
       articleId,
       feedbackType: "implicit",
       feedbackValue,
       timeSpent,
       estimatedTime,
+      updatedAt: new Date(),
     },
     update: {
       feedbackType: "implicit",
@@ -165,8 +169,8 @@ export async function recordArticleExit(
 export async function getUserFeedbackForArticle(
   userId: string,
   articleId: string
-): Promise<ArticleFeedback | null> {
-  return await prisma.articleFeedback.findUnique({
+): Promise<article_feedback | null> {
+  return await prisma.article_feedback.findUnique({
     where: {
       userId_articleId: {
         userId,
@@ -187,7 +191,7 @@ export async function getFeedbackStats(userId: string): Promise<{
   completions: number;
   averageTimeSpent: number | null;
 }> {
-  const allFeedback = await prisma.articleFeedback.findMany({
+  const allFeedback = await prisma.article_feedback.findMany({
     where: { userId },
     select: {
       feedbackType: true,
@@ -239,7 +243,7 @@ export async function deleteFeedback(
   userId: string,
   articleId: string
 ): Promise<void> {
-  await prisma.articleFeedback.delete({
+  await prisma.article_feedback.delete({
     where: {
       userId_articleId: {
         userId,
@@ -257,17 +261,17 @@ export async function getUserFeedback(userId: string): Promise<
     articleId: string;
     feedbackValue: number;
     feedbackType: string;
-    article: {
+    articles: {
       title: string;
       content: string;
       excerpt: string | null;
     };
   }>
 > {
-  return await prisma.articleFeedback.findMany({
+  return await prisma.article_feedback.findMany({
     where: { userId },
     include: {
-      article: {
+      articles: {
         select: {
           title: true,
           content: true,
@@ -292,14 +296,14 @@ export async function getRecentFeedback(
     articleId: string;
     feedbackValue: number;
     feedbackType: string;
-    article: {
+    articles: {
       title: string;
       content: string;
       excerpt: string | null;
     };
   }>
 > {
-  return await prisma.articleFeedback.findMany({
+  return await prisma.article_feedback.findMany({
     where: {
       userId,
       createdAt: {
@@ -307,7 +311,7 @@ export async function getRecentFeedback(
       },
     },
     include: {
-      article: {
+      articles: {
         select: {
           title: true,
           content: true,

@@ -1,5 +1,5 @@
 import { prisma } from "../db";
-import type { User, UserPreferences } from "@prisma/client";
+import type { User, user_preferences } from "@prisma/client";
 import type { UserWithPreferences } from "@/types/user";
 
 /**
@@ -8,7 +8,7 @@ import type { UserWithPreferences } from "@/types/user";
 export async function getUserById(userId: string): Promise<UserWithPreferences | null> {
   return await prisma.user.findUnique({
     where: { id: userId },
-    include: { preferences: true },
+    include: { user_preferences: true },
   });
 }
 
@@ -30,7 +30,11 @@ export async function createUser(data: {
   image?: string;
 }): Promise<User> {
   return await prisma.user.create({
-    data,
+    data: {
+      id: `user_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      ...data,
+      updatedAt: new Date(),
+    },
   });
 }
 
@@ -65,16 +69,16 @@ export async function deleteUser(userId: string): Promise<void> {
  */
 export async function getUserStats(userId: string) {
   const [subscribedFeedsCount, readArticlesCount, totalArticlesCount] = await Promise.all([
-    prisma.userFeed.count({
+    prisma.user_feeds.count({
       where: { userId },
     }),
-    prisma.readArticle.count({
+    prisma.read_articles.count({
       where: { userId },
     }),
-    prisma.article.count({
+    prisma.articles.count({
       where: {
-        feed: {
-          userFeeds: {
+        feeds: {
+          user_feeds: {
             some: { userId },
           },
         },

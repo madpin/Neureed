@@ -8,7 +8,7 @@ import {
 import { cacheDeletePattern } from "@/lib/cache/cache-service";
 import { InvalidationPatterns } from "@/lib/cache/cache-keys";
 import { logger } from "@/lib/logger";
-import type { Article, Prisma } from "@prisma/client";
+import type { articles, Prisma } from "@prisma/client";
 import type { ParsedArticle } from "@/lib/feed-parser";
 
 /**
@@ -143,11 +143,12 @@ export async function upsertArticles(
  */
 export async function createArticle(
   data: CreateArticleInput
-): Promise<Article> {
+): Promise<articles> {
   const contentHash = generateContentHash(data.content);
 
-  return prisma.article.create({
+  return prisma.articles.create({
     data: {
+      id: `art_${Date.now()}_${Math.random().toString(36).substring(7)}`,
       feedId: data.feedId,
       title: data.title,
       content: data.content,
@@ -159,6 +160,7 @@ export async function createArticle(
       contentHash,
       // Ensure publishedAt always has a value, fallback to current time
       publishedAt: data.publishedAt || new Date(),
+      updatedAt: new Date(),
     },
   });
 }
@@ -167,10 +169,10 @@ export async function createArticle(
  * Get a single article by ID
  */
 export async function getArticle(id: string) {
-  return prisma.article.findUnique({
+  return prisma.articles.findUnique({
     where: { id },
     include: {
-      feed: true,
+      feeds: true,
     },
   });
 }
@@ -181,7 +183,7 @@ export async function getArticle(id: string) {
 export async function getArticlesByFeed(
   feedId: string,
   options: SearchOptions = {}
-): Promise<{ articles: Article[]; total: number }> {
+): Promise<{ articles: articles[]; total: number }> {
   const page = options.page || 1;
   const limit = options.limit || 20;
   const skip = (page - 1) * limit;
@@ -189,7 +191,7 @@ export async function getArticlesByFeed(
   const sortDirection = options.sortDirection || "desc";
 
   // Build orderBy clause based on sort option
-  let orderBy: Prisma.ArticleOrderByWithRelationInput | Prisma.ArticleOrderByWithRelationInput[];
+  let orderBy: Prisma.articlesOrderByWithRelationInput | Prisma.articlesOrderByWithRelationInput[];
   
   switch (sortBy) {
     case "title":
@@ -213,16 +215,16 @@ export async function getArticlesByFeed(
   }
 
   const [articles, total] = await Promise.all([
-    prisma.article.findMany({
+    prisma.articles.findMany({
       where: { feedId },
       skip,
       take: limit,
       orderBy,
       include: {
-        feed: true,
+        feeds: true,
       },
     }),
-    prisma.article.count({
+    prisma.articles.count({
       where: { feedId },
     }),
   ]);
@@ -235,7 +237,7 @@ export async function getArticlesByFeed(
  */
 export async function getRecentArticles(
   options: SearchOptions = {}
-): Promise<{ articles: Article[]; total: number }> {
+): Promise<{ articles: articles[]; total: number }> {
   const page = options.page || 1;
   const limit = options.limit || 50;
   const skip = (page - 1) * limit;
@@ -243,7 +245,7 @@ export async function getRecentArticles(
   const sortDirection = options.sortDirection || "desc";
 
   // Build orderBy clause based on sort option
-  let orderBy: Prisma.ArticleOrderByWithRelationInput | Prisma.ArticleOrderByWithRelationInput[];
+  let orderBy: Prisma.articlesOrderByWithRelationInput | Prisma.articlesOrderByWithRelationInput[];
   
   switch (sortBy) {
     case "title":
@@ -255,7 +257,7 @@ export async function getRecentArticles(
     case "feed":
       // Sort by feed name, then by publishedAt
       orderBy = [
-        { feed: { name: sortDirection } },
+        { feeds: { name: sortDirection } },
         { publishedAt: "desc" }
       ];
       break;
@@ -271,15 +273,15 @@ export async function getRecentArticles(
   }
 
   const [articles, total] = await Promise.all([
-    prisma.article.findMany({
+    prisma.articles.findMany({
       skip,
       take: limit,
       orderBy,
       include: {
-        feed: true,
+        feeds: true,
       },
     }),
-    prisma.article.count(),
+    prisma.articles.count(),
   ]);
 
   return { articles, total };
@@ -291,14 +293,14 @@ export async function getRecentArticles(
 export async function searchArticles(
   query: string,
   options: SearchOptions = {}
-): Promise<{ articles: Article[]; total: number }> {
+): Promise<{ articles: articles[]; total: number }> {
   const page = options.page || 1;
   const limit = options.limit || 20;
   const skip = (page - 1) * limit;
   const sortBy = options.sortBy || "publishedAt";
   const sortDirection = options.sortDirection || "desc";
 
-  const where: Prisma.ArticleWhereInput = {
+  const where: Prisma.articlesWhereInput = {
     OR: [
       { title: { contains: query, mode: "insensitive" } },
       { content: { contains: query, mode: "insensitive" } },
@@ -315,7 +317,7 @@ export async function searchArticles(
   }
 
   // Build orderBy clause based on sort option
-  let orderBy: Prisma.ArticleOrderByWithRelationInput | Prisma.ArticleOrderByWithRelationInput[];
+  let orderBy: Prisma.articlesOrderByWithRelationInput | Prisma.articlesOrderByWithRelationInput[];
   
   switch (sortBy) {
     case "title":
@@ -326,7 +328,7 @@ export async function searchArticles(
       break;
     case "feed":
       orderBy = [
-        { feed: { name: sortDirection } },
+        { feeds: { name: sortDirection } },
         { publishedAt: "desc" }
       ];
       break;
@@ -341,16 +343,16 @@ export async function searchArticles(
   }
 
   const [articles, total] = await Promise.all([
-    prisma.article.findMany({
+    prisma.articles.findMany({
       where,
       skip,
       take: limit,
       orderBy,
       include: {
-        feed: true,
+        feeds: true,
       },
     }),
-    prisma.article.count({ where }),
+    prisma.articles.count({ where }),
   ]);
 
   return { articles, total };
@@ -362,8 +364,8 @@ export async function searchArticles(
 export async function updateArticle(
   id: string,
   data: UpdateArticleInput
-): Promise<Article> {
-  const updateData: Prisma.ArticleUpdateInput = {
+): Promise<articles> {
+  const updateData: Prisma.articlesUpdateInput = {
     ...data,
   };
 
@@ -372,7 +374,7 @@ export async function updateArticle(
     updateData.contentHash = generateContentHash(data.content);
   }
 
-  const article = await prisma.article.update({
+  const article = await prisma.articles.update({
     where: { id },
     data: updateData,
   });
@@ -393,12 +395,12 @@ export async function markArticleAsUpdated(
   const contentHash = generateContentHash(newContent);
 
   // Get articles to invalidate cache
-  const articles = await prisma.article.findMany({
+  const articles = await prisma.articles.findMany({
     where: { guid },
     select: { id: true },
   });
 
-  await prisma.article.updateMany({
+  await prisma.articles.updateMany({
     where: { guid },
     data: {
       content: newContent,
@@ -417,7 +419,7 @@ export async function markArticleAsUpdated(
  * Delete an article
  */
 export async function deleteArticle(id: string): Promise<void> {
-  await prisma.article.delete({
+  await prisma.articles.delete({
     where: { id },
   });
 
@@ -429,7 +431,7 @@ export async function deleteArticle(id: string): Promise<void> {
  * Delete old articles before a certain date
  */
 export async function deleteOldArticles(beforeDate: Date): Promise<number> {
-  const result = await prisma.article.deleteMany({
+  const result = await prisma.articles.deleteMany({
     where: {
       createdAt: {
         lt: beforeDate,
@@ -463,7 +465,7 @@ async function invalidateArticleCache(articleId: string): Promise<void> {
  * Delete all articles from a feed
  */
 export async function deleteArticlesByFeed(feedId: string): Promise<number> {
-  const result = await prisma.article.deleteMany({
+  const result = await prisma.articles.deleteMany({
     where: { feedId },
   });
 
@@ -474,7 +476,7 @@ export async function deleteArticlesByFeed(feedId: string): Promise<number> {
  * Get article count by feed
  */
 export async function getArticleCountByFeed(feedId: string): Promise<number> {
-  return prisma.article.count({
+  return prisma.articles.count({
     where: { feedId },
   });
 }
@@ -483,7 +485,7 @@ export async function getArticleCountByFeed(feedId: string): Promise<number> {
  * Get total article count
  */
 export async function getTotalArticleCount(): Promise<number> {
-  return prisma.article.count();
+  return prisma.articles.count();
 }
 
 /**
@@ -493,12 +495,12 @@ export async function getArticlesByDateRange(
   startDate: Date,
   endDate: Date,
   options: PaginationOptions = {}
-): Promise<{ articles: Article[]; total: number }> {
+): Promise<{ articles: articles[]; total: number }> {
   const page = options.page || 1;
   const limit = options.limit || 20;
   const skip = (page - 1) * limit;
 
-  const where: Prisma.ArticleWhereInput = {
+  const where: Prisma.articlesWhereInput = {
     publishedAt: {
       gte: startDate,
       lte: endDate,
@@ -506,16 +508,16 @@ export async function getArticlesByDateRange(
   };
 
   const [articles, total] = await Promise.all([
-    prisma.article.findMany({
+    prisma.articles.findMany({
       where,
       skip,
       take: limit,
       orderBy: { publishedAt: "desc" },
       include: {
-        feed: true,
+        feeds: true,
       },
     }),
-    prisma.article.count({ where }),
+    prisma.articles.count({ where }),
   ]);
 
   return { articles, total };

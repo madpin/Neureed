@@ -101,8 +101,9 @@ export const authConfig: NextAuthConfig = {
     async createUser({ user }) {
       // Create default preferences for new users
       if (user.id) {
-        await prisma.userPreferences.create({
+        await prisma.user_preferences.create({
           data: {
+            id: `pref_${user.id}`,
             userId: user.id,
             theme: "system",
             fontSize: "medium",
@@ -113,6 +114,7 @@ export const authConfig: NextAuthConfig = {
             showRelatedExcerpts: false,
             bounceThreshold: 0.25,
             showLowRelevanceArticles: true,
+            updatedAt: new Date(),
           },
         });
       }

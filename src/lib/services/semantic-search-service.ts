@@ -6,12 +6,12 @@
 import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { generateEmbedding } from "./embedding-service";
-import type { Article, Feed } from "@prisma/client";
+import type { articles, feeds } from "@prisma/client";
 import type { EmbeddingProvider } from "@/lib/embeddings/types";
 
-export interface SearchResult extends Article {
+export interface SearchResult extends articles {
   similarity: number;
-  feed?: Feed;
+  feeds?: feeds;
 }
 
 export interface SemanticSearchOptions {
@@ -161,7 +161,7 @@ export async function searchByEmbedding(
     }
 
     // Execute query
-    const results = await prisma.$queryRawUnsafe<Array<Article & { similarity: number }>>(
+    const results = await prisma.$queryRawUnsafe<Array<articles & { similarity: number }>>(
       query,
       ...params
     );
@@ -171,9 +171,9 @@ export async function searchByEmbedding(
 
     // Fetch feed data for each article
     const articleIds = filtered.map((r) => r.id);
-    const articlesWithFeeds = await prisma.article.findMany({
+    const articlesWithFeeds = await prisma.articles.findMany({
       where: { id: { in: articleIds } },
-      include: { feed: true },
+      include: { feeds: true },
     });
 
     // Merge feed data with similarity scores
@@ -181,7 +181,7 @@ export async function searchByEmbedding(
       const articleWithFeed = articlesWithFeeds.find((a) => a.id === result.id);
       return {
         ...result,
-        feed: articleWithFeed?.feed,
+        feeds: articleWithFeed?.feeds,
       };
     }) as SearchResult[];
 
@@ -275,7 +275,7 @@ export async function findRelatedArticles(
     params.push(limit);
 
     // Query for similar articles
-    const results = await prisma.$queryRawUnsafe<Array<Article & { similarity: number }>>(
+    const results = await prisma.$queryRawUnsafe<Array<articles & { similarity: number }>>(
       query,
       ...params
     );
@@ -285,9 +285,9 @@ export async function findRelatedArticles(
 
     // Fetch feed data for each article
     const articleIds = filtered.map((r) => r.id);
-    const articlesWithFeeds = await prisma.article.findMany({
+    const articlesWithFeeds = await prisma.articles.findMany({
       where: { id: { in: articleIds } },
-      include: { feed: true },
+      include: { feeds: true },
     });
 
     // Merge feed data with similarity scores
@@ -295,7 +295,7 @@ export async function findRelatedArticles(
       const articleWithFeed = articlesWithFeeds.find((a) => a.id === result.id);
       return {
         ...result,
-        feed: articleWithFeed?.feed,
+        feeds: articleWithFeed?.feeds,
       };
     }) as SearchResult[];
 
@@ -325,7 +325,7 @@ export async function hybridSearch(
   provider?: EmbeddingProvider
 ): Promise<{
   semantic: SearchResult[];
-  keyword: Article[];
+  keyword: articles[];
   combined: SearchResult[];
 }> {
   const { limit = 10, feedIds, since, until, recencyWeight, recencyDecayDays } = options;
@@ -339,7 +339,7 @@ export async function hybridSearch(
     );
 
     // Perform keyword search
-    const keywordResults = await prisma.article.findMany({
+    const keywordResults = await prisma.articles.findMany({
       where: {
         AND: [
           {
@@ -401,7 +401,7 @@ export async function getSearchSuggestions(
   }
 
   try {
-    const results = await prisma.article.findMany({
+    const results = await prisma.articles.findMany({
       where: {
         title: {
           contains: query,

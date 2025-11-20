@@ -110,7 +110,7 @@ async function testArticleSummarizationCache() {
   console.log("\n=== Testing Article Summarization Cache ===");
   
   // Get a test article
-  const article = await prisma.article.findFirst({
+  const article = await prisma.articles.findFirst({
     where: {
       content: { not: null },
     },
@@ -181,7 +181,7 @@ async function testArticleScoringCache() {
   console.log(`User has ${user.patterns.length} patterns`);
   
   // Get some articles
-  const articles = await prisma.article.findMany({
+  const articles = await prisma.articles.findMany({
     take: 5,
     select: { id: true, title: true },
   });
@@ -245,7 +245,7 @@ async function testCacheInvalidation() {
     return;
   }
   
-  const article = await prisma.article.findFirst();
+  const article = await prisma.articles.findFirst();
   
   if (!article) {
     console.log("No articles found for testing");

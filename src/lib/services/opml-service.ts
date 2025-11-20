@@ -1,5 +1,5 @@
 import { parseStringPromise, Builder } from "xml2js";
-import type { Feed, Category } from "@prisma/client";
+import type { feeds, categories } from "@prisma/client";
 
 /**
  * Represents a parsed feed from OPML
@@ -25,9 +25,9 @@ export interface ParsedOPML {
 /**
  * Feed with category information for export
  */
-export interface FeedWithCategories extends Feed {
-  feedCategories?: Array<{
-    category: Category;
+export interface FeedWithCategories extends feeds {
+  feed_categories?: Array<{
+    categories: categories;
   }>;
 }
 
@@ -120,7 +120,7 @@ export async function generateOPML(
   const uncategorizedFeeds: FeedWithCategories[] = [];
 
   for (const feed of feeds) {
-    const categories = feed.feedCategories?.map((fc) => fc.category.name) || [];
+    const categories = feed.feed_categories?.map((fc) => fc.categories.name) || [];
 
     if (categories.length === 0) {
       uncategorizedFeeds.push(feed);

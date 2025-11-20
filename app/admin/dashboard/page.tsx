@@ -5,6 +5,16 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { formatLocalizedDate } from "@/lib/date-utils";
 import { Tooltip } from "@/app/components/admin/Tooltip";
+import type { User as UserType } from "@prisma/client";
+
+type UserWithCount = UserType & {
+  _count: {
+    user_feeds: number;
+    read_articles: number;
+    article_feedback: number;
+    user_patterns: number;
+  };
+};
 
 type TabId = "overview" | "search" | "users" | "jobs" | "storage" | "config" | "llm-config";
 
@@ -100,7 +110,7 @@ export default function AdminDashboardPage() {
   const [embeddingStats, setEmbeddingStats] = useState<EmbeddingStats | null>(null);
   const [embeddingConfig, setEmbeddingConfig] = useState<EmbeddingConfig | null>(null);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<UserWithCount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [pendingClearCache, setPendingClearCache] = useState(false);
   const [pendingCleanup, setPendingCleanup] = useState(false);
@@ -1446,7 +1456,7 @@ function SearchTab({
 }
 
 // Users Tab
-function UsersTab({ users, userStats }: { users: User[]; userStats: UserStats | null }) {
+function UsersTab({ users, userStats }: { users: UserWithCount[]; userStats: UserStats | null }) {
   return (
     <div className="space-y-6">
       {userStats && (
@@ -1535,16 +1545,16 @@ function UsersTab({ users, userStats }: { users: User[]; userStats: UserStats | 
                     </div>
                   </td>
                   <td className="py-3 text-foreground">
-                    {user._count.userFeeds}
+                    {user._count.user_feeds}
                   </td>
                   <td className="py-3 text-foreground">
-                    {user._count.readArticles}
+                    {user._count.read_articles}
                   </td>
                   <td className="py-3 text-foreground">
-                    {user._count.articleFeedback}
+                    {user._count.article_feedback}
                   </td>
                   <td className="py-3 text-foreground">
-                    {user._count.userPatterns}
+                    {user._count.user_patterns}
                   </td>
                   <td className="py-3 text-sm text-foreground/60">
                     {formatLocalizedDate(user.createdAt)}

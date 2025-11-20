@@ -6,14 +6,14 @@
 import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { generateEmbedding, generateEmbeddings } from "./embedding-service";
-import type { Article } from "@prisma/client";
+import type { articles } from "@prisma/client";
 import type { EmbeddingProvider } from "@/lib/embeddings/types";
 
 /**
  * Prepare article text for embedding
  * Combines title, excerpt, and content (truncated)
  */
-export function prepareTextForEmbedding(article: Article): string {
+export function prepareTextForEmbedding(article: articles): string {
   const parts: string[] = [];
 
   // Add title (most important)
@@ -57,7 +57,7 @@ export async function generateArticleEmbedding(
 ): Promise<{ success: boolean; tokens?: number; error?: string; skipped?: boolean }> {
   try {
     // Fetch article
-    const article = await prisma.article.findUnique({
+    const article = await prisma.articles.findUnique({
       where: { id: articleId },
     });
 
@@ -129,7 +129,7 @@ export async function generateBatchEmbeddings(
 
   try {
     // Fetch articles (we can't filter by embedding in Prisma due to Unsupported type)
-    const allArticles = await prisma.article.findMany({
+    const allArticles = await prisma.articles.findMany({
       where: { 
         id: { in: articleIds },
       },
@@ -269,10 +269,10 @@ export async function generateBatchEmbeddings(
  */
 export async function getArticlesWithoutEmbeddings(
   limit: number = 100
-): Promise<Article[]> {
+): Promise<articles[]> {
   // Use raw SQL because embedding is Unsupported type in Prisma
   // Exclude embedding column to avoid deserialization error
-  return prisma.$queryRaw<Article[]>`
+  return prisma.$queryRaw<articles[]>`
     SELECT 
       id, "feedId", title, content, url, guid, author, excerpt, 
       "imageUrl", "contentHash", "publishedAt", "createdAt", "updatedAt"

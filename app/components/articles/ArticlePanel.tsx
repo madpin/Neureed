@@ -8,7 +8,7 @@ import { ArticleFeedbackSection } from "./ArticleFeedbackSection";
 import { RelatedArticles } from "./RelatedArticles";
 import { LoadingSpinner } from "@/app/components/layout/LoadingSpinner";
 import { processArticleContent, estimateReadingTime } from "@/lib/content-processor";
-import type { Article, Feed } from "@prisma/client";
+import type { articles, feeds } from "@prisma/client";
 import { useRef, useCallback } from "react";
 import { formatLocalizedDateTime, toISOString as formatISOString } from "@/lib/date-utils";
 
@@ -33,8 +33,8 @@ function getReadingStyles(preferences: ReadingPreferences | null): React.CSSProp
   } as React.CSSProperties;
 }
 
-interface ArticleWithFeed extends Article {
-  feed: Feed;
+interface ArticleWithFeed extends articles {
+  feeds: feeds;
 }
 
 interface ArticlePanelProps {
@@ -291,14 +291,14 @@ export function ArticlePanel({ articleId, onClose, onReadStatusChange }: Article
 
           {/* Feed Info */}
           <div className="mb-3 flex items-center gap-3 text-sm text-foreground/70">
-            {article.feed.imageUrl && (
+            {article.feeds.imageUrl && (
               <img
-                src={article.feed.imageUrl}
-                alt={article.feed.name}
+                src={article.feeds.imageUrl}
+                alt={article.feeds.name}
                 className="h-6 w-6 rounded-full"
               />
             )}
-            <span className="font-medium">{article.feed.name}</span>
+            <span className="font-medium">{article.feeds.name}</span>
             <span>•</span>
             <time dateTime={formatISOString(article.publishedAt, article.createdAt)}>
               {formatLocalizedDateTime(article.publishedAt, article.createdAt)}

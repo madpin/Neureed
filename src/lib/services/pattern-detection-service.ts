@@ -3,7 +3,7 @@ import { stripHtml } from "../content-processor";
 import { logger } from "../logger";
 import { cacheDeletePattern } from "../cache/cache-service";
 import { InvalidationPatterns } from "../cache/cache-keys";
-import type { UserPattern } from "@prisma/client";
+import type { user_patterns } from "@prisma/client";
 
 /**
  * Common English stop words to filter out
@@ -209,7 +209,7 @@ export async function updateUserPatterns(
   feedbackValue: number
 ): Promise<void> {
   // Get article content
-  const article = await prisma.article.findUnique({
+  const article = await prisma.articles.findUnique({
     where: { id: articleId },
     select: {
       title: true,
@@ -232,7 +232,7 @@ export async function updateUserPatterns(
       // Calculate weight change based on feedback value and keyword relevance
       const weightChange = feedbackValue * relevance * 0.1; // Scale down the impact
 
-      await prisma.userPattern.upsert({
+      await prisma.user_patterns.upsert({
         where: {
           userId_keyword: {
             userId,
@@ -240,10 +240,12 @@ export async function updateUserPatterns(
           },
         },
         create: {
+          id: `pattern_${Date.now()}_${Math.random().toString(36).substring(7)}`,
           userId,
           keyword,
           weight: weightChange,
           feedbackCount: 1,
+          updatedAt: new Date(),
         },
         update: {
           weight: {
@@ -274,8 +276,8 @@ export async function updateUserPatterns(
 export async function getUserPatterns(
   userId: string,
   limit?: number
-): Promise<UserPattern[]> {
-  return await prisma.userPattern.findMany({
+): Promise<user_patterns[]> {
+  return await prisma.user_patterns.findMany({
     where: { userId },
     orderBy: [{ weight: "desc" }],
     take: limit,
@@ -328,7 +330,7 @@ export async function applyPatternDecay(userId: string): Promise<void> {
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
   // Get patterns older than 30 days
-  const oldPatterns = await prisma.userPattern.findMany({
+  const oldPatterns = await prisma.user_patterns.findMany({
     where: {
       userId,
       updatedAt: {
@@ -347,7 +349,7 @@ export async function applyPatternDecay(userId: string): Promise<void> {
 
     const newWeight = pattern.weight * decayFactor;
 
-    await prisma.userPattern.update({
+    await prisma.user_patterns.update({
       where: { id: pattern.id },
       data: { weight: newWeight },
     });
@@ -364,7 +366,7 @@ export async function cleanupPatterns(
   maxPatterns: number = 100
 ): Promise<void> {
   // Delete patterns with very low absolute weight
-  await prisma.userPattern.deleteMany({
+  await prisma.user_patterns.deleteMany({
     where: {
       userId,
       weight: {
@@ -375,7 +377,7 @@ export async function cleanupPatterns(
   });
 
   // Get all patterns ordered by absolute weight
-  const allPatterns = await prisma.userPattern.findMany({
+  const allPatterns = await prisma.user_patterns.findMany({
     where: { userId },
     orderBy: [
       // We can't order by absolute value directly, so we'll fetch all and filter
@@ -392,7 +394,7 @@ export async function cleanupPatterns(
     const patternsToDelete = sortedPatterns.slice(maxPatterns);
     const idsToDelete = patternsToDelete.map((p) => p.id);
 
-    await prisma.userPattern.deleteMany({
+    await prisma.user_patterns.deleteMany({
       where: {
         id: {
           in: idsToDelete,
@@ -406,7 +408,7 @@ export async function cleanupPatterns(
  * Reset all patterns for a user
  */
 export async function resetUserPatterns(userId: string): Promise<void> {
-  await prisma.userPattern.deleteMany({
+  await prisma.user_patterns.deleteMany({
     where: { userId },
   });
 }
@@ -418,8 +420,8 @@ export async function getPatternStats(userId: string): Promise<{
   totalPatterns: number;
   positivePatterns: number;
   negativePatterns: number;
-  strongestPositive: UserPattern | null;
-  strongestNegative: UserPattern | null;
+  strongestPositive: user_patterns | null;
+  strongestNegative: user_patterns | null;
 }> {
   const patterns = await getUserPatterns(userId);
 

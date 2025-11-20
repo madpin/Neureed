@@ -6,11 +6,11 @@ import { ArticleCard } from "./ArticleCard";
 import { RelevanceScore } from "./RelevanceScore";
 import { LoadingSpinner, LoadingSkeleton } from "@/app/components/layout/LoadingSpinner";
 import { EmptyState } from "@/app/components/layout/EmptyState";
-import type { Article, Feed } from "@prisma/client";
+import type { articles, feeds } from "@prisma/client";
 import type { ArticleScore } from "@/lib/services/article-scoring-service";
 
-interface ArticleWithFeed extends Article {
-  feed: Feed;
+interface ArticleWithFeed extends articles {
+  feeds: feeds;
 }
 
 interface ArticleListProps {

@@ -20,7 +20,7 @@ export async function runPatternDecayJob(): Promise<{
 
   try {
     // Get all users who have patterns
-    const usersWithPatterns = await prisma.userPattern.findMany({
+    const usersWithPatterns = await prisma.user_patterns.findMany({
       select: { userId: true },
       distinct: ["userId"],
     });

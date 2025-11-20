@@ -47,7 +47,7 @@ async function main() {
   // 3. Check for feeds
   console.log("3. Checking Feeds...");
   console.log("-".repeat(80));
-  const allFeeds = await prisma.feed.findMany({
+  const allFeeds = await prisma.feeds.findMany({
     include: {
       _count: {
         select: { articles: true },
@@ -113,9 +113,9 @@ async function main() {
       if (userDueFeeds.length > 0) {
         console.log("\n  User's Due Feeds:");
         for (const item of userDueFeeds.slice(0, 3)) {
-          console.log(`    - ${item.feed.name}`);
+          console.log(`    - ${item.feeds.name}`);
           console.log(`      Refresh Interval: ${item.refreshInterval} minutes`);
-          console.log(`      Last Fetched: ${item.feed.lastFetched ? item.feed.lastFetched.toISOString() : 'Never'}`);
+          console.log(`      Last Fetched: ${item.feeds.lastFetched ? item.feeds.lastFetched.toISOString() : 'Never'}`);
         }
       }
     } catch (error) {
@@ -147,7 +147,7 @@ async function main() {
       }
       
       // Check updated feed
-      const updatedFeed = await prisma.feed.findUnique({
+      const updatedFeed = await prisma.feeds.findUnique({
         where: { id: testFeed.id },
         include: {
           _count: {
@@ -173,11 +173,11 @@ async function main() {
   // 7. Check recent articles
   console.log("7. Checking Recent Articles...");
   console.log("-".repeat(80));
-  const recentArticles = await prisma.article.findMany({
+  const recentArticles = await prisma.articles.findMany({
     take: 5,
     orderBy: { createdAt: "desc" },
     include: {
-      feed: {
+      feeds: {
         select: { name: true },
       },
     },
@@ -188,7 +188,7 @@ async function main() {
     console.log("\nMost Recent Articles:");
     for (const article of recentArticles) {
       console.log(`  - ${article.title}`);
-      console.log(`    Feed: ${article.feed.name}`);
+      console.log(`    Feed: ${article.feeds.name}`);
       console.log(`    Created: ${article.createdAt.toISOString()}`);
       console.log(`    Published: ${article.publishedAt?.toISOString() || 'N/A'}`);
     }

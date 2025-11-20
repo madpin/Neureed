@@ -3,7 +3,7 @@ import type { ExtractionSettings } from "@/lib/extractors/types";
 import { encrypt, decrypt } from "@/lib/services/encryption-service";
 import { testExtraction } from "@/lib/services/content-extraction-service";
 import { logger } from "@/lib/logger";
-import type { Feed } from "@prisma/client";
+import type { feeds } from "@prisma/client";
 
 /**
  * Feed settings service
@@ -17,7 +17,7 @@ export async function getExtractionSettings(
   feedId: string
 ): Promise<ExtractionSettings | null> {
   try {
-    const feed = await prisma.feed.findUnique({
+    const feed = await prisma.feeds.findUnique({
       where: { id: feedId },
       select: { settings: true },
     });
@@ -59,7 +59,7 @@ export async function updateExtractionSettings(
 ): Promise<ExtractionSettings> {
   try {
     // Get current settings
-    const feed = await prisma.feed.findUnique({
+    const feed = await prisma.feeds.findUnique({
       where: { id: feedId },
       select: { settings: true, url: true },
     });
@@ -93,7 +93,7 @@ export async function updateExtractionSettings(
       extraction: newExtraction,
     };
 
-    await prisma.feed.update({
+    await prisma.feeds.update({
       where: { id: feedId },
       data: { settings: updatedSettings },
     });
@@ -121,7 +121,7 @@ export async function updateExtractionSettings(
  */
 export async function clearExtractionSettings(feedId: string): Promise<void> {
   try {
-    const feed = await prisma.feed.findUnique({
+    const feed = await prisma.feeds.findUnique({
       where: { id: feedId },
       select: { settings: true },
     });
@@ -133,7 +133,7 @@ export async function clearExtractionSettings(feedId: string): Promise<void> {
     const currentSettings = (feed.settings as any) || {};
     delete currentSettings.extraction;
 
-    await prisma.feed.update({
+    await prisma.feeds.update({
       where: { id: feedId },
       data: { settings: currentSettings },
     });
@@ -150,7 +150,7 @@ export async function clearExtractionSettings(feedId: string): Promise<void> {
  */
 export async function clearCookies(feedId: string): Promise<void> {
   try {
-    const feed = await prisma.feed.findUnique({
+    const feed = await prisma.feeds.findUnique({
       where: { id: feedId },
       select: { settings: true },
     });
@@ -163,7 +163,7 @@ export async function clearCookies(feedId: string): Promise<void> {
     if (currentSettings.extraction) {
       delete currentSettings.extraction.cookies;
 
-      await prisma.feed.update({
+      await prisma.feeds.update({
         where: { id: feedId },
         data: { settings: currentSettings },
       });
@@ -188,7 +188,7 @@ export async function testFeedExtractionSettings(feedId: string): Promise<{
   duration: number;
 }> {
   try {
-    const feed = await prisma.feed.findUnique({
+    const feed = await prisma.feeds.findUnique({
       where: { id: feedId },
       select: { 
         url: true, 
@@ -250,7 +250,7 @@ async function updateTestStatus(
   error?: string
 ): Promise<void> {
   try {
-    const feed = await prisma.feed.findUnique({
+    const feed = await prisma.feeds.findUnique({
       where: { id: feedId },
       select: { settings: true },
     });
@@ -268,7 +268,7 @@ async function updateTestStatus(
     settings.extraction.lastTestStatus = success ? "success" : "failed";
     settings.extraction.lastTestError = error || null;
 
-    await prisma.feed.update({
+    await prisma.feeds.update({
       where: { id: feedId },
       data: { settings },
     });
@@ -282,7 +282,7 @@ async function updateTestStatus(
  */
 export async function hasExtractionSettings(feedId: string): Promise<boolean> {
   try {
-    const feed = await prisma.feed.findUnique({
+    const feed = await prisma.feeds.findUnique({
       where: { id: feedId },
       select: { settings: true },
     });
@@ -302,9 +302,9 @@ export async function hasExtractionSettings(feedId: string): Promise<boolean> {
 /**
  * Get all feeds with extraction settings
  */
-export async function getFeedsWithExtractionSettings(): Promise<Feed[]> {
+export async function getFeedsWithExtractionSettings(): Promise<feeds[]> {
   try {
-    const feeds = await prisma.feed.findMany({
+    const feeds = await prisma.feeds.findMany({
       where: {
         settings: {
           path: ["extraction"],
@@ -327,7 +327,7 @@ export async function getFeedsWithExtractionSettings(): Promise<Feed[]> {
  */
 export async function deleteAllArticles(feedId: string): Promise<number> {
   try {
-    const result = await prisma.article.deleteMany({
+    const result = await prisma.articles.deleteMany({
       where: { feedId },
     });
 

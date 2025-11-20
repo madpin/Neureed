@@ -1,12 +1,12 @@
 import { prisma } from "../db";
-import type { ReadArticle } from "@prisma/client";
+import type { read_articles } from "@prisma/client";
 import type { ReadArticleStatus } from "@/types/user";
 
 /**
  * Mark an article as read
  */
-export async function markAsRead(userId: string, articleId: string): Promise<ReadArticle> {
-  return await prisma.readArticle.upsert({
+export async function markAsRead(userId: string, articleId: string): Promise<read_articles> {
+  return await prisma.read_articles.upsert({
     where: {
       userId_articleId: {
         userId,
@@ -14,6 +14,7 @@ export async function markAsRead(userId: string, articleId: string): Promise<Rea
       },
     },
     create: {
+      id: `read_${Date.now()}_${Math.random().toString(36).substring(7)}`,
       userId,
       articleId,
     },
@@ -27,7 +28,7 @@ export async function markAsRead(userId: string, articleId: string): Promise<Rea
  * Mark an article as unread
  */
 export async function markAsUnread(userId: string, articleId: string): Promise<void> {
-  await prisma.readArticle.delete({
+  await prisma.read_articles.delete({
     where: {
       userId_articleId: {
         userId,
@@ -41,7 +42,7 @@ export async function markAsUnread(userId: string, articleId: string): Promise<v
  * Check if an article is read by a user
  */
 export async function isArticleRead(userId: string, articleId: string): Promise<boolean> {
-  const readArticle = await prisma.readArticle.findUnique({
+  const readArticle = await prisma.read_articles.findUnique({
     where: {
       userId_articleId: {
         userId,
@@ -59,7 +60,7 @@ export async function getReadArticles(
   userId: string,
   articleIds: string[]
 ): Promise<ReadArticleStatus[]> {
-  const readArticles = await prisma.readArticle.findMany({
+  const readArticles = await prisma.read_articles.findMany({
     where: {
       userId,
       articleId: { in: articleIds },
@@ -82,7 +83,7 @@ export async function getReadArticles(
  * Get total count of read articles for a user
  */
 export async function getUserReadCount(userId: string): Promise<number> {
-  return await prisma.readArticle.count({
+  return await prisma.read_articles.count({
     where: { userId },
   });
 }
@@ -93,15 +94,15 @@ export async function getUserReadCount(userId: string): Promise<number> {
 export async function getRecentlyReadArticles(
   userId: string,
   limit: number = 10
-): Promise<ReadArticle[]> {
-  return await prisma.readArticle.findMany({
+): Promise<read_articles[]> {
+  return await prisma.read_articles.findMany({
     where: { userId },
     orderBy: { readAt: "desc" },
     take: limit,
     include: {
-      article: {
+      articles: {
         include: {
-          feed: true,
+          feeds: true,
         },
       },
     },

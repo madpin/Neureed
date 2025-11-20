@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
-import type { UserCategory, UserFeedCategory, Feed } from "@prisma/client";
+import type { user_categories, user_feed_categories, feeds } from "@prisma/client";
 
-export interface UserCategoryWithFeeds extends UserCategory {
+export interface UserCategoryWithFeeds extends user_categories {
   feedCount: number;
   feeds?: Array<{
     id: string;
@@ -28,13 +28,13 @@ export interface FeedsGroupedByCategory {
 export async function getUserCategories(
   userId: string
 ): Promise<UserCategoryWithFeeds[]> {
-  const categories = await prisma.userCategory.findMany({
+  const categories = await prisma.user_categories.findMany({
     where: { userId },
     orderBy: { order: "asc" },
     include: {
       _count: {
         select: {
-          userFeedCategories: true,
+          user_feed_categories: true,
         },
       },
     },
@@ -42,7 +42,7 @@ export async function getUserCategories(
 
   return categories.map((cat) => ({
     ...cat,
-    feedCount: cat._count.userFeedCategories,
+    feedCount: cat._count.user_feed_categories,
     _count: undefined as never,
   }));
 }
@@ -54,17 +54,17 @@ export async function getUserCategory(
   userId: string,
   categoryId: string
 ): Promise<any | null> {
-  const category = await prisma.userCategory.findFirst({
+  const category = await prisma.user_categories.findFirst({
     where: {
       id: categoryId,
       userId,
     },
     include: {
-      userFeedCategories: {
+      user_feed_categories: {
         include: {
-          userFeed: {
+          user_feeds: {
             include: {
-              feed: {
+              feeds: {
                 select: {
                   id: true,
                   name: true,
@@ -82,15 +82,15 @@ export async function getUserCategory(
   if (!category) return null;
 
   // Get feed IDs for unread count calculation
-  const feedIds = category.userFeedCategories.map((ufc) => ufc.userFeed.feed.id);
+  const feedIds = category.user_feed_categories.map((ufc) => ufc.user_feeds.feeds.id);
 
   // Get unread article counts for feeds in this category
   const unreadCounts = feedIds.length > 0
-    ? await prisma.article.groupBy({
+    ? await prisma.articles.groupBy({
         by: ['feedId'],
         where: {
           feedId: { in: feedIds },
-          readArticles: {
+          read_articles: {
             none: {
               userId: userId,
             },
@@ -110,13 +110,13 @@ export async function getUserCategory(
   // Transform to include feeds array
   return {
     ...category,
-    feeds: category.userFeedCategories.map((ufc) => ({
-      id: ufc.userFeed.feed.id,
-      name: ufc.userFeed.customName || ufc.userFeed.feed.name,
-      imageUrl: ufc.userFeed.feed.imageUrl,
-      userFeedId: ufc.userFeed.id,
-      lastFetched: ufc.userFeed.feed.lastFetched,
-      articleCount: unreadCountMap.get(ufc.userFeed.feed.id) || 0,
+    feeds: category.user_feed_categories.map((ufc) => ({
+      id: ufc.user_feeds.feeds.id,
+      name: ufc.user_feeds.customName || ufc.user_feeds.feeds.name,
+      imageUrl: ufc.user_feeds.feeds.imageUrl,
+      userFeedId: ufc.user_feeds.id,
+      lastFetched: ufc.user_feeds.feeds.lastFetched,
+      articleCount: unreadCountMap.get(ufc.user_feeds.feeds.id) || 0,
     })),
   };
 }
@@ -127,8 +127,8 @@ export async function getUserCategory(
 export async function getUserCategoryByName(
   userId: string,
   name: string
-): Promise<UserCategory | null> {
-  return prisma.userCategory.findFirst({
+): Promise<user_categories | null> {
+  return prisma.user_categories.findFirst({
     where: {
       userId,
       name: {
@@ -148,7 +148,7 @@ export async function createUserCategory(
   description?: string,
   settings?: Record<string, any>,
   icon?: string
-): Promise<UserCategory> {
+): Promise<user_categories> {
   // Check if category already exists for this user
   const existing = await getUserCategoryByName(userId, name);
   if (existing) {
@@ -156,7 +156,7 @@ export async function createUserCategory(
   }
 
   // Get the highest order number and add 1
-  const highestOrder = await prisma.userCategory.findFirst({
+  const highestOrder = await prisma.user_categories.findFirst({
     where: { userId },
     orderBy: { order: "desc" },
     select: { order: true },
@@ -164,14 +164,16 @@ export async function createUserCategory(
 
   const order = (highestOrder?.order ?? -1) + 1;
 
-  return prisma.userCategory.create({
+  return prisma.user_categories.create({
     data: {
+      id: `cat_${userId}_${Date.now()}`,
       userId,
       name: name.trim(),
       description: description?.trim(),
       settings,
       icon: icon || "📁",
       order,
+      updatedAt: new Date(),
     },
   });
 }
@@ -188,7 +190,7 @@ export async function updateUserCategory(
     settings?: Record<string, any>;
     icon?: string;
   }
-): Promise<UserCategory> {
+): Promise<user_categories> {
   // Verify ownership
   const category = await getUserCategory(userId, categoryId);
   if (!category) {
@@ -203,7 +205,7 @@ export async function updateUserCategory(
     }
   }
 
-  return prisma.userCategory.update({
+  return prisma.user_categories.update({
     where: { id: categoryId },
     data: {
       name: data.name?.trim(),
@@ -229,7 +231,7 @@ export async function deleteUserCategory(
   }
 
   // Delete the category (cascade will remove UserFeedCategory entries)
-  await prisma.userCategory.delete({
+  await prisma.user_categories.delete({
     where: { id: categoryId },
   });
 }
@@ -242,7 +244,7 @@ export async function reorderUserCategories(
   categoryIds: string[]
 ): Promise<void> {
   // Verify all categories belong to the user
-  const categories = await prisma.userCategory.findMany({
+  const categories = await prisma.user_categories.findMany({
     where: {
       userId,
       id: { in: categoryIds },
@@ -256,7 +258,7 @@ export async function reorderUserCategories(
   // Update orders in a transaction
   await prisma.$transaction(
     categoryIds.map((id, index) =>
-      prisma.userCategory.update({
+      prisma.user_categories.update({
         where: { id },
         data: { order: index },
       })
@@ -271,9 +273,9 @@ export async function assignFeedToCategory(
   userId: string,
   userFeedId: string,
   categoryId: string
-): Promise<UserFeedCategory> {
+): Promise<user_feed_categories> {
   // Verify the user owns the feed
-  const userFeed = await prisma.userFeed.findFirst({
+  const userFeed = await prisma.user_feeds.findFirst({
     where: {
       id: userFeedId,
       userId,
@@ -291,7 +293,7 @@ export async function assignFeedToCategory(
   }
 
   // Check if already assigned
-  const existing = await prisma.userFeedCategory.findFirst({
+  const existing = await prisma.user_feed_categories.findFirst({
     where: {
       userFeedId,
       userCategoryId: categoryId,
@@ -303,8 +305,9 @@ export async function assignFeedToCategory(
   }
 
   // Create the assignment
-  return prisma.userFeedCategory.create({
+  return prisma.user_feed_categories.create({
     data: {
+      id: `ufc_${userFeedId}_${categoryId}`,
       userFeedId,
       userCategoryId: categoryId,
     },
@@ -320,7 +323,7 @@ export async function unassignFeedFromCategory(
   categoryId: string
 ): Promise<void> {
   // Verify the user owns the feed
-  const userFeed = await prisma.userFeed.findFirst({
+  const userFeed = await prisma.user_feeds.findFirst({
     where: {
       id: userFeedId,
       userId,
@@ -332,7 +335,7 @@ export async function unassignFeedFromCategory(
   }
 
   // Delete the assignment
-  await prisma.userFeedCategory.deleteMany({
+  await prisma.user_feed_categories.deleteMany({
     where: {
       userFeedId,
       userCategoryId: categoryId,
@@ -348,7 +351,7 @@ export async function unassignFeedFromAllCategories(
   userFeedId: string
 ): Promise<void> {
   // Verify the user owns the feed
-  const userFeed = await prisma.userFeed.findFirst({
+  const userFeed = await prisma.user_feeds.findFirst({
     where: {
       id: userFeedId,
       userId,
@@ -359,7 +362,7 @@ export async function unassignFeedFromAllCategories(
     throw new Error("Feed not found");
   }
 
-  await prisma.userFeedCategory.deleteMany({
+  await prisma.user_feed_categories.deleteMany({
     where: { userFeedId },
   });
 }
@@ -372,15 +375,15 @@ export async function getFeedsGroupedByCategory(
   userId: string
 ): Promise<FeedsGroupedByCategory> {
   // Get all user categories
-  const categories = await prisma.userCategory.findMany({
+  const categories = await prisma.user_categories.findMany({
     where: { userId },
     orderBy: { order: "asc" },
     include: {
-      userFeedCategories: {
+      user_feed_categories: {
         include: {
-          userFeed: {
+          user_feeds: {
             include: {
-              feed: {
+              feeds: {
                 select: {
                   id: true,
                   name: true,
@@ -396,10 +399,10 @@ export async function getFeedsGroupedByCategory(
   });
 
   // Get all user feeds
-  const allUserFeeds = await prisma.userFeed.findMany({
+  const allUserFeeds = await prisma.user_feeds.findMany({
     where: { userId },
     include: {
-      feed: {
+      feeds: {
         select: {
           id: true,
           name: true,
@@ -407,7 +410,7 @@ export async function getFeedsGroupedByCategory(
           lastFetched: true,
         },
       },
-      userFeedCategories: {
+      user_feed_categories: {
         select: {
           id: true,
         },
@@ -416,15 +419,15 @@ export async function getFeedsGroupedByCategory(
   });
 
   // Get all feed IDs to calculate unread counts
-  const feedIds = allUserFeeds.map((uf) => uf.feed.id);
+  const feedIds = allUserFeeds.map((uf) => uf.feeds.id);
 
   // Get unread article counts for all feeds in a single query
   const unreadCounts = feedIds.length > 0 
-    ? await prisma.article.groupBy({
+    ? await prisma.articles.groupBy({
         by: ['feedId'],
         where: {
           feedId: { in: feedIds },
-          readArticles: {
+          read_articles: {
             none: {
               userId: userId,
             },
@@ -443,15 +446,15 @@ export async function getFeedsGroupedByCategory(
 
   // Find uncategorized feeds (feeds with no category assignments)
   const uncategorizedFeeds = allUserFeeds
-    .filter((uf) => uf.userFeedCategories.length === 0)
+    .filter((uf) => uf.user_feed_categories.length === 0)
     .map((uf) => ({
-      id: uf.feed.id,
-      name: uf.customName || uf.feed.name,
-      imageUrl: uf.feed.imageUrl,
+      id: uf.feeds.id,
+      name: uf.customName || uf.feeds.name,
+      imageUrl: uf.feeds.imageUrl,
       userFeedId: uf.id,
-      feedId: uf.feed.id,
-      lastFetched: uf.feed.lastFetched,
-      articleCount: unreadCountMap.get(uf.feed.id) || 0,
+      feedId: uf.feeds.id,
+      lastFetched: uf.feeds.lastFetched,
+      articleCount: unreadCountMap.get(uf.feeds.id) || 0,
     }));
 
   // Map categories with their feeds
@@ -466,14 +469,14 @@ export async function getFeedsGroupedByCategory(
       settings: cat.settings,
       createdAt: cat.createdAt,
       updatedAt: cat.updatedAt,
-      feedCount: cat.userFeedCategories.length,
-      feeds: cat.userFeedCategories.map((ufc) => ({
-        id: ufc.userFeed.feed.id,
-        name: ufc.userFeed.customName || ufc.userFeed.feed.name,
-        imageUrl: ufc.userFeed.feed.imageUrl,
-        userFeedId: ufc.userFeed.id,
-        lastFetched: ufc.userFeed.feed.lastFetched,
-        articleCount: unreadCountMap.get(ufc.userFeed.feed.id) || 0,
+      feedCount: cat.user_feed_categories.length,
+      feeds: cat.user_feed_categories.map((ufc) => ({
+        id: ufc.user_feeds.feeds.id,
+        name: ufc.user_feeds.customName || ufc.user_feeds.feeds.name,
+        imageUrl: ufc.user_feeds.feeds.imageUrl,
+        userFeedId: ufc.user_feeds.id,
+        lastFetched: ufc.user_feeds.feeds.lastFetched,
+        articleCount: unreadCountMap.get(ufc.user_feeds.feeds.id) || 0,
       })),
     })
   );
@@ -494,14 +497,14 @@ export async function getCategoryFeeds(userId: string, categoryId: string) {
     throw new Error("Category not found");
   }
 
-  const categoryWithFeeds = await prisma.userCategory.findUnique({
+  const categoryWithFeeds = await prisma.user_categories.findUnique({
     where: { id: categoryId },
     include: {
-      userFeedCategories: {
+      user_feed_categories: {
         include: {
-          userFeed: {
+          user_feeds: {
             include: {
-              feed: true,
+              feeds: true,
             },
           },
         },
@@ -515,10 +518,10 @@ export async function getCategoryFeeds(userId: string, categoryId: string) {
 
   return {
     ...category,
-    feeds: categoryWithFeeds.userFeedCategories.map((ufc) => ({
-      ...ufc.userFeed.feed,
-      userFeedId: ufc.userFeed.id,
-      customName: ufc.userFeed.customName,
+    feeds: categoryWithFeeds.user_feed_categories.map((ufc) => ({
+      ...ufc.user_feeds.feeds,
+      userFeedId: ufc.user_feeds.id,
+      customName: ufc.user_feeds.customName,
     })),
   };
 }
@@ -531,15 +534,15 @@ export async function getFeedEffectiveSettings(
   userId: string,
   userFeedId: string
 ): Promise<Record<string, any>> {
-  const userFeed = await prisma.userFeed.findFirst({
+  const userFeed = await prisma.user_feeds.findFirst({
     where: {
       id: userFeedId,
       userId,
     },
     include: {
-      userFeedCategories: {
+      user_feed_categories: {
         include: {
-          userCategory: true,
+          user_categories: true,
         },
       },
     },
@@ -553,8 +556,8 @@ export async function getFeedEffectiveSettings(
   let effectiveSettings: Record<string, any> = {};
 
   // Apply category settings (if feed is in a category)
-  if (userFeed.userFeedCategories.length > 0) {
-    const categorySettings = userFeed.userFeedCategories[0].userCategory
+  if (userFeed.user_feed_categories.length > 0) {
+    const categorySettings = userFeed.user_feed_categories[0].user_categories
       .settings as Record<string, any> | null;
     if (categorySettings) {
       effectiveSettings = { ...effectiveSettings, ...categorySettings };

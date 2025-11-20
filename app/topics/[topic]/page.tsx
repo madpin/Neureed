@@ -7,11 +7,11 @@ import { useSession } from "next-auth/react";
 import { ArticleList } from "@/app/components/articles/ArticleList";
 import { ArticleSortDropdown } from "@/app/components/articles/ArticleSortDropdown";
 import { ReadingPanelLayout } from "@/app/components/layout/ReadingPanelLayout";
-import type { Article, Feed } from "@prisma/client";
+import type { articles, feeds } from "@prisma/client";
 import type { ArticleSortOrder, ArticleSortDirection } from "@/lib/validations/article-validation";
 
-interface ArticleWithFeed extends Article {
-  feed: Feed;
+interface ArticleWithFeed extends articles {
+  feeds: feeds;
 }
 
 export default function TopicDetailPage({

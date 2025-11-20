@@ -6,7 +6,7 @@
 import { prisma } from "@/lib/db";
 import { env } from "@/env";
 import { logger } from "@/lib/logger";
-import { AdminSettings } from "@prisma/client";
+import { admin_settings } from "@prisma/client";
 import { encrypt, decrypt, maskApiKey } from "@/lib/crypto";
 
 /**
@@ -18,7 +18,7 @@ export async function getAdminSetting<T = any>(
   envFallback?: T
 ): Promise<T | null> {
   try {
-    const setting = await prisma.adminSettings.findUnique({
+    const setting = await prisma.admin_settings.findUnique({
       where: { key },
     });
 
@@ -41,9 +41,9 @@ export async function updateAdminSetting(
   key: string,
   value: any,
   description?: string
-): Promise<AdminSettings> {
+): Promise<admin_settings> {
   try {
-    const setting = await prisma.adminSettings.upsert({
+    const setting = await prisma.admin_settings.upsert({
       where: { key },
       update: {
         value,
@@ -51,9 +51,11 @@ export async function updateAdminSetting(
         updatedAt: new Date(),
       },
       create: {
+        id: `admin_${key}_${Date.now()}`,
         key,
         value,
         description,
+        updatedAt: new Date(),
       },
     });
 
@@ -68,9 +70,9 @@ export async function updateAdminSetting(
 /**
  * Get all admin settings
  */
-export async function getAllAdminSettings(): Promise<AdminSettings[]> {
+export async function getAllAdminSettings(): Promise<admin_settings[]> {
   try {
-    return await prisma.adminSettings.findMany({
+    return await prisma.admin_settings.findMany({
       orderBy: { key: "asc" },
     });
   } catch (error) {
@@ -84,7 +86,7 @@ export async function getAllAdminSettings(): Promise<AdminSettings[]> {
  */
 export async function deleteAdminSetting(key: string): Promise<void> {
   try {
-    await prisma.adminSettings.delete({
+    await prisma.admin_settings.delete({
       where: { key },
     });
     logger.info("Admin setting deleted", { key });
@@ -118,11 +120,11 @@ export async function getEmbeddingConfiguration(): Promise<{
   model: string;
   batchSize: number;
 }> {
-  const autoGenerateSetting = await prisma.adminSettings.findUnique({
+  const autoGenerateSetting = await prisma.admin_settings.findUnique({
     where: { key: "embedding_auto_generate" },
   });
 
-  const providerSetting = await prisma.adminSettings.findUnique({
+  const providerSetting = await prisma.admin_settings.findUnique({
     where: { key: "embedding_provider" },
   });
 
@@ -206,11 +208,11 @@ export async function getSearchRecencyConfiguration(): Promise<{
   defaultRecencyDecayDays: number;
   defaultRecencyDecayDaysSource: "database" | "default";
 }> {
-  const weightSetting = await prisma.adminSettings.findUnique({
+  const weightSetting = await prisma.admin_settings.findUnique({
     where: { key: "default_search_recency_weight" },
   });
 
-  const decayDaysSetting = await prisma.adminSettings.findUnique({
+  const decayDaysSetting = await prisma.admin_settings.findUnique({
     where: { key: "default_search_recency_decay_days" },
   });
 

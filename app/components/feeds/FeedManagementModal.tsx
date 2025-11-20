@@ -960,14 +960,14 @@ function CategorySettingsView({
       }
 
       const addData = await addResponse.json();
-      const newFeedId = addData.data?.feed?.id;
+      const newFeedId = addData.data?.feeds?.id;
       
       // Get the user feed ID
       const feedsResponse = await fetch("/api/user/feeds");
       if (feedsResponse.ok) {
         const feedsData = await feedsResponse.json();
         const subscriptions = feedsData.data?.subscriptions || [];
-        const subscription = subscriptions.find((sub: any) => sub.feed.id === newFeedId);
+        const subscription = subscriptions.find((sub: any) => sub.feeds.id === newFeedId);
         
         if (subscription) {
           // Then assign it to this category

@@ -18,13 +18,13 @@ export async function GET(
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        preferences: true,
+        user_preferences: true,
         _count: {
           select: {
-            userFeeds: true,
-            readArticles: true,
-            articleFeedback: true,
-            userPatterns: true,
+            user_feeds: true,
+            read_articles: true,
+            article_feedback: true,
+            user_patterns: true,
           },
         },
       },
@@ -35,12 +35,12 @@ export async function GET(
     }
 
     // Get recent activity
-    const recentFeedback = await prisma.articleFeedback.findMany({
+    const recentFeedback = await prisma.article_feedback.findMany({
       where: { userId },
       take: 10,
       orderBy: { createdAt: "desc" },
       include: {
-        article: {
+        articles: {
           select: {
             id: true,
             title: true,
@@ -49,12 +49,12 @@ export async function GET(
       },
     });
 
-    const recentReads = await prisma.readArticle.findMany({
+    const recentReads = await prisma.read_articles.findMany({
       where: { userId },
       take: 10,
       orderBy: { readAt: "desc" },
       include: {
-        article: {
+        articles: {
           select: {
             id: true,
             title: true,

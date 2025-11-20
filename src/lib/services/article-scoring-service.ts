@@ -4,7 +4,7 @@ import { getUserPatternsMap } from "./pattern-detection-service";
 import { stripHtml } from "../content-processor";
 import { cacheGet, cacheSet, cacheGetMany, cacheSetMany } from "../cache/cache-service";
 import { CacheKeys, CacheTTL } from "../cache/cache-keys";
-import type { Article } from "@prisma/client";
+import type { articles } from "@prisma/client";
 
 /**
  * Article score result
@@ -35,7 +35,7 @@ export async function scoreArticle(
   }
 
   // Get article
-  const article = await prisma.article.findUnique({
+  const article = await prisma.articles.findUnique({
     where: { id: articleId },
     select: {
       id: true,
@@ -147,7 +147,7 @@ export async function scoreArticleBatch(
   }
 
   // Get uncached articles
-  const articles = await prisma.article.findMany({
+  const articles = await prisma.articles.findMany({
     where: {
       id: {
         in: uncachedIds,

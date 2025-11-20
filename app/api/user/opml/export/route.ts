@@ -23,7 +23,7 @@ export const GET = createHandler(
     const userFeeds = await getUserFeeds(userId);
 
     // Extract feeds from subscriptions and include category information
-    let feeds: FeedWithCategories[] = userFeeds.map((uf) => uf.feed as FeedWithCategories);
+    let feeds: FeedWithCategories[] = userFeeds.map((uf) => uf.feeds as FeedWithCategories);
 
     // Filter by feedIds if provided
     if (feedIds && feedIds.length > 0) {
@@ -33,8 +33,8 @@ export const GET = createHandler(
     // Filter by categoryIds if provided
     if (categoryIds && categoryIds.length > 0) {
       feeds = feeds.filter((feed) =>
-        feed.feedCategories?.some((fc) =>
-          categoryIds.includes(fc.category.id)
+        feed.feed_categories?.some((fc) =>
+          categoryIds.includes(fc.categories.id)
         )
       );
     }

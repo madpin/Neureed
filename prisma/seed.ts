@@ -6,76 +6,88 @@ async function main() {
   console.log("🌱 Starting database seed...");
 
   // Create categories
-  const techCategory = await prisma.category.upsert({
+  const techCategory = await prisma.categories.upsert({
     where: { name: "Technology" },
     update: {},
     create: {
+      id: "cat_tech_001",
       name: "Technology",
       description: "Tech news and articles",
+      updatedAt: new Date(),
     },
   });
 
-  const aiCategory = await prisma.category.upsert({
+  const aiCategory = await prisma.categories.upsert({
     where: { name: "AI & Machine Learning" },
     update: {},
     create: {
+      id: "cat_ai_001",
       name: "AI & Machine Learning",
       description: "Artificial Intelligence and ML content",
+      updatedAt: new Date(),
     },
   });
 
-  const webDevCategory = await prisma.category.upsert({
+  const webDevCategory = await prisma.categories.upsert({
     where: { name: "Web Development" },
     update: {},
     create: {
+      id: "cat_webdev_001",
       name: "Web Development",
       description: "Web development tutorials and news",
+      updatedAt: new Date(),
     },
   });
 
   console.log("✅ Categories created");
 
   // Create sample feeds
-  const hackerNewsFeed = await prisma.feed.upsert({
+  const hackerNewsFeed = await prisma.feeds.upsert({
     where: { url: "https://hnrss.org/frontpage" },
     update: {},
     create: {
+      id: "feed_hn_001",
       name: "Hacker News - Front Page",
       url: "https://hnrss.org/frontpage",
       settings: {
         refreshInterval: 3600,
       },
+      updatedAt: new Date(),
     },
   });
 
-  const vercelBlogFeed = await prisma.feed.upsert({
+  const vercelBlogFeed = await prisma.feeds.upsert({
     where: { url: "https://vercel.com/blog/rss.xml" },
     update: {},
     create: {
+      id: "feed_vercel_001",
       name: "Vercel Blog",
       url: "https://vercel.com/blog/rss.xml",
       settings: {
         refreshInterval: 7200,
       },
+      updatedAt: new Date(),
     },
   });
 
-  const openAIBlogFeed = await prisma.feed.upsert({
+  const openAIBlogFeed = await prisma.feeds.upsert({
     where: { url: "https://openai.com/blog/rss.xml" },
     update: {},
     create: {
+      id: "feed_openai_001",
       name: "OpenAI Blog",
       url: "https://openai.com/blog/rss.xml",
       settings: {
         refreshInterval: 86400,
       },
+      updatedAt: new Date(),
     },
   });
 
   console.log("✅ Feeds created");
 
   // Associate feeds with categories
-  await prisma.feedCategory.upsert({
+  await prisma.feed_categories.upsert({
     where: {
       feedId_categoryId: {
         feedId: hackerNewsFeed.id,
@@ -89,7 +101,7 @@ async function main() {
     },
   });
 
-  await prisma.feedCategory.upsert({
+  await prisma.feed_categories.upsert({
     where: {
       feedId_categoryId: {
         feedId: vercelBlogFeed.id,
@@ -103,7 +115,7 @@ async function main() {
     },
   });
 
-  await prisma.feedCategory.upsert({
+  await prisma.feed_categories.upsert({
     where: {
       feedId_categoryId: {
         feedId: openAIBlogFeed.id,
@@ -122,30 +134,36 @@ async function main() {
   // Create sample articles
   const sampleArticles = [
     {
+      id: "art_001",
       feedId: hackerNewsFeed.id,
       title: "Sample Tech Article",
       content: "This is a sample technology article for testing purposes.",
       url: "https://example.com/tech-article-1",
       publishedAt: new Date("2024-01-01"),
+      updatedAt: new Date(),
     },
     {
+      id: "art_002",
       feedId: vercelBlogFeed.id,
       title: "Next.js 15 Released",
       content: "Sample content about Next.js 15 features and improvements.",
       url: "https://example.com/nextjs-15",
       publishedAt: new Date("2024-01-02"),
+      updatedAt: new Date(),
     },
     {
+      id: "art_003",
       feedId: openAIBlogFeed.id,
       title: "Advances in AI Research",
       content: "Sample content about recent advances in artificial intelligence.",
       url: "https://example.com/ai-research",
       publishedAt: new Date("2024-01-03"),
+      updatedAt: new Date(),
     },
   ];
 
   for (const article of sampleArticles) {
-    await prisma.article.upsert({
+    await prisma.articles.upsert({
       where: { url: article.url },
       update: {},
       create: article,
@@ -159,19 +177,22 @@ async function main() {
     where: { email: "test@neureed.com" },
     update: {},
     create: {
+      id: "user_test_001",
       email: "test@neureed.com",
       name: "Test User",
       emailVerified: new Date(),
+      updatedAt: new Date(),
     },
   });
 
   console.log("✅ Test user created");
 
   // Create user preferences
-  await prisma.userPreferences.upsert({
+  await prisma.user_preferences.upsert({
     where: { userId: testUser.id },
     update: {},
     create: {
+      id: "pref_test_001",
       userId: testUser.id,
       theme: "system",
       fontSize: "medium",
@@ -180,13 +201,14 @@ async function main() {
       showReadArticles: true,
       autoMarkAsRead: false,
       showRelatedExcerpts: false,
+      updatedAt: new Date(),
     },
   });
 
   console.log("✅ User preferences created");
 
   // Subscribe test user to feeds
-  await prisma.userFeed.upsert({
+  await prisma.user_feeds.upsert({
     where: {
       userId_feedId: {
         userId: testUser.id,
@@ -195,12 +217,14 @@ async function main() {
     },
     update: {},
     create: {
+      id: "userfeed_001",
       userId: testUser.id,
       feedId: hackerNewsFeed.id,
+      updatedAt: new Date(),
     },
   });
 
-  await prisma.userFeed.upsert({
+  await prisma.user_feeds.upsert({
     where: {
       userId_feedId: {
         userId: testUser.id,
@@ -209,21 +233,24 @@ async function main() {
     },
     update: {},
     create: {
+      id: "userfeed_002",
       userId: testUser.id,
       feedId: vercelBlogFeed.id,
       customName: "Vercel Updates",
+      updatedAt: new Date(),
     },
   });
 
   console.log("✅ User feed subscriptions created");
 
   // Mark some articles as read for the test user
-  const articles = await prisma.article.findMany({
+  const articles = await prisma.articles.findMany({
     take: 2,
   });
 
-  for (const article of articles) {
-    await prisma.readArticle.upsert({
+  for (let i = 0; i < articles.length; i++) {
+    const article = articles[i];
+    await prisma.read_articles.upsert({
       where: {
         userId_articleId: {
           userId: testUser.id,
@@ -232,6 +259,7 @@ async function main() {
       },
       update: {},
       create: {
+        id: `read_art_${i + 1}`,
         userId: testUser.id,
         articleId: article.id,
       },
@@ -241,13 +269,15 @@ async function main() {
   console.log("✅ Read articles created");
 
   // Create admin settings
-  await prisma.adminSettings.upsert({
+  await prisma.admin_settings.upsert({
     where: { key: "embedding_auto_generate" },
     update: {},
     create: {
+      id: "admin_setting_001",
       key: "embedding_auto_generate",
       value: false,
       description: "Automatically generate embeddings when importing feed articles",
+      updatedAt: new Date(),
     },
   });
 

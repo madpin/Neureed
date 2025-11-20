@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Feed } from "@prisma/client";
+import type { feeds } from "@prisma/client";
 import { FeedSettingsPanel } from "./FeedSettingsPanel";
 
-interface FeedWithStats extends Feed {
+interface FeedWithStats extends feeds {
   articleCount?: number;
   unreadCount?: number;
 }
@@ -49,7 +49,7 @@ export function FeedList({
     }
   };
 
-  const hasExtractionSettings = (feed: Feed) => {
+  const hasExtractionSettings = (feed: feeds) => {
     if (!feed.settings || typeof feed.settings !== "object") return false;
     const settings = feed.settings as any;
     return !!settings.extraction;

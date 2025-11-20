@@ -1,11 +1,11 @@
-import type { User, UserPreferences, UserFeed, Feed, ReadArticle } from "@prisma/client";
+import type { User, user_preferences, user_feeds, feeds, read_articles } from "@prisma/client";
 
 export type UserWithPreferences = User & {
-  preferences: UserPreferences | null;
+  user_preferences: user_preferences | null;
 };
 
-export type UserFeedSubscription = UserFeed & {
-  feed: Feed;
+export type UserFeedSubscription = user_feeds & {
+  feeds: feeds;
 };
 
 export type ReadArticleStatus = {
@@ -14,8 +14,8 @@ export type ReadArticleStatus = {
   readAt?: Date;
 };
 
-export type FeedWithSubscription = Feed & {
+export type FeedWithSubscription = feeds & {
   isSubscribed: boolean;
-  subscription?: UserFeed;
+  subscription?: user_feeds;
 };
 

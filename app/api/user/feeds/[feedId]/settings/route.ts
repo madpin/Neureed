@@ -26,7 +26,7 @@ export const GET = createHandler(
     const { feedId } = params;
 
     // Check if user is subscribed to this feed
-    const userFeed = await prisma.userFeed.findUnique({
+    const userFeed = await prisma.user_feeds.findUnique({
       where: {
         userId_feedId: {
           userId: session!.user!.id,
@@ -79,7 +79,7 @@ export const PUT = createHandler(
     }
 
     // Check if user is subscribed to this feed
-    const userFeed = await prisma.userFeed.findUnique({
+    const userFeed = await prisma.user_feeds.findUnique({
       where: {
         userId_feedId: {
           userId: session!.user!.id,
@@ -117,7 +117,7 @@ export const PUT = createHandler(
     });
 
     // Update user feed settings
-    const updatedUserFeed = await prisma.userFeed.update({
+    const updatedUserFeed = await prisma.user_feeds.update({
       where: {
         userId_feedId: {
           userId: session!.user!.id,

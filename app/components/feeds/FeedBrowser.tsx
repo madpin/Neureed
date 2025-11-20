@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import type { Feed } from "@prisma/client";
+import type { feeds } from "@prisma/client";
 
-interface FeedWithSubscription extends Feed {
+interface FeedWithSubscription extends feeds {
   isSubscribed: boolean;
 }
 

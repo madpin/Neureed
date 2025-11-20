@@ -1,16 +1,18 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import type { Feed, Category } from "@prisma/client";
+import type { feeds, categories } from "@prisma/client";
 
-interface FeedWithCategories extends Feed {
+type Category = categories;
+
+interface FeedWithCategories extends feeds {
   feedCategories?: Array<{
-    category: Category;
+    category: categories;
   }>;
 }
 
 interface UserFeedSubscription {
-  feed: FeedWithCategories;
+  feeds: FeedWithCategories;
 }
 
 interface OpmlExportModalProps {
@@ -21,7 +23,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [subscriptions, setSubscriptions] = useState<UserFeedSubscription[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<categories[]>([]);
   const [exportMode, setExportMode] = useState<"all" | "categories" | "feeds">("all");
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<string>>(new Set());
   const [selectedFeedIds, setSelectedFeedIds] = useState<Set<string>>(new Set());
@@ -63,8 +65,8 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
       // Extract unique categories from feeds
       const uniqueCategories = new Map<string, Category>();
       for (const subscription of feedsData.subscriptions || []) {
-        if (subscription.feed?.feedCategories) {
-          for (const fc of subscription.feed.feedCategories) {
+        if (subscription.feeds?.feedCategories) {
+          for (const fc of subscription.feeds.feedCategories) {
             if (fc.category && !uniqueCategories.has(fc.category.id)) {
               uniqueCategories.set(fc.category.id, fc.category);
             }
@@ -150,7 +152,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
   };
 
   const selectAllFeeds = () => {
-    setSelectedFeedIds(new Set(subscriptions.map((s) => s.feed.id)));
+    setSelectedFeedIds(new Set(subscriptions.map((s) => s.feeds.id)));
   };
 
   const deselectAllFeeds = () => {
@@ -161,7 +163,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
     if (exportMode === "all") return subscriptions.length;
     if (exportMode === "categories") {
       return subscriptions.filter((s) =>
-        s.feed?.feedCategories?.some((fc) =>
+        s.feeds?.feedCategories?.some((fc) =>
           selectedCategoryIds.has(fc.category.id)
         )
       ).length;
@@ -317,15 +319,15 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
                   </div>
                   <div className="max-h-64 overflow-y-auto space-y-2 rounded-lg border border-border p-3 border-border">
                     {subscriptions.map((subscription) => (
-                      <label key={subscription.feed.id} className="flex items-center gap-3 cursor-pointer">
+                      <label key={subscription.feeds.id} className="flex items-center gap-3 cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={selectedFeedIds.has(subscription.feed.id)}
-                          onChange={() => toggleFeed(subscription.feed.id)}
+                          checked={selectedFeedIds.has(subscription.feeds.id)}
+                          onChange={() => toggleFeed(subscription.feeds.id)}
                           className="h-4 w-4 rounded text-blue-600"
                         />
                         <span className="text-sm text-foreground/70">
-                          {subscription.feed.name}
+                          {subscription.feeds.name}
                         </span>
                       </label>
                     ))}

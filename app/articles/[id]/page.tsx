@@ -8,9 +8,9 @@ import { RelatedArticles } from "@/app/components/articles/RelatedArticles";
 import { LoadingSpinner } from "@/app/components/layout/LoadingSpinner";
 import { processArticleContent, estimateReadingTime } from "@/lib/content-processor";
 import { formatLocalizedDateTime, toISOString } from "@/lib/date-utils";
-import type { Article, Feed } from "@prisma/client";
+import type { articles, feeds } from "@prisma/client";
 
-type ArticleWithFeed = Article & { feed: Feed };
+type ArticleWithFeed = articles & { feeds: feeds };
 
 /**
  * Standalone article page - displays article in full page view
@@ -111,16 +111,16 @@ export default function ArticlePage() {
 
       {/* Feed and Date */}
       <div className="mb-4 flex items-center gap-2 text-sm text-foreground/60">
-        {article.feed && (
+        {article.feeds && (
           <>
-            {article.feed.imageUrl && (
+            {article.feeds.imageUrl && (
               <img
-                src={article.feed.imageUrl}
-                alt={article.feed.name}
+                src={article.feeds.imageUrl}
+                alt={article.feeds.name}
                 className="h-5 w-5 rounded-full"
               />
             )}
-            <span className="font-medium">{article.feed.name}</span>
+            <span className="font-medium">{article.feeds.name}</span>
             {publishedDate && <span>•</span>}
           </>
         )}

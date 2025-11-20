@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { parseFeedUrl, validateFeedUrl, normalizeFeedUrl, isSafeFeedUrl } from "@/lib/feed-parser";
-import type { Feed, Prisma } from "@prisma/client";
+import type { feeds, Prisma } from "@prisma/client";
 
 /**
  * Input types for feed operations
@@ -29,7 +29,7 @@ export interface PaginationOptions {
   limit?: number;
 }
 
-export interface FeedWithStats extends Feed {
+export interface FeedWithStats extends feeds {
   articleCount: number;
   unreadCount?: number;
 }
@@ -37,7 +37,7 @@ export interface FeedWithStats extends Feed {
 /**
  * Create a new feed
  */
-export async function createFeed(data: CreateFeedInput): Promise<Feed> {
+export async function createFeed(data: CreateFeedInput): Promise<feeds> {
   // Normalize and validate URL
   const normalizedUrl = normalizeFeedUrl(data.url);
   
@@ -46,7 +46,7 @@ export async function createFeed(data: CreateFeedInput): Promise<Feed> {
   }
 
   // Check if feed already exists
-  const existing = await prisma.feed.findUnique({
+  const existing = await prisma.feeds.findUnique({
     where: { url: normalizedUrl },
   });
 
@@ -55,15 +55,17 @@ export async function createFeed(data: CreateFeedInput): Promise<Feed> {
   }
 
   // Create feed
-  const feed = await prisma.feed.create({
+  const feed = await prisma.feeds.create({
     data: {
+      id: `feed_${Date.now()}_${Math.random().toString(36).substring(7)}`,
       name: data.name,
       url: normalizedUrl,
       description: data.description,
       siteUrl: data.siteUrl,
       imageUrl: data.imageUrl,
       fetchInterval: data.fetchInterval || 60,
-      feedCategories: data.categoryIds
+      updatedAt: new Date(),
+      feed_categories: data.categoryIds
         ? {
             create: data.categoryIds.map((categoryId) => ({
               categoryId,
@@ -72,9 +74,9 @@ export async function createFeed(data: CreateFeedInput): Promise<Feed> {
         : undefined,
     },
     include: {
-      feedCategories: {
+      feed_categories: {
         include: {
-          category: true,
+          categories: true,
         },
       },
     },
@@ -91,7 +93,7 @@ export async function validateAndCreateFeed(
   url: string,
   name?: string,
   categoryIds?: string[]
-): Promise<Feed> {
+): Promise<feeds> {
   // Normalize URL
   const normalizedUrl = normalizeFeedUrl(url);
 
@@ -129,13 +131,13 @@ export async function validateAndCreateFeed(
 /**
  * Get a single feed by ID
  */
-export async function getFeed(id: string): Promise<Feed | null> {
-  return prisma.feed.findUnique({
+export async function getFeed(id: string): Promise<feeds | null> {
+  return prisma.feeds.findUnique({
     where: { id },
     include: {
-      feedCategories: {
+      feed_categories: {
         include: {
-          category: true,
+          categories: true,
         },
       },
     },
@@ -145,9 +147,9 @@ export async function getFeed(id: string): Promise<Feed | null> {
 /**
  * Get a feed by URL
  */
-export async function getFeedByUrl(url: string): Promise<Feed | null> {
+export async function getFeedByUrl(url: string): Promise<feeds | null> {
   const normalizedUrl = normalizeFeedUrl(url);
-  return prisma.feed.findUnique({
+  return prisma.feeds.findUnique({
     where: { url: normalizedUrl },
   });
 }
@@ -163,14 +165,14 @@ export async function getAllFeeds(
   const skip = (page - 1) * limit;
 
   const [feeds, total] = await Promise.all([
-    prisma.feed.findMany({
+    prisma.feeds.findMany({
       skip,
       take: limit,
       orderBy: { createdAt: "desc" },
       include: {
-        feedCategories: {
+        feed_categories: {
           include: {
-            category: true,
+            categories: true,
           },
         },
         _count: {
@@ -180,7 +182,7 @@ export async function getAllFeeds(
         },
       },
     }),
-    prisma.feed.count(),
+    prisma.feeds.count(),
   ]);
 
   const feedsWithStats: FeedWithStats[] = feeds.map((feed) => ({
@@ -195,19 +197,19 @@ export async function getAllFeeds(
 /**
  * Get feeds by category
  */
-export async function getFeedsByCategory(categoryId: string): Promise<Feed[]> {
-  return prisma.feed.findMany({
+export async function getFeedsByCategory(categoryId: string): Promise<feeds[]> {
+  return prisma.feeds.findMany({
     where: {
-      feedCategories: {
+      feed_categories: {
         some: {
           categoryId,
         },
       },
     },
     include: {
-      feedCategories: {
+      feed_categories: {
         include: {
-          category: true,
+          categories: true,
         },
       },
     },
@@ -218,8 +220,8 @@ export async function getFeedsByCategory(categoryId: string): Promise<Feed[]> {
 /**
  * Search feeds by name or description
  */
-export async function searchFeeds(query: string): Promise<Feed[]> {
-  return prisma.feed.findMany({
+export async function searchFeeds(query: string): Promise<feeds[]> {
+  return prisma.feeds.findMany({
     where: {
       OR: [
         { name: { contains: query, mode: "insensitive" } },
@@ -228,9 +230,9 @@ export async function searchFeeds(query: string): Promise<Feed[]> {
       ],
     },
     include: {
-      feedCategories: {
+      feed_categories: {
         include: {
-          category: true,
+          categories: true,
         },
       },
     },
@@ -244,8 +246,8 @@ export async function searchFeeds(query: string): Promise<Feed[]> {
 export async function updateFeed(
   id: string,
   data: UpdateFeedInput
-): Promise<Feed> {
-  return prisma.feed.update({
+): Promise<feeds> {
+  return prisma.feeds.update({
     where: { id },
     data: {
       name: data.name,
@@ -256,9 +258,9 @@ export async function updateFeed(
       settings: data.settings as any,
     },
     include: {
-      feedCategories: {
+      feed_categories: {
         include: {
-          category: true,
+          categories: true,
         },
       },
     },
@@ -276,8 +278,8 @@ export async function updateFeedMetadata(
     link?: string;
     imageUrl?: string;
   }
-): Promise<Feed> {
-  return prisma.feed.update({
+): Promise<feeds> {
+  return prisma.feeds.update({
     where: { id },
     data: {
       name: metadata.title,
@@ -295,7 +297,7 @@ export async function recordFeedError(
   id: string,
   error: string
 ): Promise<void> {
-  await prisma.feed.update({
+  await prisma.feeds.update({
     where: { id },
     data: {
       errorCount: { increment: 1 },
@@ -308,7 +310,7 @@ export async function recordFeedError(
  * Clear feed error
  */
 export async function clearFeedError(id: string): Promise<void> {
-  await prisma.feed.update({
+  await prisma.feeds.update({
     where: { id },
     data: {
       errorCount: 0,
@@ -325,7 +327,7 @@ export async function updateFeedLastFetched(
   etag?: string,
   lastModified?: string
 ): Promise<void> {
-  await prisma.feed.update({
+  await prisma.feeds.update({
     where: { id },
     data: {
       lastFetched: new Date(),
@@ -339,7 +341,7 @@ export async function updateFeedLastFetched(
  * Delete a feed
  */
 export async function deleteFeed(id: string): Promise<void> {
-  await prisma.feed.delete({
+  await prisma.feeds.delete({
     where: { id },
   });
 }
@@ -349,7 +351,7 @@ export async function deleteFeed(id: string): Promise<void> {
  * (Cascade delete is handled by Prisma schema)
  */
 export async function deleteFeedWithArticles(id: string): Promise<void> {
-  await prisma.feed.delete({
+  await prisma.feeds.delete({
     where: { id },
   });
 }
@@ -357,10 +359,10 @@ export async function deleteFeedWithArticles(id: string): Promise<void> {
 /**
  * Get feeds that need to be refreshed (system-wide)
  */
-export async function getFeedsToRefresh(): Promise<Feed[]> {
+export async function getFeedsToRefresh(): Promise<feeds[]> {
   const now = new Date();
 
-  return prisma.feed.findMany({
+  return prisma.feeds.findMany({
     where: {
       OR: [
         // Never fetched
@@ -389,7 +391,7 @@ export async function getFeedsToRefresh(): Promise<Feed[]> {
  */
 export async function getUserFeedsToRefresh(userId: string): Promise<
   Array<{
-    feed: Feed;
+    feeds: feeds;
     userFeedId: string;
     refreshInterval: number;
   }>
@@ -397,20 +399,20 @@ export async function getUserFeedsToRefresh(userId: string): Promise<
   const now = new Date();
 
   // Get all user's subscribed feeds
-  const userFeeds = await prisma.userFeed.findMany({
+  const userFeeds = await prisma.user_feeds.findMany({
     where: { userId },
     include: {
-      feed: true,
-      userFeedCategories: {
+      feeds: true,
+      user_feed_categories: {
         include: {
-          userCategory: true,
+          user_categories: true,
         },
       },
     },
   });
 
   // Get user preferences for defaults
-  const userPreferences = await prisma.userPreferences.findUnique({
+  const userPreferences = await prisma.user_preferences.findUnique({
     where: { userId },
   });
 
@@ -418,14 +420,14 @@ export async function getUserFeedsToRefresh(userId: string): Promise<
     userPreferences?.defaultRefreshInterval || 60;
 
   const feedsToRefresh: Array<{
-    feed: Feed;
+    feeds: feeds;
     userFeedId: string;
     refreshInterval: number;
   }> = [];
 
   for (const userFeed of userFeeds) {
     // Skip feeds with too many errors
-    if (userFeed.feed.errorCount >= 10) {
+    if (userFeed.feeds.errorCount >= 10) {
       continue;
     }
 
@@ -433,8 +435,8 @@ export async function getUserFeedsToRefresh(userId: string): Promise<
     let refreshInterval = defaultRefreshInterval;
 
     // Check category settings (if feed is in a category)
-    if (userFeed.userFeedCategories.length > 0) {
-      const categorySettings = userFeed.userFeedCategories[0].userCategory
+    if (userFeed.user_feed_categories.length > 0) {
+      const categorySettings = userFeed.user_feed_categories[0].user_categories
         .settings as any;
       if (
         categorySettings?.refreshInterval !== undefined &&
@@ -454,7 +456,7 @@ export async function getUserFeedsToRefresh(userId: string): Promise<
     }
 
     // Check if feed needs refresh
-    const lastFetched = userFeed.feed.lastFetched;
+    const lastFetched = userFeed.feeds.lastFetched;
     const refreshIntervalMs = refreshInterval * 60 * 1000;
 
     if (
@@ -462,7 +464,7 @@ export async function getUserFeedsToRefresh(userId: string): Promise<
       now.getTime() - lastFetched.getTime() >= refreshIntervalMs
     ) {
       feedsToRefresh.push({
-        feed: userFeed.feed,
+        feeds: userFeed.feeds,
         userFeedId: userFeed.id,
         refreshInterval,
       });
@@ -486,22 +488,22 @@ export async function getFeedStats(feedId: string): Promise<{
 
   const [totalArticles, articlesThisWeek, articlesThisMonth, lastArticle] =
     await Promise.all([
-      prisma.article.count({
+      prisma.articles.count({
         where: { feedId },
       }),
-      prisma.article.count({
+      prisma.articles.count({
         where: {
           feedId,
           createdAt: { gte: oneWeekAgo },
         },
       }),
-      prisma.article.count({
+      prisma.articles.count({
         where: {
           feedId,
           createdAt: { gte: oneMonthAgo },
         },
       }),
-      prisma.article.findFirst({
+      prisma.articles.findFirst({
         where: { feedId },
         orderBy: { publishedAt: "desc" },
         select: { publishedAt: true },
@@ -524,13 +526,13 @@ export async function updateFeedCategories(
   categoryIds: string[]
 ): Promise<void> {
   // Delete existing categories
-  await prisma.feedCategory.deleteMany({
+  await prisma.feed_categories.deleteMany({
     where: { feedId },
   });
 
   // Create new categories
   if (categoryIds.length > 0) {
-    await prisma.feedCategory.createMany({
+    await prisma.feed_categories.createMany({
       data: categoryIds.map((categoryId) => ({
         feedId,
         categoryId,

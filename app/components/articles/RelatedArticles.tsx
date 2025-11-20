@@ -12,7 +12,7 @@ interface RelatedArticle {
   imageUrl?: string;
   publishedAt?: string;
   similarity: number;
-  feed: {
+  feeds: {
     name: string;
   };
 }
@@ -218,7 +218,7 @@ export function RelatedArticles({
                       </p>
                     )}
                     <div className="mt-2 flex items-center gap-2 text-xs text-foreground/60 dark:text-foreground/60">
-                      <span>{article.feed.name}</span>
+                      <span>{article.feeds.name}</span>
                       {article.publishedAt && (
                         <>
                           <span>•</span>
@@ -240,7 +240,7 @@ export function RelatedArticles({
                         •
                       </span>
                       <span className="flex-shrink-0 text-xs text-foreground/60 dark:text-foreground/60">
-                        {article.feed.name}
+                        {article.feeds.name}
                       </span>
                     </div>
                     <span className="flex-shrink-0 rounded bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">

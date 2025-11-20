@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import type { Feed } from "@prisma/client";
+import type { feeds } from "@prisma/client";
 import { FeedManagementModal } from "./FeedManagementModal";
 import { Tooltip } from "../layout/Tooltip";
 import { IconPicker } from "./IconPicker";

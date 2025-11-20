@@ -26,7 +26,7 @@ export async function extractContent(
     // Get extraction settings if feedId provided
     let extractionSettings: ExtractionSettings | null = null;
     if (feedId) {
-      const feed = await prisma.feed.findUnique({
+      const feed = await prisma.feeds.findUnique({
         where: { id: feedId },
         select: { settings: true },
       });
@@ -205,7 +205,7 @@ async function updateFeedTestStatus(
   error?: string
 ): Promise<void> {
   try {
-    const feed = await prisma.feed.findUnique({
+    const feed = await prisma.feeds.findUnique({
       where: { id: feedId },
       select: { settings: true },
     });
@@ -224,7 +224,7 @@ async function updateFeedTestStatus(
     settings.extraction.lastTestStatus = success ? "success" : "failed";
     settings.extraction.lastTestError = error || null;
 
-    await prisma.feed.update({
+    await prisma.feeds.update({
       where: { id: feedId },
       data: { settings },
     });

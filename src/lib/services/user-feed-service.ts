@@ -1,5 +1,5 @@
 import { prisma } from "../db";
-import type { UserFeed, Feed } from "@prisma/client";
+import type { user_feeds, feeds } from "@prisma/client";
 import type { UserFeedSubscription, FeedWithSubscription } from "@/types/user";
 import { assignFeedToCategory } from "./user-category-service";
 
@@ -7,9 +7,9 @@ import { assignFeedToCategory } from "./user-category-service";
  * Get all feeds subscribed by a user
  */
 export async function getUserFeeds(userId: string): Promise<UserFeedSubscription[]> {
-  return await prisma.userFeed.findMany({
+  return await prisma.user_feeds.findMany({
     where: { userId },
-    include: { feed: true },
+    include: { feeds: true },
     orderBy: { subscribedAt: "desc" },
   });
 }
@@ -23,12 +23,14 @@ export async function subscribeFeed(
   feedId: string,
   customName?: string,
   categoryId?: string
-): Promise<UserFeed> {
-  const userFeed = await prisma.userFeed.create({
+): Promise<user_feeds> {
+  const userFeed = await prisma.user_feeds.create({
     data: {
+      id: `uf_${userId}_${feedId}_${Date.now()}`,
       userId,
       feedId,
       customName,
+      updatedAt: new Date(),
     },
   });
 
@@ -44,7 +46,7 @@ export async function subscribeFeed(
  * Unsubscribe a user from a feed
  */
 export async function unsubscribeFeed(userId: string, feedId: string): Promise<void> {
-  await prisma.userFeed.delete({
+  await prisma.user_feeds.delete({
     where: {
       userId_feedId: {
         userId,
@@ -64,8 +66,8 @@ export async function updateFeedSettings(
     customName?: string;
     settings?: Record<string, unknown>;
   }
-): Promise<UserFeed> {
-  return await prisma.userFeed.update({
+): Promise<user_feeds> {
+  return await prisma.user_feeds.update({
     where: {
       userId_feedId: {
         userId,
@@ -83,7 +85,7 @@ export async function updateFeedSettings(
  * Check if a user is subscribed to a feed
  */
 export async function isUserSubscribed(userId: string, feedId: string): Promise<boolean> {
-  const subscription = await prisma.userFeed.findUnique({
+  const subscription = await prisma.user_feeds.findUnique({
     where: {
       userId_feedId: {
         userId,
@@ -100,9 +102,9 @@ export async function isUserSubscribed(userId: string, feedId: string): Promise<
 export async function getAllFeedsWithSubscriptionStatus(
   userId: string
 ): Promise<FeedWithSubscription[]> {
-  const feeds = await prisma.feed.findMany({
+  const feeds = await prisma.feeds.findMany({
     include: {
-      userFeeds: {
+      user_feeds: {
         where: { userId },
       },
     },
@@ -111,9 +113,9 @@ export async function getAllFeedsWithSubscriptionStatus(
 
   return feeds.map((feed) => ({
     ...feed,
-    isSubscribed: feed.userFeeds.length > 0,
-    subscription: feed.userFeeds[0] || undefined,
-    userFeeds: undefined as never, // Remove from type
+    isSubscribed: feed.user_feeds.length > 0,
+    subscription: feed.user_feeds[0] || undefined,
+    user_feeds: undefined as never, // Remove from type
   }));
 }
 
@@ -121,7 +123,7 @@ export async function getAllFeedsWithSubscriptionStatus(
  * Get feed IDs that a user is subscribed to
  */
 export async function getUserFeedIds(userId: string): Promise<string[]> {
-  const subscriptions = await prisma.userFeed.findMany({
+  const subscriptions = await prisma.user_feeds.findMany({
     where: { userId },
     select: { feedId: true },
   });

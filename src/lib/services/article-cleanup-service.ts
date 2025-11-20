@@ -49,7 +49,7 @@ export async function cleanupOldArticles(
   cutoffDate.setDate(cutoffDate.getDate() - maxAge);
 
   // Delete old articles
-  const oldArticlesWhere: Prisma.ArticleWhereInput = {
+  const oldArticlesWhere: Prisma.articlesWhereInput = {
     createdAt: {
       lt: cutoffDate,
     },
@@ -57,12 +57,12 @@ export async function cleanupOldArticles(
 
   if (dryRun) {
     // Just count
-    deletedByAge = await prisma.article.count({
+    deletedByAge = await prisma.articles.count({
       where: oldArticlesWhere,
     });
   } else {
     // Actually delete
-    const result = await prisma.article.deleteMany({
+    const result = await prisma.articles.deleteMany({
       where: oldArticlesWhere,
     });
     deletedByAge = result.count;
@@ -71,12 +71,12 @@ export async function cleanupOldArticles(
   totalDeleted += deletedByAge;
 
   // Clean up by count per feed
-  const feeds = await prisma.feed.findMany({
+  const feeds = await prisma.feeds.findMany({
     select: { id: true },
   });
 
   for (const feed of feeds) {
-    const articleCount = await prisma.article.count({
+    const articleCount = await prisma.articles.count({
       where: { feedId: feed.id },
     });
 
@@ -84,7 +84,7 @@ export async function cleanupOldArticles(
       const toDelete = articleCount - maxArticlesPerFeed;
 
       // Get oldest articles to delete
-      const oldestArticles = await prisma.article.findMany({
+      const oldestArticles = await prisma.articles.findMany({
         where: { feedId: feed.id },
         orderBy: { createdAt: "asc" },
         take: toDelete,
@@ -92,7 +92,7 @@ export async function cleanupOldArticles(
       });
 
       if (!dryRun) {
-        await prisma.article.deleteMany({
+        await prisma.articles.deleteMany({
           where: {
             id: {
               in: oldestArticles.map((a) => a.id),
@@ -124,7 +124,7 @@ export async function deleteArticlesOlderThan(days: number): Promise<number> {
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - days);
 
-  const result = await prisma.article.deleteMany({
+  const result = await prisma.articles.deleteMany({
     where: {
       createdAt: {
         lt: cutoffDate,
@@ -143,7 +143,7 @@ export async function keepOnlyRecentArticles(
   keepCount: number
 ): Promise<number> {
   // Get total count
-  const totalCount = await prisma.article.count({
+  const totalCount = await prisma.articles.count({
     where: { feedId },
   });
 
@@ -152,7 +152,7 @@ export async function keepOnlyRecentArticles(
   }
 
   // Get articles to keep (most recent)
-  const articlesToKeep = await prisma.article.findMany({
+  const articlesToKeep = await prisma.articles.findMany({
     where: { feedId },
     orderBy: { createdAt: "desc" },
     take: keepCount,
@@ -162,7 +162,7 @@ export async function keepOnlyRecentArticles(
   const keepIds = articlesToKeep.map((a) => a.id);
 
   // Delete articles not in keep list
-  const result = await prisma.article.deleteMany({
+  const result = await prisma.articles.deleteMany({
     where: {
       feedId,
       id: {
@@ -218,7 +218,7 @@ export async function cleanupFeedArticles(
   cutoffDate.setDate(cutoffDate.getDate() - maxAge);
 
   // Delete old articles by age
-  const oldArticlesResult = await prisma.article.deleteMany({
+  const oldArticlesResult = await prisma.articles.deleteMany({
     where: {
       feedId,
       createdAt: {
@@ -229,7 +229,7 @@ export async function cleanupFeedArticles(
   deletedByAge = oldArticlesResult.count;
 
   // Clean up by count (keep only most recent N articles)
-  const articleCount = await prisma.article.count({
+  const articleCount = await prisma.articles.count({
     where: { feedId },
   });
 
@@ -237,7 +237,7 @@ export async function cleanupFeedArticles(
     const toDelete = articleCount - maxArticlesPerFeed;
 
     // Get oldest articles to delete
-    const oldestArticles = await prisma.article.findMany({
+    const oldestArticles = await prisma.articles.findMany({
       where: { feedId },
       orderBy: { createdAt: "asc" },
       take: toDelete,
@@ -245,7 +245,7 @@ export async function cleanupFeedArticles(
     });
 
     if (oldestArticles.length > 0) {
-      await prisma.article.deleteMany({
+      await prisma.articles.deleteMany({
         where: {
           id: {
             in: oldestArticles.map((a) => a.id),
@@ -290,20 +290,20 @@ export async function getCleanupStats(): Promise<{
     articlesOlderThan90Days,
     articlesOlderThan180Days,
   ] = await Promise.all([
-    prisma.article.count(),
-    prisma.article.count({
+    prisma.articles.count(),
+    prisma.articles.count({
       where: { createdAt: { lt: thirtyDaysAgo } },
     }),
-    prisma.article.count({
+    prisma.articles.count({
       where: { createdAt: { lt: ninetyDaysAgo } },
     }),
-    prisma.article.count({
+    prisma.articles.count({
       where: { createdAt: { lt: oneEightyDaysAgo } },
     }),
   ]);
 
   // Count feeds with more than 1000 articles
-  const feeds = await prisma.feed.findMany({
+  const feeds = await prisma.feeds.findMany({
     include: {
       _count: {
         select: { articles: true },

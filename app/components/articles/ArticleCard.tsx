@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import type { Article, Feed } from "@prisma/client";
+import type { articles, feeds } from "@prisma/client";
 import { FeedbackButtons } from "./FeedbackButtons";
 import { formatSmartDate, toISOString } from "@/lib/date-utils";
 
-interface ArticleWithFeed extends Article {
-  feed: Feed;
+interface ArticleWithFeed extends articles {
+  feeds: feeds;
   isRead?: boolean;
   readAt?: Date;
 }
@@ -121,15 +121,15 @@ export function ArticleCard({ article, variant = "compact", onReadStatusChange, 
         <div className="flex-1 min-w-0">
           {/* Feed Info */}
           <div className="mb-2 flex items-center gap-2 text-xs text-secondary">
-            {article.feed?.imageUrl && (
+            {article.feeds?.imageUrl && (
               <img
-                src={article.feed.imageUrl}
-                alt={article.feed.name}
+                src={article.feeds.imageUrl}
+                alt={article.feeds.name}
                 className="h-4 w-4 rounded-full"
               />
             )}
-            {article.feed && (
-              <span className="font-medium">{article.feed.name}</span>
+            {article.feeds && (
+              <span className="font-medium">{article.feeds.name}</span>
             )}
             <span>•</span>
             <time dateTime={toISOString(article.publishedAt, article.createdAt)}>

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { generateContentHash } from "@/lib/feed-parser";
-import type { Article } from "@prisma/client";
+import type { articles } from "@prisma/client";
 import type { ParsedArticle } from "@/lib/feed-parser";
 
 /**
@@ -9,10 +9,10 @@ import type { ParsedArticle } from "@/lib/feed-parser";
 export async function findDuplicateArticle(
   article: ParsedArticle,
   feedId: string
-): Promise<Article | null> {
+): Promise<articles | null> {
   // Strategy 1: Check by GUID (most reliable)
   if (article.guid) {
-    const byGuid = await prisma.article.findFirst({
+    const byGuid = await prisma.articles.findFirst({
       where: {
         feedId,
         guid: article.guid,
@@ -23,7 +23,7 @@ export async function findDuplicateArticle(
 
   // Strategy 2: Check by URL (secondary method)
   if (article.link) {
-    const byUrl = await prisma.article.findFirst({
+    const byUrl = await prisma.articles.findFirst({
       where: {
         url: article.link,
       },
@@ -34,7 +34,7 @@ export async function findDuplicateArticle(
   // Strategy 3: Check by content hash (for articles without GUID)
   if (!article.guid && article.content) {
     const contentHash = generateContentHash(article.content);
-    const byHash = await prisma.article.findFirst({
+    const byHash = await prisma.articles.findFirst({
       where: {
         feedId,
         contentHash,
@@ -51,7 +51,7 @@ export async function findDuplicateArticle(
  * Returns true if content has changed significantly
  */
 export async function shouldUpdateArticle(
-  existing: Article,
+  existing: articles,
   parsed: ParsedArticle
 ): Promise<boolean> {
   // Check if content hash has changed

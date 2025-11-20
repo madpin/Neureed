@@ -1,16 +1,16 @@
 import { prisma } from "@/lib/db";
-import type { Category } from "@prisma/client";
+import type { categories } from "@prisma/client";
 
 /**
  * Get all categories
  */
-export async function getAllCategories(): Promise<Category[]> {
-  return prisma.category.findMany({
+export async function getAllCategories(): Promise<categories[]> {
+  return prisma.categories.findMany({
     orderBy: { name: "asc" },
     include: {
       _count: {
         select: {
-          feedCategories: true,
+          feed_categories: true,
         },
       },
     },
@@ -20,13 +20,13 @@ export async function getAllCategories(): Promise<Category[]> {
 /**
  * Get a category by ID
  */
-export async function getCategory(id: string): Promise<Category | null> {
-  return prisma.category.findUnique({
+export async function getCategory(id: string): Promise<categories | null> {
+  return prisma.categories.findUnique({
     where: { id },
     include: {
       _count: {
         select: {
-          feedCategories: true,
+          feed_categories: true,
         },
       },
     },
@@ -36,8 +36,8 @@ export async function getCategory(id: string): Promise<Category | null> {
 /**
  * Get a category by name (case-insensitive)
  */
-export async function getCategoryByName(name: string): Promise<Category | null> {
-  return prisma.category.findFirst({
+export async function getCategoryByName(name: string): Promise<categories | null> {
+  return prisma.categories.findFirst({
     where: {
       name: {
         equals: name,
@@ -53,17 +53,19 @@ export async function getCategoryByName(name: string): Promise<Category | null> 
 export async function createCategory(
   name: string,
   description?: string
-): Promise<Category> {
+): Promise<categories> {
   // Check if category already exists
   const existing = await getCategoryByName(name);
   if (existing) {
     throw new Error(`Category "${name}" already exists`);
   }
 
-  return prisma.category.create({
+  return prisma.categories.create({
     data: {
+      id: `cat_${Date.now()}_${Math.random().toString(36).substring(7)}`,
       name: name.trim(),
       description: description?.trim(),
+      updatedAt: new Date(),
     },
   });
 }
@@ -72,7 +74,7 @@ export async function createCategory(
  * Find existing category by name or create a new one
  * This is useful for OPML import where we want to reuse existing categories
  */
-export async function findOrCreateCategory(name: string): Promise<Category> {
+export async function findOrCreateCategory(name: string): Promise<categories> {
   const existing = await getCategoryByName(name);
   if (existing) {
     return existing;
@@ -90,7 +92,7 @@ export async function updateCategory(
     name?: string;
     description?: string;
   }
-): Promise<Category> {
+): Promise<categories> {
   // If updating name, check for duplicates
   if (data.name) {
     const existing = await getCategoryByName(data.name);
@@ -99,7 +101,7 @@ export async function updateCategory(
     }
   }
 
-  return prisma.category.update({
+  return prisma.categories.update({
     where: { id },
     data: {
       name: data.name?.trim(),
@@ -114,7 +116,7 @@ export async function updateCategory(
  */
 export async function deleteCategory(id: string): Promise<void> {
   // Check if any feeds are using this category
-  const feedCount = await prisma.feedCategory.count({
+  const feedCount = await prisma.feed_categories.count({
     where: { categoryId: id },
   });
 
@@ -124,7 +126,7 @@ export async function deleteCategory(id: string): Promise<void> {
     );
   }
 
-  await prisma.category.delete({
+  await prisma.categories.delete({
     where: { id },
   });
 }
@@ -133,14 +135,14 @@ export async function deleteCategory(id: string): Promise<void> {
  * Get categories with their feed counts
  */
 export async function getCategoriesWithStats(): Promise<
-  Array<Category & { feedCount: number }>
+  Array<categories & { feedCount: number }>
 > {
-  const categories = await prisma.category.findMany({
+  const categories = await prisma.categories.findMany({
     orderBy: { name: "asc" },
     include: {
       _count: {
         select: {
-          feedCategories: true,
+          feed_categories: true,
         },
       },
     },
@@ -148,7 +150,7 @@ export async function getCategoriesWithStats(): Promise<
 
   return categories.map((cat) => ({
     ...cat,
-    feedCount: cat._count.feedCategories,
+    feedCount: cat._count.feed_categories,
     _count: undefined as never,
   }));
 }
@@ -157,12 +159,12 @@ export async function getCategoriesWithStats(): Promise<
  * Get feeds in a category
  */
 export async function getCategoryFeeds(categoryId: string) {
-  const category = await prisma.category.findUnique({
+  const category = await prisma.categories.findUnique({
     where: { id: categoryId },
     include: {
-      feedCategories: {
+      feed_categories: {
         include: {
-          feed: true,
+          feeds: true,
         },
       },
     },
@@ -174,8 +176,8 @@ export async function getCategoryFeeds(categoryId: string) {
 
   return {
     ...category,
-    feeds: category.feedCategories.map((fc) => fc.feed),
-    feedCategories: undefined as never,
+    feeds: category.feed_categories.map((fc) => fc.feeds),
+    feed_categories: undefined as never,
   };
 }
 

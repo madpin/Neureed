@@ -20,7 +20,7 @@ export const POST = createHandler(
     const testConfig = body;
 
     // Get feed
-    const feed = await prisma.feed.findUnique({
+    const feed = await prisma.feeds.findUnique({
       where: { id },
       select: { url: true, settings: true, articles: { take: 1, orderBy: { publishedAt: 'desc' } } },
     });

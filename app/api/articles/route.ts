@@ -25,7 +25,7 @@ export const GET = createHandler(
     let finalSortDirection: "asc" | "desc" = (sortDirection as any) || "desc";
     
     if (user?.id && !sortBy) {
-      const userPrefs = await prisma.userPreferences.findUnique({
+      const userPrefs = await prisma.user_preferences.findUnique({
         where: { userId: user.id },
         select: { articleSortOrder: true, articleSortDirection: true },
       });
@@ -45,18 +45,18 @@ export const GET = createHandler(
       
       // If categoryId is provided, filter to only feeds in that category
       if (categoryId) {
-        const categoryFeeds = await prisma.userFeedCategory.findMany({
+        const categoryFeeds = await prisma.user_feed_categories.findMany({
           where: {
             userCategoryId: categoryId,
-            userFeed: {
+            user_feeds: {
               userId: user.id,
             },
           },
           include: {
-            userFeed: true,
+            user_feeds: true,
           },
         });
-        const categoryFeedIds = categoryFeeds.map((cf: { userFeed: { feedId: string } }) => cf.userFeed.feedId);
+        const categoryFeedIds = categoryFeeds.map((cf: { user_feeds: { feedId: string } }) => cf.user_feeds.feedId);
         subscribedFeedIds = subscribedFeedIds.filter((id: string) => categoryFeedIds.includes(id));
       }
       
@@ -76,8 +76,8 @@ export const GET = createHandler(
       // Query articles from subscribed feeds
       const skip = (page - 1) * limit;
       
-      const where = feedId
-        ? { feedId, feed: { id: { in: subscribedFeedIds } } }
+      const       where = feedId
+        ? { feedId, feeds: { id: { in: subscribedFeedIds } } }
         : { feedId: { in: subscribedFeedIds } };
 
       // Build orderBy clause based on sort option
@@ -93,7 +93,7 @@ export const GET = createHandler(
         orderBy = { updatedAt: finalSortDirection };
       } else if (finalSortBy === "feed") {
         orderBy = [
-          { feed: { name: finalSortDirection } },
+          { feeds: { name: finalSortDirection } },
           { publishedAt: "desc" }
         ];
       } else {
@@ -102,14 +102,14 @@ export const GET = createHandler(
       }
 
       [articles, total] = await Promise.all([
-        prisma.article.findMany({
+        prisma.articles.findMany({
           where,
-          include: { feed: true },
+          include: { feeds: true },
           orderBy,
           skip,
           take: limit,
         }),
-        prisma.article.count({ where }),
+        prisma.articles.count({ where }),
       ]);
 
       // Add read status to articles

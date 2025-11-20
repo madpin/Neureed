@@ -319,7 +319,7 @@ export async function refreshUserFeeds(userId: string): Promise<{
 
   // Refresh feeds with user-specific settings
   const results = await refreshFeeds(
-    feedsToRefresh.map((f) => f.feed.id),
+    feedsToRefresh.map((f) => f.feeds.id),
     userId
   );
 

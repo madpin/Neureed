@@ -22,10 +22,10 @@ export async function GET(request: NextRequest) {
         emailVerified: true,
         _count: {
           select: {
-            userFeeds: true,
-            readArticles: true,
-            articleFeedback: true,
-            userPatterns: true,
+            user_feeds: true,
+            read_articles: true,
+            article_feedback: true,
+            user_patterns: true,
           },
         },
       },
@@ -37,8 +37,8 @@ export async function GET(request: NextRequest) {
     // Get additional statistics
     const stats = {
       totalUsers: users.length,
-      activeUsers: users.filter(u => u._count.readArticles > 0).length,
-      usersWithFeedback: users.filter(u => u._count.articleFeedback > 0).length,
+      activeUsers: users.filter(u => u._count.read_articles > 0).length,
+      usersWithFeedback: users.filter(u => u._count.article_feedback > 0).length,
     };
 
     return apiResponse({ users, stats });

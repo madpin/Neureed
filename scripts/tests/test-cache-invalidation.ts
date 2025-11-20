@@ -29,7 +29,7 @@ async function testUserPatternInvalidation() {
     return false;
   }
 
-  const article = await prisma.article.findFirst({
+  const article = await prisma.articles.findFirst({
     where: {
       content: { not: "" },
     },
@@ -85,7 +85,7 @@ async function testArticleUpdateInvalidation() {
   console.log("\n=== Testing Article Update Cache Invalidation ===");
 
   // Get a test article
-  const article = await prisma.article.findFirst({
+  const article = await prisma.articles.findFirst({
     where: {
       content: { not: "" },
       summary: { not: null },
@@ -134,14 +134,14 @@ async function testArticleDeleteInvalidation() {
   console.log("\n=== Testing Article Delete Cache Invalidation ===");
 
   // Create a test article
-  const feed = await prisma.feed.findFirst();
+  const feed = await prisma.feeds.findFirst();
 
   if (!feed) {
     console.log("⚠️  No feeds found for testing");
     return false;
   }
 
-  const testArticle = await prisma.article.create({
+  const testArticle = await prisma.articles.create({
     data: {
       feedId: feed.id,
       title: "Test Article for Cache Invalidation",

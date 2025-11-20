@@ -15,15 +15,15 @@ import { SignInWithGoogleButton, SignInWithGitHubButton } from "./components/aut
 import { Tooltip } from "./components/layout/Tooltip";
 import { LoadingSpinner } from "./components/layout/LoadingSpinner";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
-import type { Feed, Article } from "@prisma/client";
+import type { feeds, articles } from "@prisma/client";
 import type { ArticleSortOrder, ArticleSortDirection } from "@/lib/validations/article-validation";
 
-interface FeedWithStats extends Feed {
+interface FeedWithStats extends feeds {
   articleCount?: number;
 }
 
-interface ArticleWithFeed extends Article {
-  feed: Feed;
+interface ArticleWithFeed extends articles {
+  feeds: feeds;
   isRead?: boolean;
   readAt?: Date;
   similarity?: number;
@@ -159,11 +159,11 @@ export default function Home() {
       const subscriptions = data.data?.subscriptions || [];
       // Merge feed data with custom name from subscription
       const feedsData = subscriptions.map((sub: any) => ({
-        ...sub.feed,
+        ...sub.feeds,
         // Override name with custom name if it exists
-        name: sub.customName || sub.feed.name,
+        name: sub.customName || sub.feeds.name,
         // Store original name for reference
-        _originalName: sub.feed.name,
+        _originalName: sub.feeds.name,
         _subscriptionId: sub.id,
       }));
       setFeeds(feedsData);
