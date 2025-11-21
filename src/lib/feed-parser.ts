@@ -196,15 +196,25 @@ function parseArticle(item: Parser.Item): ParsedArticle {
   const imageUrl = extractArticleImage(item, content);
   
   // Parse published date (Atom uses isoDate, RSS uses pubDate)
+  // Dates are parsed with their timezone offset and converted to UTC for storage
   // If no date is provided, use current time as fallback
   let publishedAt: Date | undefined;
   if (item.isoDate) {
+    // isoDate is already in ISO format, parse directly (handles timezone)
     publishedAt = new Date(item.isoDate);
   } else if (item.pubDate) {
+    // pubDate may include timezone offset (e.g., "20 Nov 2025 20:50:00 -0300")
+    // JavaScript Date constructor automatically converts to UTC
     publishedAt = new Date(item.pubDate);
   } else {
     // Fallback to current time if no date is provided by the feed
     // This ensures articles always have a timestamp for sorting
+    publishedAt = new Date();
+  }
+  
+  // Validate the parsed date - if invalid, use current time
+  if (publishedAt && isNaN(publishedAt.getTime())) {
+    console.warn(`Invalid date for article: ${item.title}. Using current time.`);
     publishedAt = new Date();
   }
 
@@ -227,8 +237,8 @@ function parseArticle(item: Parser.Item): ParsedArticle {
     content: sanitizeHtml(decodedContent),
     excerpt: decodedExcerpt ? sanitizeHtml(decodedExcerpt) : undefined,
     author: decodedAuthor || undefined,
-    // Always include publishedAt (validated or fallback to current time)
-    publishedAt: publishedAt && !isNaN(publishedAt.getTime()) ? publishedAt : new Date(),
+    // publishedAt is already validated above and guaranteed to be a valid Date
+    publishedAt,
     imageUrl,
   };
 }
@@ -431,21 +441,22 @@ export function generateContentHash(content: string): string {
 export function sanitizeHtml(html: string): string {
   if (!html) return "";
 
-  // Remove script tags and their content
-  let sanitized = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "");
+  // Remove script tags and their content (use [\s\S] to match across newlines)
+  let sanitized = html.replace(/<script\b[\s\S]*?<\/script>/gi, "");
 
   // Remove style tags and their content
-  sanitized = sanitized.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "");
+  sanitized = sanitized.replace(/<style\b[\s\S]*?<\/style>/gi, "");
 
   // Remove event handlers (onclick, onerror, etc.)
-  sanitized = sanitized.replace(/\s*on\w+\s*=\s*["'][^"']*["']/gi, "");
-  sanitized = sanitized.replace(/\s*on\w+\s*=\s*[^\s>]*/gi, "");
+  // Be more careful to only match within tag boundaries
+  sanitized = sanitized.replace(/\s+on\w+\s*=\s*["'][^"']*["']/gi, "");
+  sanitized = sanitized.replace(/\s+on\w+\s*=\s*[^\s>"']+/gi, "");
 
-  // Remove javascript: protocol
-  sanitized = sanitized.replace(/javascript:/gi, "");
+  // Remove javascript: protocol from href and src attributes
+  sanitized = sanitized.replace(/(href|src)\s*=\s*["']javascript:[^"']*["']/gi, "");
 
-  // Remove data: protocol (can be used for XSS)
-  sanitized = sanitized.replace(/data:text\/html/gi, "");
+  // Remove data: protocol with text/html (can be used for XSS)
+  sanitized = sanitized.replace(/(src)\s*=\s*["']data:text\/html[^"']*["']/gi, "");
 
   return sanitized.trim();
 }

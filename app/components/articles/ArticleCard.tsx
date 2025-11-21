@@ -284,7 +284,8 @@ export const ArticleCard = React.memo(({
       },
 
       image: () => {
-        if (!preferences.showImage || !article.imageUrl) {
+        // Check if image should be shown and if imageUrl is valid (not null, undefined, or empty string)
+        if (!preferences.showImage || !article.imageUrl?.trim()) {
           return null;
         }
 
@@ -294,6 +295,10 @@ export const ArticleCard = React.memo(({
               src={article.imageUrl}
               alt={article.title}
               className={`${densityClasses.imageSize} rounded-lg object-cover`}
+              onError={(e) => {
+                // Hide image if it fails to load
+                e.currentTarget.style.display = 'none';
+              }}
             />
           </div>
         );
@@ -384,7 +389,8 @@ export const ArticleCard = React.memo(({
   }, [article, articleLink, preferences, densityClasses, isRead, isTogglingRead, handleArticleClick, toggleReadStatus, onArticleClick]);
 
   // Determine if we need the split layout (image on left, content on right)
-  const hasImage = preferences.showImage && article.imageUrl;
+  // Check for valid imageUrl (not null, undefined, or empty/whitespace string)
+  const hasImage = preferences.showImage && !!article.imageUrl?.trim();
   const imageInOrder = preferences.sectionOrder.includes("image");
 
   // Get border styling classes

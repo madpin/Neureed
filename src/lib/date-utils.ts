@@ -4,6 +4,14 @@
  * This module provides utilities to properly handle dates across timezones,
  * ensuring that article publication dates are displayed correctly regardless
  * of the user's timezone.
+ * 
+ * How timezone handling works:
+ * 1. RSS feeds provide dates with timezone offsets (e.g., "20 Nov 2025 20:50:00 -0300")
+ * 2. JavaScript Date constructor automatically converts these to UTC internally
+ * 3. Prisma stores dates as UTC timestamps in PostgreSQL (using @db.Timestamptz)
+ * 4. When displaying, toLocaleDateString/toLocaleString automatically converts
+ *    from UTC to the user's browser timezone
+ * 5. getTime() returns milliseconds since epoch (UTC), so time calculations are accurate
  */
 
 /**

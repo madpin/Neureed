@@ -100,24 +100,49 @@ function addTargetBlankToLinks(html: string): string {
 
 /**
  * Process images (add lazy loading, alt text, etc.)
+ * Handles img tags with srcset, sizes, and other complex attributes
+ * Also handles multi-line img tags and fixes broken img tags
  */
 function processImages(html: string): string {
+  // First, fix broken img tags where the closing > appears too early
+  // This handles cases where srcset/sizes attributes appear as text after the img tag
+  html = fixBrokenImageTags(html);
+
+  // Use a more robust regex that handles multi-line attributes and special characters
+  // [\s\S] matches any character including newlines
   return html.replace(
-    /<img\s+([^>]*?)>/gi,
+    /<img\s+([\s\S]*?)>/gi,
     (match, attributes) => {
-      let newAttributes = attributes;
+      // Normalize whitespace in attributes (collapse multiple spaces/newlines to single space)
+      let newAttributes = attributes.replace(/\s+/g, ' ').trim();
 
       // Add loading="lazy" if not present
-      if (!/loading\s*=/i.test(attributes)) {
+      if (!/loading\s*=/i.test(newAttributes)) {
         newAttributes += ' loading="lazy"';
       }
 
       // Add alt text if not present
-      if (!/alt\s*=/i.test(attributes)) {
+      if (!/alt\s*=/i.test(newAttributes)) {
         newAttributes += ' alt=""';
       }
 
       return `<img ${newAttributes}>`;
+    }
+  );
+}
+
+/**
+ * Fix broken img tags where attributes appear outside the tag
+ * Example: <img src="..."> srcset="..." sizes="..." becomes <img src="..." srcset="..." sizes="">
+ */
+function fixBrokenImageTags(html: string): string {
+  // Match img tag followed immediately by orphaned attributes (srcset, sizes, etc.)
+  // This pattern looks for: <img ...> followed by attribute-like text
+  return html.replace(
+    /(<img\s+[^>]*?)>\s*((?:(?:srcset|sizes|width|height|style|class|id|data-[\w-]+)\s*=\s*["'][^"']*["']\s*)+)/gi,
+    (match, imgTag, orphanedAttrs) => {
+      // Move the orphaned attributes inside the img tag
+      return `${imgTag} ${orphanedAttrs.trim()}>`;
     }
   );
 }
