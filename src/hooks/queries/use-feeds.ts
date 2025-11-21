@@ -92,7 +92,9 @@ async function fetchUserFeeds(includeAll = false): Promise<UserFeed[] | UserFeed
     // Add subscription specific fields
     subscribedAt: sub.createdAt,
     category: sub.category,
+    // Preserve feed settings (extraction, etc.) and add user subscription settings
     settings: {
+      ...(sub.feeds.settings || {}), // Keep feed-level settings (extraction, etc.)
       refreshInterval: sub.refreshInterval,
       maxArticlesPerFeed: sub.maxArticlesPerFeed,
       maxArticleAge: sub.maxArticleAge,
@@ -348,6 +350,107 @@ export function useRefreshAllFeeds() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.articles.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.feeds.all });
+    },
+  });
+}
+
+/**
+ * Bulk settings update type
+ */
+export interface BulkSettingsUpdate {
+  refreshInterval?: number;
+  maxArticlesPerFeed?: number;
+  maxArticleAge?: number;
+  extractionMethod?: "rss" | "readability" | "playwright";
+}
+
+/**
+ * Hook to bulk update feed settings
+ */
+export function useBulkUpdateFeedSettings() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ 
+      feedIds, 
+      settings 
+    }: { 
+      feedIds: string[]; 
+      settings: BulkSettingsUpdate;
+    }) => {
+      const promises: Promise<any>[] = [];
+
+      // Check if any user feed settings are being updated
+      const hasUserFeedSettings = 
+        settings.refreshInterval !== undefined ||
+        settings.maxArticlesPerFeed !== undefined ||
+        settings.maxArticleAge !== undefined;
+
+      if (hasUserFeedSettings) {
+        // Build user feed settings object with only defined values
+        const userFeedSettings: {
+          refreshInterval?: number;
+          maxArticlesPerFeed?: number;
+          maxArticleAge?: number;
+        } = {};
+
+        if (settings.refreshInterval !== undefined) {
+          userFeedSettings.refreshInterval = settings.refreshInterval;
+        }
+        if (settings.maxArticlesPerFeed !== undefined) {
+          userFeedSettings.maxArticlesPerFeed = settings.maxArticlesPerFeed;
+        }
+        if (settings.maxArticleAge !== undefined) {
+          userFeedSettings.maxArticleAge = settings.maxArticleAge;
+        }
+
+        // Update user feed settings (per-user)
+        feedIds.forEach(feedId => {
+          promises.push(
+            apiPut(`/api/user/feeds/${feedId}/settings`, userFeedSettings)
+          );
+        });
+      }
+
+      // Update extraction method (system-wide)
+      if (settings.extractionMethod !== undefined) {
+        feedIds.forEach(feedId => {
+          promises.push(
+            apiPut(`/api/feeds/${feedId}/settings`, {
+              method: settings.extractionMethod,
+            })
+          );
+        });
+      }
+
+      const results = await Promise.allSettled(promises);
+
+      // Log any errors for debugging
+      const errors = results
+        .filter((r): r is PromiseRejectedResult => r.status === "rejected")
+        .map(r => r.reason);
+      
+      if (errors.length > 0) {
+        console.error("Bulk update errors:", errors);
+      }
+
+      return {
+        total: results.length,
+        successful: results.filter((r) => r.status === "fulfilled").length,
+        failed: results.filter((r) => r.status === "rejected").length,
+        results,
+        errors,
+      };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.feeds.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.articles.all });
+      
+      // Log success statistics
+      console.log(`Bulk update completed: ${data.successful}/${data.total} successful`);
+    },
+    onError: (error) => {
+      console.error("Bulk update failed:", error);
     },
   });
 }

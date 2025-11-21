@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { CookieGuide } from "./CookieGuide";
 import { OpmlExportModal } from "./OpmlExportModal";
 import { OpmlImportModal } from "./OpmlImportModal";
+import { BulkFeedSettingsModal, type BulkSettings } from "./BulkFeedSettingsModal";
 import { formatSmartDate } from "@/lib/date-utils";
 import { 
   useCategories, 
@@ -19,6 +20,7 @@ import {
   useRefreshFeed, 
   useUnsubscribeFeed, 
   useDeleteFeed,
+  useBulkUpdateFeedSettings,
   type Feed,
   type UserFeed
 } from "@/hooks/queries/use-feeds";
@@ -288,6 +290,10 @@ function ManagementOverview({
   const [isCreating, setIsCreating] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  
+  // Bulk operations state
+  const [selectedFeedIds, setSelectedFeedIds] = useState<Set<string>>(new Set());
+  const [showBulkModal, setShowBulkModal] = useState(false);
 
   // Use React Query hooks
   const { data: categories = [], isLoading: loadingCategories } = useCategories();
@@ -296,6 +302,7 @@ function ManagementOverview({
   
   const createCategoryMutation = useCreateCategory();
   const deleteCategoryMutation = useDeleteCategory();
+  const bulkUpdateMutation = useBulkUpdateFeedSettings();
 
   const isLoading = loadingCategories || loadingFeeds;
 
@@ -348,6 +355,43 @@ function ManagementOverview({
     setShowImportModal(false);
     onRefreshData?.();
   };
+
+  // Bulk operations handlers
+  const handleToggleSelectAll = () => {
+    if (selectedFeedIds.size === subscriptions.length) {
+      setSelectedFeedIds(new Set());
+    } else {
+      setSelectedFeedIds(new Set(subscriptions.map(s => s.id)));
+    }
+  };
+
+  const handleToggleSelect = (feedId: string) => {
+    const newSet = new Set(selectedFeedIds);
+    if (newSet.has(feedId)) {
+      newSet.delete(feedId);
+    } else {
+      newSet.add(feedId);
+    }
+    setSelectedFeedIds(newSet);
+  };
+
+  const handleBulkApply = async (settings: BulkSettings) => {
+    const feedIds = Array.from(selectedFeedIds);
+    
+    try {
+      await bulkUpdateMutation.mutateAsync({
+        feedIds,
+        settings,
+      });
+      
+      setSelectedFeedIds(new Set());
+      onRefreshData?.();
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const selectedFeeds = subscriptions.filter(s => selectedFeedIds.has(s.id));
 
   if (isLoading) {
     return (
@@ -467,6 +511,168 @@ function ManagementOverview({
         </div>
       </div>
 
+      {/* Feeds List */}
+      <div className="space-y-4 mb-8">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-semibold">Your Feeds</h2>
+            {selectedFeedIds.size > 0 && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary border border-primary/20">
+                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {selectedFeedIds.size} selected
+              </span>
+            )}
+          </div>
+          {selectedFeedIds.size > 0 && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowBulkModal(true)}
+                className="btn btn-primary btn-sm"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Bulk Edit
+              </button>
+              <button
+                onClick={() => setSelectedFeedIds(new Set())}
+                className="btn btn-outline btn-sm"
+              >
+                Clear
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Feeds Table */}
+        <div className="rounded-lg border border-border overflow-hidden bg-background">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-muted/50 border-b border-border">
+                <tr>
+                  <th className="px-4 py-3 text-left w-12">
+                    <input
+                      type="checkbox"
+                      checked={subscriptions.length > 0 && selectedFeedIds.size === subscriptions.length}
+                      onChange={handleToggleSelectAll}
+                      className="h-4 w-4 rounded border-border cursor-pointer"
+                      title="Select all"
+                    />
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground/70">Feed</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground/70">Last Updated</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground/70">Interval</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground/70">Extraction</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-foreground/70">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border bg-background">
+                {subscriptions.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-12 text-center">
+                      <div className="flex flex-col items-center gap-2">
+                        <svg className="h-12 w-12 text-foreground/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 5c7.18 0 13 5.82 13 13M6 11a7 7 0 017 7m-6 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                        </svg>
+                        <p className="text-sm text-foreground/50">No feeds found. Add your first feed to get started!</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  subscriptions.map((feed) => {
+                    const feedSettings = feed.settings || {};
+                    const refreshInterval = feedSettings.refreshInterval || 60;
+                    const hasExtractionSettings = (feed as any).settings?.extraction;
+                    const extractionMethod = hasExtractionSettings?.method || "rss";
+                    
+                    return (
+                      <tr 
+                        key={feed.id} 
+                        onClick={() => handleToggleSelect(feed.id)}
+                        className={`hover:bg-muted/30 transition-colors cursor-pointer ${
+                          selectedFeedIds.has(feed.id) ? "bg-accent/5" : ""
+                        }`}
+                      >
+                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={selectedFeedIds.has(feed.id)}
+                            onChange={() => handleToggleSelect(feed.id)}
+                            className="h-4 w-4 rounded border-border cursor-pointer"
+                          />
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            {feed.imageUrl ? (
+                              <img
+                                src={feed.imageUrl}
+                                alt=""
+                                className="h-8 w-8 rounded object-cover flex-shrink-0"
+                              />
+                            ) : (
+                              <div className="h-8 w-8 rounded bg-muted flex items-center justify-center flex-shrink-0">
+                                <svg className="h-4 w-4 text-foreground/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 5c7.18 0 13 5.82 13 13M6 11a7 7 0 017 7m-6 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                                </svg>
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <div className="text-sm font-medium truncate">{feed.name}</div>
+                              {feed.category && (
+                                <div className="text-xs text-foreground/50 truncate">
+                                  {feed.category.name}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-foreground/60 whitespace-nowrap">
+                          {feed.lastFetched ? formatSmartDate(new Date(feed.lastFetched)) : "Never"}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-foreground/60">
+                          <span className="inline-flex items-center gap-1">
+                            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            {refreshInterval}m
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium border ${
+                            extractionMethod === "rss" 
+                              ? "bg-accent/10 text-accent border-accent/20"
+                              : extractionMethod === "readability"
+                              ? "bg-primary/10 text-primary border-primary/20"
+                              : "bg-secondary/10 text-secondary border-secondary/20"
+                          }`}>
+                            {extractionMethod}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => onNavigateToFeed(feed.id)}
+                            className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors"
+                            title="Edit feed settings"
+                          >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <span className="hidden sm:inline">Settings</span>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       {/* Categories List */}
       <div className="space-y-4">
         <h2 className="text-lg font-semibold">Your Categories</h2>
@@ -564,6 +770,16 @@ function ManagementOverview({
       {showImportModal && (
         <OpmlImportModal onClose={() => setShowImportModal(false)} onSuccess={handleImportSuccess} />
       )}
+
+
+      {/* Bulk Edit Modal */}
+      {showBulkModal && (
+        <BulkFeedSettingsModal
+          selectedFeeds={selectedFeeds}
+          onClose={() => setShowBulkModal(false)}
+          onApply={handleBulkApply}
+        />
+      )}
     </div>
   );
 }
@@ -633,7 +849,6 @@ function FeedSettingsView({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUnsubscribing, setIsUnsubscribing] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [showDangerZone, setShowDangerZone] = useState(false);
   
   // Advanced Extraction Settings
@@ -659,11 +874,25 @@ function FeedSettingsView({
       
       if (subscription.settings) {
         setFetchInterval(subscription.settings.refreshInterval || 60);
+        
+        // Load extraction settings if they exist
+        const extractionSettings = (subscription.settings as any)?.extraction;
+        if (extractionSettings) {
+          if (extractionSettings.method) {
+            setExtractionMethod(extractionSettings.method);
+          }
+          if (extractionSettings.requiresAuth !== undefined) {
+            setRequiresAuth(extractionSettings.requiresAuth);
+          }
+          if (extractionSettings.contentMergeStrategy) {
+            setContentMergeStrategy(extractionSettings.contentMergeStrategy);
+          }
+          if (extractionSettings.timeout) {
+            setTimeoutVal(extractionSettings.timeout);
+          }
+        }
       }
     }
-    
-    // If we have advanced settings (mocked for now as they aren't fully in the types yet)
-    // In a real implementation, these would come from feed.settings or subscription.settings
   }, [subscription, feed]);
 
   const handleSave = async () => {
@@ -835,54 +1064,56 @@ function FeedSettingsView({
         </div>
       </div>
 
-      {/* Advanced Settings (Expandable) */}
-      <div className="mb-6">
-        <button
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className="mb-4 flex w-full items-center justify-between rounded-lg border border-border bg-muted px-4 py-3 text-left font-semibold hover:bg-muted border-border bg-background dark:hover:bg-muted"
-        >
-          <span>Advanced Settings</span>
-          <svg
-            className={`h-5 w-5 transition-transform ${showAdvanced ? "rotate-180" : ""}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
+      {/* Advanced Settings */}
+      <div className="mb-6 space-y-4">
+        <h3 className="text-base font-semibold">Advanced Settings</h3>
         
-        {showAdvanced && (
-          <div className="space-y-4 rounded-lg border border-border bg-background p-4 border-border bg-background">
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="requiresAuth"
-                checked={requiresAuth}
-                onChange={(e) => setRequiresAuth(e.target.checked)}
-                className="rounded"
-              />
-              <label htmlFor="requiresAuth" className="text-sm">
-                Requires authentication (cookies needed)
-              </label>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm font-medium">Content Extraction Method</label>
-              <select
-                value={extractionMethod}
-                onChange={(e) => setExtractionMethod(e.target.value as any)}
-                className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
-              >
-                <option value="rss">RSS Only (Default)</option>
-                <option value="readability">Readability (Clean extraction)</option>
-                <option value="playwright">Playwright (JS-rendered content)</option>
-              </select>
-            </div>
-
-            {/* Additional fields for cookies, headers, etc. would go here */}
+        <div className="space-y-4 rounded-lg border border-border bg-background p-4">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="requiresAuth"
+              checked={requiresAuth}
+              onChange={(e) => setRequiresAuth(e.target.checked)}
+              className="h-4 w-4 rounded border-border cursor-pointer"
+            />
+            <label htmlFor="requiresAuth" className="text-sm cursor-pointer">
+              Requires authentication (cookies needed)
+            </label>
           </div>
-        )}
+
+          <div>
+            <label className="mb-1 block text-sm font-medium">Content Extraction Method</label>
+            <select
+              value={extractionMethod}
+              onChange={(e) => setExtractionMethod(e.target.value as any)}
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="rss">RSS Only (Default)</option>
+              <option value="readability">Readability (Clean extraction)</option>
+              <option value="playwright">Playwright (JS-rendered content)</option>
+            </select>
+            <p className="mt-1.5 text-xs text-foreground/50">
+              Choose how to extract article content from this feed
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium">Content Merge Strategy</label>
+            <select
+              value={contentMergeStrategy}
+              onChange={(e) => setContentMergeStrategy(e.target.value as any)}
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="replace">Replace RSS content</option>
+              <option value="prepend">Prepend to RSS content</option>
+              <option value="append">Append to RSS content</option>
+            </select>
+            <p className="mt-1.5 text-xs text-foreground/50">
+              How to combine extracted content with RSS content
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Actions */}
