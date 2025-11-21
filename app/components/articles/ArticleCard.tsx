@@ -3,18 +3,12 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import type { articles, feeds } from "@prisma/client";
 import { FeedbackButtons } from "./FeedbackButtons";
 import { formatSmartDate, toISOString } from "@/lib/date-utils";
-
-interface ArticleWithFeed extends articles {
-  feeds: feeds;
-  isRead?: boolean;
-  readAt?: Date;
-}
+import { type Article, useMarkArticleAsRead, useMarkArticleAsUnread } from "@/hooks/queries/use-articles";
 
 interface ArticleCardProps {
-  article: ArticleWithFeed;
+  article: Article;
   variant?: "compact" | "expanded";
   onReadStatusChange?: (articleId?: string, isRead?: boolean) => void;
   onArticleClick?: (articleId: string) => void;
@@ -24,6 +18,9 @@ export function ArticleCard({ article, variant = "compact", onReadStatusChange, 
   const pathname = usePathname();
   const [isRead, setIsRead] = useState(article.isRead || false);
   const [isTogglingRead, setIsTogglingRead] = useState(false);
+  
+  const markAsReadMutation = useMarkArticleAsRead();
+  const markAsUnreadMutation = useMarkArticleAsUnread();
 
   // Sync local state when article prop changes (e.g., after page refresh)
   useEffect(() => {
@@ -51,21 +48,23 @@ export function ArticleCard({ article, variant = "compact", onReadStatusChange, 
     e.preventDefault();
     e.stopPropagation();
     
+    // Optimistic update handled by local state for immediate feedback
+    const newReadStatus = !isRead;
+    setIsRead(newReadStatus);
     setIsTogglingRead(true);
+    
     try {
-      const method = isRead ? "DELETE" : "POST";
-      const response = await fetch(`/api/user/articles/${article.id}/read`, {
-        method,
-      });
-
-      if (response.ok) {
-        const newReadStatus = !isRead;
-        setIsRead(newReadStatus);
-        console.log('[ArticleCard] Calling onReadStatusChange callback');
-        onReadStatusChange?.(article.id, newReadStatus);
+      if (newReadStatus) {
+        await markAsReadMutation.mutateAsync(article.id);
+      } else {
+        await markAsUnreadMutation.mutateAsync(article.id);
       }
+
+      onReadStatusChange?.(article.id, newReadStatus);
     } catch (error) {
       console.error("Failed to toggle read status:", error);
+      // Revert on error
+      setIsRead(!newReadStatus);
     } finally {
       setIsTogglingRead(false);
     }
@@ -132,8 +131,8 @@ export function ArticleCard({ article, variant = "compact", onReadStatusChange, 
               <span className="font-medium">{article.feeds.name}</span>
             )}
             <span>•</span>
-            <time dateTime={toISOString(article.publishedAt, article.createdAt)}>
-              {formatSmartDate(article.publishedAt, article.createdAt)}
+            <time dateTime={toISOString(article.publishedAt || null, article.createdAt)}>
+              {formatSmartDate(article.publishedAt || null, article.createdAt)}
             </time>
             {article.author && (
               <>

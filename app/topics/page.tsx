@@ -1,35 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { EmptyState } from "@/app/components/layout/EmptyState";
-
-interface Topic {
-  topic: string;
-  count: number;
-}
+import { useTopicsWithCounts } from "@/hooks/queries/use-articles";
 
 export default function TopicsPage() {
-  const [topics, setTopics] = useState<Topic[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-
-  useEffect(() => {
-    loadTopics();
-  }, []);
-
-  const loadTopics = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/articles/topics?limit=100");
-      const data = await response.json();
-      setTopics(data.data?.topics || []);
-    } catch (error) {
-      console.error("Failed to load topics:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  
+  // Use React Query hook
+  const { data: topics = [], isLoading } = useTopicsWithCounts(100);
 
   const filteredTopics = topics.filter((topic) =>
     topic.topic.toLowerCase().includes(searchTerm.toLowerCase())

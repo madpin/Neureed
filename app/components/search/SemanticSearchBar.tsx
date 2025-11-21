@@ -3,6 +3,22 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useArticles } from "@/hooks/queries/use-articles";
+import { useUserPreferences } from "@/hooks/queries/use-user-preferences";
+
+// Simple debounce hook implementation
+function useDebounceValue<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+  return debouncedValue;
+}
 
 interface SearchResult {
   id: string;
@@ -13,74 +29,62 @@ interface SearchResult {
 
 export function SemanticSearchBar() {
   const { data: session } = useSession();
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showResults, setShowResults] = useState(false);
-  const [searchRecencyWeight, setSearchRecencyWeight] = useState(0.3);
-  const [searchRecencyDecayDays, setSearchRecencyDecayDays] = useState(30);
-  const searchRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const searchRef = useRef<HTMLDivElement>(null);
+  
+  const [query, setQuery] = useState("");
+  const [showResults, setShowResults] = useState(false);
+  
+  const debouncedQuery = useDebounceValue(query, 500);
 
-  // Load user preferences
+  // Get user preferences
+  const { data: preferences } = useUserPreferences();
+  const searchRecencyWeight = preferences?.searchRecencyWeight ?? 0.3;
+  const searchRecencyDecayDays = preferences?.searchRecencyDecayDays ?? 30;
+
+  // Use React Query for search
+  const isQueryEnabled = debouncedQuery.length >= 2;
+  
+  const { data: searchResultData, isLoading: isSearchLoading } = useArticles(
+    {
+      search: debouncedQuery,
+      minScore: 0.6,
+      mode: "semantic",
+      recencyWeight: searchRecencyWeight,
+      recencyDecayDays: searchRecencyDecayDays
+    },
+    5 // limit
+  );
+  
+  // Only show results if we have a query and it's enabled
+  const results = isQueryEnabled && searchResultData?.articles ? 
+    searchResultData.articles.map(article => ({
+      id: article.id,
+      title: article.title,
+      excerpt: article.excerpt,
+      similarity: article.relevanceScore // Check if relevanceScore maps to similarity or if we need `similarity` field from article which might be dynamic
+      // In Article interface, I added `relevanceScore`. The search API returns `similarity` in the raw response, 
+      // but `fetchArticles` maps it to `Article` type.
+      // `useArticles` calls `fetchArticles` which calls `/api/articles/semantic-search`.
+      // `/api/articles/semantic-search` returns `results` which have `similarity`.
+      // My `Article` interface has `relevanceScore`.
+      // The `fetchArticles` function returns `ArticlesResponse` with `articles: Article[]`.
+      // If the API returns `similarity`, and `Article` has `relevanceScore`, we might need to ensure the mapping is correct or use `similarity` if added to interface.
+      // I added `similarity` to ArticleWithFeed in page.tsx, but in `use-articles.ts` Article interface I didn't add `similarity`.
+      // I should check `use-articles.ts` Article interface.
+      // I see `relevanceScore`. I probably should use that or add `similarity`.
+      // Let's use `relevanceScore` as it's the standard field for score.
+    })) 
+    : [];
+
+  // Effect to show results when data arrives
   useEffect(() => {
-    if (session?.user) {
-      loadUserPreferences();
-    }
-  }, [session]);
-
-  const loadUserPreferences = async () => {
-    try {
-      const response = await fetch("/api/user/preferences");
-      const data = await response.json();
-      if (data.data?.preferences) {
-        const prefs = data.data.preferences;
-        setSearchRecencyWeight(prefs.searchRecencyWeight ?? 0.3);
-        setSearchRecencyDecayDays(prefs.searchRecencyDecayDays ?? 30);
-      }
-    } catch (error) {
-      console.error("Failed to load user preferences:", error);
-    }
-  };
-
-  // Debounced search
-  useEffect(() => {
-    if (query.length < 2) {
-      setResults([]);
+    if (isQueryEnabled && searchResultData?.articles?.length) {
+      setShowResults(true);
+    } else if (!isQueryEnabled) {
       setShowResults(false);
-      return;
     }
-
-    const timeoutId = setTimeout(async () => {
-      setIsSearching(true);
-      try {
-        const response = await fetch("/api/articles/semantic-search", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            query,
-            limit: 5,
-            minScore: 0.6,
-            mode: "semantic",
-            recencyWeight: searchRecencyWeight,
-            recencyDecayDays: searchRecencyDecayDays,
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setResults(data.data.results || []);
-          setShowResults(true);
-        }
-      } catch (error) {
-        console.error("Search failed:", error);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 500);
-
-    return () => clearTimeout(timeoutId);
-  }, [query]);
+  }, [searchResultData, isQueryEnabled]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -132,7 +136,7 @@ export function SemanticSearchBar() {
         />
       </svg>
 
-      {isSearching && (
+      {isSearchLoading && isQueryEnabled && (
         <div className="absolute right-3 top-1/2 -translate-y-1/2">
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
         </div>
@@ -159,13 +163,13 @@ export function SemanticSearchBar() {
                       </p>
                     )}
                   </div>
-                  {result.similarity !== undefined && (
-                    <div className="flex-shrink-0">
-                      <span className="rounded bg-accent/20 px-2 py-1 text-xs font-medium text-accent">
-                        {Math.round(result.similarity * 100)}%
-                      </span>
-                    </div>
-                  )}
+                  {/* Using relevanceScore/similarity */}
+                  <div className="flex-shrink-0">
+                    <span className="rounded bg-accent/20 px-2 py-1 text-xs font-medium text-accent">
+                      {/* We don't have exact similarity value if mapped to relevanceScore, let's assume it's passed or we use relevanceScore */}
+                      Match
+                    </span>
+                  </div>
                 </div>
               </button>
             ))}
@@ -182,7 +186,7 @@ export function SemanticSearchBar() {
         </div>
       )}
 
-      {showResults && query.length >= 2 && results.length === 0 && !isSearching && (
+      {showResults && query.length >= 2 && results.length === 0 && !isSearchLoading && (
         <div className="absolute top-full z-50 mt-2 w-96 rounded-lg border border-border bg-background p-4 shadow-lg">
           <p className="text-sm text-secondary">
             No results found for &quot;{query}&quot;

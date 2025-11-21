@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useImportOpml } from "@/hooks/queries/use-opml";
 
 interface ImportSummary {
   totalFeeds: number;
@@ -24,13 +25,16 @@ interface OpmlImportModalProps {
 export function OpmlImportModal({ onClose, onSuccess }: OpmlImportModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
-  const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [importErrors, setImportErrors] = useState<ImportError[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // Use React Query mutation
+  const importMutation = useImportOpml();
+  const importing = importMutation.isPending;
 
   // Handle click outside modal
   useEffect(() => {
@@ -103,28 +107,23 @@ export function OpmlImportModal({ onClose, onSuccess }: OpmlImportModalProps) {
     }
 
     try {
-      setImporting(true);
       setError(null);
       setSuccess(false);
 
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const response = await fetch("/api/user/opml/import", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Import failed");
-      }
+      const result = await importMutation.mutateAsync(file);
 
       // Success
       setSuccess(true);
-      setSummary(data.data.summary);
-      setImportErrors(data.data.summary.errors || []);
+      setSummary({
+        totalFeeds: (result as any).totalFeeds || 0,
+        feedsCreated: result.imported || 0,
+        feedsSkipped: 0,
+        subscriptionsAdded: result.imported || 0,
+        categoriesCreated: 0,
+      });
+      setImportErrors((result.errors || []).map((err: any) => 
+        typeof err === 'string' ? { feedUrl: '', feedTitle: '', error: err } : err
+      ));
 
       // Call onSuccess callback if provided
       if (onSuccess) {
@@ -132,8 +131,6 @@ export function OpmlImportModal({ onClose, onSuccess }: OpmlImportModalProps) {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Import failed");
-    } finally {
-      setImporting(false);
     }
   };
 

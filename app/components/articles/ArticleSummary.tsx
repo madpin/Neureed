@@ -7,6 +7,10 @@ import {
   useEffect,
   ForwardedRef,
 } from "react";
+import {
+  useArticleSummary,
+  useGenerateArticleSummary,
+} from "@/hooks/queries/use-articles";
 
 interface ArticleSummaryProps {
   articleId: string;
@@ -33,62 +37,22 @@ function ArticleSummaryComponent(
   }: ArticleSummaryProps,
   ref: ForwardedRef<ArticleSummaryRef>,
 ) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(!!initialSummary);
-  const [summary, setSummary] = useState<{
-    summary: string;
-    keyPoints: string[];
-    topics: string[];
-  } | null>(initialSummary);
-  const [error, setError] = useState<string | null>(null);
+  // If we have an initial summary, we start with it expanded if requested
+  // But we only request data from API if we don't have initial summary AND it's explicitly requested
+  const [isExpanded, setIsExpanded] = useState(autoExpand || !!initialSummary);
   const [summaryRef, setSummaryRef] = useState<HTMLDivElement | null>(null);
-  const [hasRequestedSummary, setHasRequestedSummary] = useState(
-    !!initialSummary
+  
+  // We only want to fetch if we don't have initial summary and the user requested it
+  const [hasRequestedSummary, setHasRequestedSummary] = useState(false);
+
+  // Use React Query hooks
+  // We enable the query only when requested
+  const { data: summaryData, isLoading: isQueryLoading, error: queryError } = useArticleSummary(
+    articleId, 
+    hasRequestedSummary && !initialSummary
   );
-
-  const generateSummary = async () => {
-    if (summary) {
-      // If summary already exists, just expand and scroll to it
-      setIsExpanded(true);
-      scrollToSummary();
-      return;
-    }
-
-    setHasRequestedSummary(true);
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      console.log("Fetching summary for article:", articleId);
-      const response = await fetch(`/api/articles/${articleId}/summary`);
-      console.log("Response status:", response.status, response.statusText);
-      
-      if (!response.ok) {
-        let errorData;
-        try {
-          errorData = await response.json();
-          console.log("Error response data:", errorData);
-        } catch (parseError) {
-          console.error("Failed to parse error response:", parseError);
-          errorData = {};
-        }
-        
-        const errorMessage = errorData.error || errorData.message || `Server error: ${response.status} ${response.statusText}`;
-        console.error("Error message:", errorMessage);
-        throw new Error(errorMessage);
-      }
-
-      const data = await response.json();
-      console.log("Success response data:", data);
-      setSummary(data.data?.summary || null);
-      setIsExpanded(true);
-    } catch (err) {
-      console.error("Error generating summary:", err);
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  
+  const generateMutation = useGenerateArticleSummary();
 
   const scrollToSummary = () => {
     if (summaryRef) {
@@ -96,23 +60,54 @@ function ArticleSummaryComponent(
     }
   };
 
+  const generateSummary = async () => {
+    const currentSummary = summaryData || initialSummary;
+
+    if (currentSummary) {
+      // If summary already exists, just expand and scroll to it
+      setIsExpanded(true);
+      scrollToSummary();
+      return;
+    }
+
+    setHasRequestedSummary(true);
+
+    // If we don't have data, we might need to trigger generation explicitly if the query doesn't auto-trigger
+    // The useArticleSummary query will try to fetch. If it fails (404), we might want to trigger generation.
+    // But useGenerateArticleSummary is specifically for *generating* (POST), while useArticleSummary is for *fetching* (GET).
+    // The previous code used generateMutation.mutateAsync.
+    
+    try {
+      await generateMutation.mutateAsync(articleId);
+      setIsExpanded(true);
+      scrollToSummary(); // Scroll after generation
+    } catch (err) {
+      console.error("Error generating summary:", err);
+    }
+  };
+
+  const isLoading = generateMutation.isPending || (hasRequestedSummary && isQueryLoading && !initialSummary);
+  const error = generateMutation.error || queryError;
+  const displaySummary = summaryData || initialSummary;
+
   // Expose methods to parent via ref
   useImperativeHandle(ref, () => ({
     generateSummary,
     isLoading,
-    hasSummary: !!summary,
+    hasSummary: !!displaySummary,
     scrollToSummary,
   }));
 
   // Auto-expand if requested
   useEffect(() => {
-    if (autoExpand && summary) {
+    if (autoExpand && displaySummary) {
       setIsExpanded(true);
+      // Small delay to ensure rendering before scroll
       setTimeout(scrollToSummary, 100);
     }
-  }, [autoExpand, summary]);
+  }, [autoExpand, displaySummary]);
 
-  if (!hasRequestedSummary && !summary) {
+  if (!hasRequestedSummary && !displaySummary && !isLoading) {
     return null;
   }
 
@@ -125,7 +120,7 @@ function ArticleSummaryComponent(
         <h2 className="text-xl font-bold text-foreground">
           AI Summary
         </h2>
-        {summary && (
+        {displaySummary && (
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="text-sm text-blue-600 hover:underline dark:text-blue-400"
@@ -146,28 +141,28 @@ function ArticleSummaryComponent(
 
       {error && (
         <div className="mt-4 rounded-lg bg-red-50 p-4 text-red-800 dark:bg-red-900/20 dark:text-red-200">
-          {error}
+          {error instanceof Error ? error.message : "An error occurred"}
         </div>
       )}
 
-      {summary && isExpanded && (
+      {displaySummary && isExpanded && (
         <div className="mt-4 space-y-4">
           {/* Summary */}
           <div>
             <h3 className="mb-2 text-sm font-semibold text-foreground/70">
               Summary
             </h3>
-            <p className="text-foreground/70">{summary.summary}</p>
+            <p className="text-foreground/70">{displaySummary.summary}</p>
           </div>
 
           {/* Key Points */}
-          {summary.keyPoints && summary.keyPoints.length > 0 && (
+          {displaySummary.keyPoints && displaySummary.keyPoints.length > 0 && (
             <div>
               <h3 className="mb-2 text-sm font-semibold text-foreground/70">
                 Key Points
               </h3>
               <ul className="list-inside list-disc space-y-1 text-foreground/70">
-                {summary.keyPoints.map((point, index) => (
+                {displaySummary.keyPoints.map((point, index) => (
                   <li key={index}>{point}</li>
                 ))}
               </ul>
@@ -175,13 +170,13 @@ function ArticleSummaryComponent(
           )}
 
           {/* Topics */}
-          {summary.topics && summary.topics.length > 0 && (
+          {displaySummary.topics && displaySummary.topics.length > 0 && (
             <div>
               <h3 className="mb-2 text-sm font-semibold text-foreground/70">
                 Topics
               </h3>
               <div className="flex flex-wrap gap-2">
-                {summary.topics.map((topic, index) => (
+                {displaySummary.topics.map((topic, index) => (
                   <span
                     key={index}
                     className="rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
@@ -195,13 +190,13 @@ function ArticleSummaryComponent(
         </div>
       )}
 
-      {summary && !isExpanded && (
+      {displaySummary && !isExpanded && (
         <p className="mt-4 text-sm text-foreground/70">
           Click &quot;Expand&quot; to view the AI-generated summary
         </p>
       )}
 
-      {!summary && !isLoading && !error && hasRequestedSummary && (
+      {!displaySummary && !isLoading && !error && hasRequestedSummary && (
         <p className="mt-4 text-sm text-foreground/70">
           Use the Summary button in the toolbar to generate an AI overview for this article.
         </p>
@@ -211,4 +206,3 @@ function ArticleSummaryComponent(
 }
 
 export const ArticleSummary = forwardRef(ArticleSummaryComponent);
-

@@ -1,108 +1,55 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { toast } from "sonner";
-import type { feeds } from "@prisma/client";
-
-interface FeedWithSubscription extends feeds {
-  isSubscribed: boolean;
-}
+import {
+  useUserFeeds,
+  useSubscribeFeed,
+  useUnsubscribeFeed,
+  type UserFeedWithSubscription,
+} from "@/hooks/queries/use-feeds";
 
 interface FeedBrowserProps {
   onClose: () => void;
 }
 
 export function FeedBrowser({ onClose }: FeedBrowserProps) {
-  const [feeds, setFeeds] = useState<FeedWithSubscription[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [subscribingIds, setSubscribingIds] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    loadFeeds();
-  }, []);
-
-  const loadFeeds = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/user/feeds?includeAll=true");
-      const data = await response.json();
-      setFeeds(data.data?.feeds || []);
-    } catch (error) {
-      console.error("Failed to load feeds:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Use React Query hooks
+  const { data: feeds = [], isLoading } = useUserFeeds(true) as { data: UserFeedWithSubscription[], isLoading: boolean }; // includeAll=true
+  const subscribeMutation = useSubscribeFeed();
+  const unsubscribeMutation = useUnsubscribeFeed();
 
   const handleSubscribe = async (feedId: string) => {
-    setSubscribingIds((prev) => new Set(prev).add(feedId));
     try {
-      const response = await fetch("/api/user/feeds", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ feedId }),
-      });
-
-      if (response.ok) {
-        setFeeds((prev) =>
-          prev.map((feed) =>
-            feed.id === feedId ? { ...feed, isSubscribed: true } : feed
-          )
-        );
-      } else {
-        const error = await response.json();
-        toast.error(error.error || "Failed to subscribe");
-      }
+      await subscribeMutation.mutateAsync(feedId);
     } catch (error) {
       console.error("Failed to subscribe:", error);
       toast.error("Failed to subscribe to feed");
-    } finally {
-      setSubscribingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(feedId);
-        return next;
-      });
     }
   };
 
   const handleUnsubscribe = async (feedId: string) => {
-    setSubscribingIds((prev) => new Set(prev).add(feedId));
     try {
-      const response = await fetch("/api/user/feeds", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ feedId }),
-      });
-
-      if (response.ok) {
-        setFeeds((prev) =>
-          prev.map((feed) =>
-            feed.id === feedId ? { ...feed, isSubscribed: false } : feed
-          )
-        );
-      } else {
-        const error = await response.json();
-        toast.error(error.error || "Failed to unsubscribe");
-      }
+      await unsubscribeMutation.mutateAsync(feedId);
     } catch (error) {
       console.error("Failed to unsubscribe:", error);
       toast.error("Failed to unsubscribe from feed");
-    } finally {
-      setSubscribingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(feedId);
-        return next;
-      });
     }
   };
 
-  const filteredFeeds = feeds.filter(
+  // Track pending operations
+  const isOperationPending = (feedId: string) => {
+    return subscribeMutation.isPending || unsubscribeMutation.isPending;
+  };
+
+  const filteredFeeds = useMemo(() => feeds.filter(
     (feed) =>
       feed.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       feed.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
       feed.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ), [feeds, searchQuery]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -190,17 +137,17 @@ export function FeedBrowser({ onClose }: FeedBrowserProps) {
                   <button
                     onClick={() =>
                       feed.isSubscribed
-                        ? handleUnsubscribe(feed.id)
-                        : handleSubscribe(feed.id)
+                        ? handleUnsubscribe(String(feed.id))
+                        : handleSubscribe(String(feed.id))
                     }
-                    disabled={subscribingIds.has(feed.id)}
+                    disabled={isOperationPending(String(feed.id))}
                     className={`flex-shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                       feed.isSubscribed
                         ? "border border-border text-foreground/80 hover:bg-muted border-border"
                         : "bg-primary text-primary-foreground hover:bg-primary/90"
                     } disabled:opacity-50`}
                   >
-                    {subscribingIds.has(feed.id)
+                    {isOperationPending(String(feed.id))
                       ? "..."
                       : feed.isSubscribed
                         ? "Unsubscribe"

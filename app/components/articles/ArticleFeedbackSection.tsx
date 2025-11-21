@@ -1,8 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import { 
+  useArticleFeedback, 
+  useSubmitArticleFeedback, 
+  useDeleteArticleFeedback 
+} from "@/hooks/queries/use-articles";
 
 interface ArticleFeedbackSectionProps {
   articleId: string;
@@ -12,42 +16,14 @@ export function ArticleFeedbackSection({
   articleId,
 }: ArticleFeedbackSectionProps) {
   const { data: session } = useSession();
-  const [feedback, setFeedback] = useState<number | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Fetch existing feedback on mount
-  useEffect(() => {
-    if (!session?.user) {
-      setIsLoading(false);
-      return;
-    }
-
-    const fetchFeedback = async () => {
-      try {
-        const response = await fetch(`/api/user/articles/${articleId}/feedback`);
-        if (response.ok) {
-          const result = await response.json();
-          console.log("Feedback API response:", result);
-          // API wraps response in { success: true, data: { feedback: ... } }
-          if (result.data?.feedback) {
-            console.log("Setting feedback to:", result.data.feedback.feedbackValue);
-            setFeedback(result.data.feedback.feedbackValue);
-          } else {
-            console.log("No feedback found in response");
-          }
-        } else {
-          console.error("Feedback fetch failed:", response.status, response.statusText);
-        }
-      } catch (error) {
-        console.error("Error fetching feedback:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchFeedback();
-  }, [articleId, session]);
+  
+  const { data: feedbackData, isLoading } = useArticleFeedback(articleId);
+  const feedback = feedbackData?.feedbackValue ?? null;
+  
+  const submitFeedback = useSubmitArticleFeedback();
+  const deleteFeedback = useDeleteArticleFeedback();
+  
+  const isSubmitting = submitFeedback.isPending || deleteFeedback.isPending;
 
   const handleFeedback = async (value: number) => {
     if (!session?.user) {
@@ -55,43 +31,17 @@ export function ArticleFeedbackSection({
       return;
     }
 
-    setIsSubmitting(true);
-
     try {
       // If clicking the same button, remove feedback
       if (feedback === value) {
-        const response = await fetch(`/api/user/articles/${articleId}/feedback`, {
-          method: "DELETE",
-        });
-
-        if (response.ok) {
-          setFeedback(null);
-        }
+        await deleteFeedback.mutateAsync(articleId);
       } else {
         // Submit new feedback
-        const response = await fetch(`/api/user/articles/${articleId}/feedback`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ feedbackValue: value }),
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          console.log("Feedback submit response:", result);
-          setFeedback(value);
-        } else {
-          console.error("Feedback submit failed:", response.status, response.statusText);
-          const errorText = await response.text();
-          console.error("Error details:", errorText);
-        }
+        await submitFeedback.mutateAsync({ articleId, feedbackValue: value });
       }
     } catch (error) {
       console.error("Error submitting feedback:", error);
       toast.error("Failed to submit feedback");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 

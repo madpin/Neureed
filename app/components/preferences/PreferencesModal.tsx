@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { ThemePalette } from "./ThemePalette";
+import { useUserPreferences, useUpdateUserPreferences, useResetPatterns, type UserPreferences } from "@/hooks/queries/use-user-preferences";
 
 type ViewType = 'profile' | 'appearance' | 'reading' | 'learning' | 'llm' | 'feeds';
 
@@ -12,83 +13,42 @@ interface PreferencesModalProps {
   initialView?: ViewType;
 }
 
-interface UserPreferences {
-  theme: string;
-  fontSize: string;
-  articlesPerPage: number;
-  defaultView: string;
-  showReadArticles: boolean;
-  autoMarkAsRead: boolean;
-  showRelatedExcerpts: boolean;
-  bounceThreshold: number;
-  showLowRelevanceArticles: boolean;
-  llmProvider: string | null;
-  llmSummaryModel: string | null;
-  llmEmbeddingModel: string | null;
-  llmDigestModel: string | null;
-  llmApiKey: string | null;
-  llmBaseUrl: string | null;
-  embeddingsEnabled?: boolean;
-  readingPanelEnabled: boolean;
-  readingPanelPosition: string;
-  readingPanelSize: number;
-  readingFontFamily?: string;
-  readingFontSize?: number;
-  readingLineHeight?: number;
-  readingParagraphSpacing?: number;
-  breakLineSpacing?: number;
-  showReadingTime?: boolean;
-  infiniteScrollMode?: string;
-  searchRecencyWeight?: number;
-  searchRecencyDecayDays?: number;
-}
-
 export function PreferencesModal({
   onClose,
   initialView = 'profile',
 }: PreferencesModalProps) {
   const { data: session } = useSession();
+  const { data: cachedPreferences, isLoading } = useUserPreferences();
+  const updatePreferencesMutation = useUpdateUserPreferences();
+  
   const [currentView, setCurrentView] = useState<ViewType>(initialView);
-  const [preferences, setPreferences] = useState<UserPreferences | null>(null);
+  
+  const [localPreferences, setLocalPreferences] = useState<UserPreferences | null>(null);
   const [originalPreferences, setOriginalPreferences] = useState<UserPreferences | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-  const isNavigatingRef = useRef(false);
+  const isShowingUnsavedDialog = useRef(false);
 
+  // Initialize local state from cached data
   useEffect(() => {
-    loadPreferences();
-  }, []);
-
-  const loadPreferences = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/user/preferences");
-
-      if (response.ok) {
-        const data = await response.json();
-        const loadedPrefs = data.data?.preferences;
-        const prefs = {
-          ...getDefaultPreferences(),
-          ...loadedPrefs,
-        };
-        setPreferences(prefs);
+    if (cachedPreferences) {
+      const prefs = {
+        ...getDefaultPreferences(),
+        ...cachedPreferences,
+      };
+      // Only update if we haven't started editing or if it's the first load
+      if (!localPreferences) {
+        setLocalPreferences(prefs);
         setOriginalPreferences(prefs);
-      } else {
-        const defaultPrefs = getDefaultPreferences();
-        setPreferences(defaultPrefs);
-        setOriginalPreferences(defaultPrefs);
       }
-    } catch (error) {
-      console.error("Failed to load preferences:", error);
-      const defaultPrefs = getDefaultPreferences();
-      setPreferences(defaultPrefs);
-      setOriginalPreferences(defaultPrefs);
-    } finally {
-      setIsLoading(false);
+    } else if (!isLoading && !localPreferences) {
+       // Fallback if no data
+       const defaultPrefs = getDefaultPreferences();
+       setLocalPreferences(defaultPrefs);
+       setOriginalPreferences(defaultPrefs);
     }
-  };
+  }, [cachedPreferences, isLoading]);
 
   const getDefaultPreferences = (): UserPreferences => ({
     theme: "system",
@@ -122,38 +82,45 @@ export function PreferencesModal({
   });
 
   const hasUnsavedChanges = () => {
-    if (!preferences || !originalPreferences) return false;
-    return JSON.stringify(preferences) !== JSON.stringify(originalPreferences);
+    if (!localPreferences || !originalPreferences) return false;
+    return JSON.stringify(localPreferences) !== JSON.stringify(originalPreferences);
   };
 
   const revertChanges = () => {
     if (!originalPreferences) return;
     
-    // Revert theme and fontSize if they were changed
-    if (preferences?.theme !== originalPreferences.theme) {
+    // Revert theme and fontSize if they were changed in the UI but not saved
+    if (localPreferences?.theme !== originalPreferences.theme) {
       window.dispatchEvent(new CustomEvent("preferencesUpdated", { 
         detail: { theme: originalPreferences.theme } 
       }));
     }
     
-    if (preferences?.fontSize !== originalPreferences.fontSize) {
+    if (localPreferences?.fontSize !== originalPreferences.fontSize) {
       window.dispatchEvent(new CustomEvent("preferencesUpdated", { 
         detail: { fontSize: originalPreferences.fontSize } 
       }));
     }
+    
+    setLocalPreferences(originalPreferences);
   };
 
   const handleCloseWithHistory = () => {
     if (hasUnsavedChanges()) {
+      // Prevent showing multiple dialogs
+      if (isShowingUnsavedDialog.current) {
+        return;
+      }
+      
+      isShowingUnsavedDialog.current = true;
+      
       toast.warning("You have unsaved changes", {
         description: "Are you sure you want to close without saving?",
         action: {
           label: "Close anyway",
           onClick: () => {
-            // Revert any immediately-applied changes
+            isShowingUnsavedDialog.current = false;
             revertChanges();
-            
-            // Go back through history to remove modal states
             if (window.history.state?.modal === 'preferences') {
               window.history.back();
             }
@@ -162,13 +129,20 @@ export function PreferencesModal({
         },
         cancel: {
           label: "Keep editing",
-          onClick: () => {},
+          onClick: () => {
+            isShowingUnsavedDialog.current = false;
+          },
+        },
+        onDismiss: () => {
+          isShowingUnsavedDialog.current = false;
+        },
+        onAutoClose: () => {
+          isShowingUnsavedDialog.current = false;
         },
       });
       return;
     }
     
-    // Go back through history to remove modal states
     if (window.history.state?.modal === 'preferences') {
       window.history.back();
     }
@@ -177,19 +151,34 @@ export function PreferencesModal({
 
   const handleClose = () => {
     if (hasUnsavedChanges()) {
+      // Prevent showing multiple dialogs
+      if (isShowingUnsavedDialog.current) {
+        return;
+      }
+      
+      isShowingUnsavedDialog.current = true;
+      
       toast.warning("You have unsaved changes", {
         description: "Are you sure you want to close without saving?",
         action: {
           label: "Close anyway",
           onClick: () => {
-            // Revert any immediately-applied changes
+            isShowingUnsavedDialog.current = false;
             revertChanges();
             onClose();
           },
         },
         cancel: {
           label: "Keep editing",
-          onClick: () => {},
+          onClick: () => {
+            isShowingUnsavedDialog.current = false;
+          },
+        },
+        onDismiss: () => {
+          isShowingUnsavedDialog.current = false;
+        },
+        onAutoClose: () => {
+          isShowingUnsavedDialog.current = false;
         },
       });
       return;
@@ -198,27 +187,22 @@ export function PreferencesModal({
   };
 
   const handleSave = async () => {
-    if (!preferences) return;
+    if (!localPreferences) return;
 
     setIsSaving(true);
     setSaveMessage(null);
 
     try {
-      const response = await fetch("/api/user/preferences", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(preferences),
-      });
+      // Use the mutation to save
+      await updatePreferencesMutation.mutateAsync(localPreferences);
 
-      if (response.ok) {
-        setSaveMessage({ type: "success", text: "Preferences saved successfully!" });
-        setOriginalPreferences(preferences);
-        window.dispatchEvent(new CustomEvent("preferencesUpdated", { detail: preferences }));
-        setTimeout(() => setSaveMessage(null), 3000);
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to save preferences");
-      }
+      setSaveMessage({ type: "success", text: "Preferences saved successfully!" });
+      setOriginalPreferences(localPreferences);
+      
+      // Dispatch event for immediate UI update if listeners exist (though React Query cache update should handle most)
+      window.dispatchEvent(new CustomEvent("preferencesUpdated", { detail: localPreferences }));
+      
+      setTimeout(() => setSaveMessage(null), 3000);
     } catch (error) {
       console.error("Failed to save preferences:", error);
       setSaveMessage({
@@ -234,18 +218,13 @@ export function PreferencesModal({
     key: K,
     value: UserPreferences[K]
   ) => {
-    setPreferences((prev) => (prev ? { ...prev, [key]: value } : null));
+    setLocalPreferences((prev) => (prev ? { ...prev, [key]: value } : null));
   };
 
   // Navigate to a different view
   const navigateToView = (view: ViewType) => {
     setCurrentView(view);
-    
-    // Push to browser history
-    const state = { 
-      modal: 'preferences',
-      view
-    };
+    const state = { modal: 'preferences', view };
     window.history.pushState(state, '', window.location.href);
   };
 
@@ -253,19 +232,13 @@ export function PreferencesModal({
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
       if (event.state?.modal === 'preferences') {
-        // Navigate to the state from history
         setCurrentView(event.state.view || 'profile');
       } else {
-        // If we're going back beyond the modal, close it
         handleCloseWithHistory();
       }
     };
 
-    // Push initial state
-    const initialState = { 
-      modal: 'preferences',
-      view: initialView
-    };
+    const initialState = { modal: 'preferences', view: initialView };
     window.history.pushState(initialState, '', window.location.href);
 
     window.addEventListener('popstate', handlePopState);
@@ -284,9 +257,9 @@ export function PreferencesModal({
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [preferences, originalPreferences]);
+  }, [localPreferences, originalPreferences]);
 
-  if (isLoading) {
+  if (isLoading && !localPreferences) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
         <div className="flex h-[90vh] w-full max-w-6xl items-center justify-center rounded-lg bg-background shadow-xl">
@@ -296,7 +269,7 @@ export function PreferencesModal({
     );
   }
 
-  if (!preferences) {
+  if (!localPreferences) {
     return null;
   }
 
@@ -413,16 +386,16 @@ export function PreferencesModal({
               <ProfileView session={session} />
             )}
             {currentView === 'appearance' && (
-              <AppearanceView preferences={preferences} updatePreference={updatePreference} />
+              <AppearanceView preferences={localPreferences} updatePreference={updatePreference} />
             )}
             {currentView === 'reading' && (
-              <ReadingView preferences={preferences} updatePreference={updatePreference} />
+              <ReadingView preferences={localPreferences} updatePreference={updatePreference} />
             )}
             {currentView === 'learning' && (
-              <LearningView preferences={preferences} updatePreference={updatePreference} />
+              <LearningView preferences={localPreferences} updatePreference={updatePreference} />
             )}
             {currentView === 'llm' && (
-              <LLMView preferences={preferences} updatePreference={updatePreference} />
+              <LLMView preferences={localPreferences} updatePreference={updatePreference} />
             )}
           </div>
 
@@ -492,7 +465,7 @@ function AppearanceView({
         <div>
           <label className="mb-3 block text-sm font-medium">Theme</label>
           <ThemePalette
-            selectedTheme={preferences.theme}
+            selectedTheme={preferences.theme || "system"}
             onThemeChange={(theme) => {
               updatePreference("theme", theme);
               window.dispatchEvent(new CustomEvent("preferencesUpdated", {
@@ -507,7 +480,7 @@ function AppearanceView({
           <label className="mb-2 block text-sm font-medium">Font Size</label>
           <div className="flex gap-2">
             <select
-              value={["small", "medium", "large"].includes(preferences.fontSize) ? preferences.fontSize : "custom"}
+              value={["small", "medium", "large"].includes(preferences.fontSize || "medium") ? preferences.fontSize : "custom"}
               onChange={(e) => {
                 if (e.target.value !== "custom") {
                   updatePreference("fontSize", e.target.value);
@@ -520,7 +493,7 @@ function AppearanceView({
               <option value="large">Large (18px)</option>
               <option value="custom">Custom</option>
             </select>
-            {!["small", "medium", "large"].includes(preferences.fontSize) && (
+            {!["small", "medium", "large"].includes(preferences.fontSize || "medium") && (
               <input
                 type="text"
                 value={preferences.fontSize}
@@ -536,8 +509,8 @@ function AppearanceView({
         <div>
           <label className="mb-2 block text-sm font-medium">Default Article View</label>
           <select
-            value={preferences.defaultView}
-            onChange={(e) => updatePreference("defaultView", e.target.value)}
+            value={preferences.defaultView || "expanded"}
+            onChange={(e) => updatePreference("defaultView", e.target.value as "compact" | "expanded")}
             className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           >
             <option value="compact">Compact</option>
@@ -549,7 +522,7 @@ function AppearanceView({
   );
 }
 
-// Reading View Component (simplified for brevity - you can expand this with all the reading preferences)
+// Reading View Component
 function ReadingView({
   preferences,
   updatePreference,
@@ -573,7 +546,7 @@ function ReadingView({
             <ToggleSwitch
               label="Enable Reading Panel"
               description="Show articles in a resizable side panel instead of a separate page"
-              checked={preferences.readingPanelEnabled}
+              checked={preferences.readingPanelEnabled || false}
               onChange={(checked) => updatePreference("readingPanelEnabled", checked)}
             />
 
@@ -618,7 +591,7 @@ function ReadingView({
                     min="30"
                     max="70"
                     step="5"
-                    value={preferences.readingPanelSize}
+                    value={preferences.readingPanelSize || 50}
                     onChange={(e) => updatePreference("readingPanelSize", parseInt(e.target.value))}
                     className="w-full"
                   />
@@ -643,7 +616,7 @@ function ReadingView({
             type="number"
             min="5"
             max="100"
-            value={preferences.articlesPerPage}
+            value={preferences.articlesPerPage || 20}
             onChange={(e) => updatePreference("articlesPerPage", parseInt(e.target.value))}
             className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
@@ -670,21 +643,21 @@ function ReadingView({
         <ToggleSwitch
           label="Show Read Articles"
           description="Display articles you've already read in the feed"
-          checked={preferences.showReadArticles}
+          checked={preferences.showReadArticles || false}
           onChange={(checked) => updatePreference("showReadArticles", checked)}
         />
 
         <ToggleSwitch
           label="Auto Mark as Read"
           description="Automatically mark articles as read when you open them"
-          checked={preferences.autoMarkAsRead}
+          checked={preferences.autoMarkAsRead || false}
           onChange={(checked) => updatePreference("autoMarkAsRead", checked)}
         />
 
         <ToggleSwitch
           label="Show Excerpts in Related Articles"
           description="Display article snippets in the related articles section"
-          checked={preferences.showRelatedExcerpts}
+          checked={preferences.showRelatedExcerpts || false}
           onChange={(checked) => updatePreference("showRelatedExcerpts", checked)}
         />
       </div>
@@ -707,19 +680,19 @@ function LearningView({
         {/* Bounce Threshold */}
         <div>
           <label className="mb-2 block text-sm font-medium">
-            Bounce Detection Threshold: {Math.round(preferences.bounceThreshold * 100)}%
+            Bounce Detection Threshold: {Math.round((preferences.bounceThreshold || 0.25) * 100)}%
           </label>
           <input
             type="range"
             min="10"
             max="50"
             step="5"
-            value={preferences.bounceThreshold * 100}
+            value={(preferences.bounceThreshold || 0.25) * 100}
             onChange={(e) => updatePreference("bounceThreshold", parseInt(e.target.value) / 100)}
             className="w-full"
           />
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            If you leave an article before reading {Math.round(preferences.bounceThreshold * 100)}% of the estimated time,
+            If you leave an article before reading {Math.round((preferences.bounceThreshold || 0.25) * 100)}% of the estimated time,
             it counts as negative feedback
           </p>
         </div>
@@ -727,7 +700,7 @@ function LearningView({
         <ToggleSwitch
           label="Show Low-Relevance Articles"
           description="Display articles with low relevance scores (dimmed) instead of hiding them"
-          checked={preferences.showLowRelevanceArticles}
+          checked={preferences.showLowRelevanceArticles || false}
           onChange={(checked) => updatePreference("showLowRelevanceArticles", checked)}
         />
 
@@ -776,26 +749,7 @@ function LearningView({
           <p className="mb-3 text-xs text-gray-600 dark:text-gray-400">
             The system learns from your feedback to personalize article recommendations
           </p>
-          <button
-            onClick={async () => {
-              if (confirm("Are you sure you want to reset all learned patterns? This cannot be undone.")) {
-                try {
-                  const response = await fetch("/api/user/patterns/reset", {
-                    method: "POST",
-                  });
-                  if (response.ok) {
-                    toast.success("Patterns reset successfully!");
-                  }
-                } catch (error) {
-                  console.error("Failed to reset patterns:", error);
-                  toast.error("Failed to reset patterns. Please try again.");
-                }
-              }
-            }}
-            className="btn btn-danger btn-sm"
-          >
-            Reset Learning
-          </button>
+          <ResetPatternsButton />
         </div>
       </div>
     </div>
@@ -938,6 +892,33 @@ function LLMView({
   );
 }
 
+// Reset Patterns Button Component
+function ResetPatternsButton() {
+  const resetPatterns = useResetPatterns();
+
+  const handleReset = async () => {
+    if (confirm("Are you sure you want to reset all learned patterns? This cannot be undone.")) {
+      try {
+        await resetPatterns.mutateAsync();
+        toast.success("Patterns reset successfully!");
+      } catch (error) {
+        console.error("Failed to reset patterns:", error);
+        toast.error("Failed to reset patterns. Please try again.");
+      }
+    }
+  };
+
+  return (
+    <button
+      onClick={handleReset}
+      disabled={resetPatterns.isPending}
+      className="btn btn-danger btn-sm disabled:opacity-50"
+    >
+      {resetPatterns.isPending ? "Resetting..." : "Reset Learning"}
+    </button>
+  );
+}
+
 // Toggle Switch Component
 function ToggleSwitch({
   label,
@@ -971,4 +952,3 @@ function ToggleSwitch({
     </div>
   );
 }
-

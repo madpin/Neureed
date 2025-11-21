@@ -1,8 +1,5 @@
 import { createHandler } from "@/lib/api-handler";
-import { getSchedulerStatus } from "@/lib/jobs/scheduler";
-import { isSchedulerRunning as isFeedRefreshRunning } from "@/lib/jobs/feed-refresh-job";
-import { isSchedulerRunning as isCleanupRunning } from "@/lib/jobs/cleanup-job";
-import { env } from "@/env";
+import { getCronJobStatus } from "@/lib/jobs/scheduler";
 
 export const dynamic = "force-dynamic";
 
@@ -12,23 +9,9 @@ export const dynamic = "force-dynamic";
  */
 export const GET = createHandler(
   async () => {
-    const status = getSchedulerStatus();
+    const status = getCronJobStatus();
     
-    return {
-      data: {
-        ...status,
-        feedRefreshRunning: isFeedRefreshRunning(),
-        cleanupRunning: isCleanupRunning(),
-        schedules: {
-          feedRefresh: env.FEED_REFRESH_SCHEDULE,
-          cleanup: env.CLEANUP_SCHEDULE,
-        },
-        environment: {
-          nodeEnv: env.NODE_ENV,
-          nextRuntime: process.env.NEXT_RUNTIME,
-        },
-      },
-    };
+    return status; // This returns { enabled, initialized, jobs: [...] }
   },
   { requireAuth: true }
 );

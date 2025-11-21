@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { ArticleViewTracker } from "./ArticleViewTracker";
 import { ArticleToolbar } from "./ArticleToolbar";
 import { ArticleSummary, ArticleSummaryRef } from "./ArticleSummary";
@@ -8,9 +8,9 @@ import { ArticleFeedbackSection } from "./ArticleFeedbackSection";
 import { RelatedArticles } from "./RelatedArticles";
 import { LoadingSpinner } from "@/app/components/layout/LoadingSpinner";
 import { processArticleContent, estimateReadingTime } from "@/lib/content-processor";
-import type { articles, feeds } from "@prisma/client";
-import { useRef, useCallback } from "react";
 import { formatLocalizedDateTime, toISOString as formatISOString } from "@/lib/date-utils";
+import { useArticle, useGenerateArticleSummary } from "@/hooks/queries/use-articles";
+import { useUserPreferences, type UserPreferences } from "@/hooks/queries/use-user-preferences";
 
 interface ReadingPreferences {
   readingFontFamily: string;
@@ -33,10 +33,6 @@ function getReadingStyles(preferences: ReadingPreferences | null): React.CSSProp
   } as React.CSSProperties;
 }
 
-interface ArticleWithFeed extends articles {
-  feeds: feeds;
-}
-
 interface ArticlePanelProps {
   articleId: string;
   onClose: () => void;
@@ -53,78 +49,36 @@ function normalizeKeyPoints(value: unknown): string[] {
 }
 
 export function ArticlePanel({ articleId, onClose, onReadStatusChange }: ArticlePanelProps) {
-  const [article, setArticle] = useState<ArticleWithFeed | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const summaryRef = useRef<ArticleSummaryRef>(null);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [hasSummary, setHasSummary] = useState(false);
-  const [preferences, setPreferences] = useState<ReadingPreferences | null>(null);
   const [readingTime, setReadingTime] = useState<number>(0);
 
+  // Use React Query hooks
+  const { data: article, isLoading, error } = useArticle(articleId);
+  const { data: userPrefs } = useUserPreferences();
+  
+  // Map user preferences to reading preferences
+  const preferences: ReadingPreferences | null = userPrefs ? {
+    readingFontFamily: userPrefs.readingFontFamily || "Georgia",
+    readingFontSize: userPrefs.readingFontSize || 18,
+    readingLineHeight: userPrefs.readingLineHeight || 1.7,
+    readingParagraphSpacing: userPrefs.readingParagraphSpacing || 1.5,
+    breakLineSpacing: userPrefs.breakLineSpacing || 0.75,
+    showReadingTime: userPrefs.showReadingTime !== undefined ? userPrefs.showReadingTime : true,
+  } : null;
+
+  // Effect to calculate reading time and check for summary
   useEffect(() => {
-    const fetchArticle = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await fetch(`/api/articles/${articleId}`);
-        if (!response.ok) {
-          throw new Error("Failed to load article");
-        }
-        const data = await response.json();
-        const articleData = data.data?.article || data.article || data;
-        setArticle(articleData);
-        setHasSummary(!!(data.data?.article?.summary || data.article?.summary || data.summary));
-        
-        // Calculate reading time
-        if (articleData?.content) {
-          const time = estimateReadingTime(articleData.content);
-          setReadingTime(time);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load article");
-      } finally {
-        setIsLoading(false);
+    if (article) {
+      setHasSummary(!!article.summary);
+      
+      if (article.content) {
+        const time = estimateReadingTime(article.content);
+        setReadingTime(time);
       }
-    };
-
-    fetchArticle();
-  }, [articleId]);
-
-  useEffect(() => {
-    const fetchPreferences = async () => {
-      try {
-        const response = await fetch("/api/user/preferences");
-        if (response.ok) {
-          const data = await response.json();
-          const prefs = data.data?.preferences;
-          if (prefs) {
-            setPreferences({
-              readingFontFamily: prefs.readingFontFamily || "Georgia",
-              readingFontSize: prefs.readingFontSize || 18,
-              readingLineHeight: prefs.readingLineHeight || 1.7,
-              readingParagraphSpacing: prefs.readingParagraphSpacing || 1.5,
-              breakLineSpacing: prefs.breakLineSpacing || 0.75,
-              showReadingTime: prefs.showReadingTime !== undefined ? prefs.showReadingTime : true,
-            });
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load preferences:", err);
-        // Use defaults if preferences can't be loaded
-        setPreferences({
-          readingFontFamily: "Georgia",
-          readingFontSize: 18,
-          readingLineHeight: 1.7,
-          readingParagraphSpacing: 1.5,
-          breakLineSpacing: 0.75,
-          showReadingTime: true,
-        });
-      }
-    };
-
-    fetchPreferences();
-  }, []);
+    }
+  }, [article]);
 
   const handleGenerateSummary = useCallback(async () => {
     if (!summaryRef.current) return;
@@ -177,7 +131,7 @@ export function ArticlePanel({ articleId, onClose, onReadStatusChange }: Article
           <h3 className="mb-2 text-lg font-semibold text-foreground">
             Failed to load article
           </h3>
-          <p className="text-sm text-foreground/60">{error}</p>
+          <p className="text-sm text-foreground/60">{error ? (error as Error).message : "Unknown error"}</p>
           <button
             onClick={onClose}
             className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
@@ -189,7 +143,7 @@ export function ArticlePanel({ articleId, onClose, onReadStatusChange }: Article
     );
   }
 
-  const processedContent = processArticleContent(article.content, article.url);
+  const processedContent = processArticleContent(article.content || "", article.url);
   const initialSummary =
     article.summary && article.keyPoints && article.topics
       ? {
@@ -202,7 +156,7 @@ export function ArticlePanel({ articleId, onClose, onReadStatusChange }: Article
   return (
     <div className="flex h-full flex-col bg-background">
       {/* View Tracker */}
-      <ArticleViewTracker articleId={article.id} onReadStatusChange={onReadStatusChange} />
+      <ArticleViewTracker articleId={article.id} estimatedTime={readingTime * 60} onReadStatusChange={onReadStatusChange} />
 
       {/* Header with controls */}
       <div className="flex-shrink-0 border-b border-border bg-background px-4 py-3">
@@ -291,17 +245,17 @@ export function ArticlePanel({ articleId, onClose, onReadStatusChange }: Article
 
           {/* Feed Info */}
           <div className="mb-3 flex items-center gap-3 text-sm text-foreground/70">
-            {article.feeds.imageUrl && (
+            {article.feeds?.imageUrl && (
               <img
                 src={article.feeds.imageUrl}
                 alt={article.feeds.name}
                 className="h-6 w-6 rounded-full"
               />
             )}
-            <span className="font-medium">{article.feeds.name}</span>
+            <span className="font-medium">{article.feeds?.name}</span>
             <span>•</span>
-            <time dateTime={formatISOString(article.publishedAt, article.createdAt)}>
-              {formatLocalizedDateTime(article.publishedAt, article.createdAt)}
+            <time dateTime={formatISOString(article.publishedAt || null, article.createdAt)}>
+              {formatLocalizedDateTime(article.publishedAt || null, article.createdAt)}
             </time>
             {article.author && (
               <>

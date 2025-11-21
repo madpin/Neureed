@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArticlePageClient } from "@/app/components/articles/ArticlePageClient";
 import { ArticleFeedbackSection } from "@/app/components/articles/ArticleFeedbackSection";
@@ -8,9 +7,7 @@ import { RelatedArticles } from "@/app/components/articles/RelatedArticles";
 import { LoadingSpinner } from "@/app/components/layout/LoadingSpinner";
 import { processArticleContent, estimateReadingTime } from "@/lib/content-processor";
 import { formatLocalizedDateTime, toISOString } from "@/lib/date-utils";
-import type { articles, feeds } from "@prisma/client";
-
-type ArticleWithFeed = articles & { feeds: feeds };
+import { useArticle } from "@/hooks/queries/use-articles";
 
 /**
  * Standalone article page - displays article in full page view
@@ -20,31 +17,8 @@ export default function ArticlePage() {
   const params = useParams();
   const router = useRouter();
   const articleId = params.id as string;
-  const [article, setArticle] = useState<ArticleWithFeed | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchArticle = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await fetch(`/api/articles/${articleId}`);
-        if (!response.ok) {
-          throw new Error("Failed to load article");
-        }
-        const data = await response.json();
-        const articleData = data.data?.article || data.article || data;
-        setArticle(articleData);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load article");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchArticle();
-  }, [articleId]);
+  const { data: article, isLoading, error } = useArticle(articleId);
 
   if (isLoading) {
     return (
@@ -63,7 +37,9 @@ export default function ArticlePage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <p className="text-foreground/70 mb-4">{error || "Article not found"}</p>
+          <p className="text-foreground/70 mb-4">
+            {error instanceof Error ? error.message : error || "Article not found"}
+          </p>
           <button
             onClick={() => router.push("/")}
             className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
@@ -124,7 +100,9 @@ export default function ArticlePage() {
             {publishedDate && <span>•</span>}
           </>
         )}
-        {publishedDate && <time dateTime={toISOString(article.publishedAt)}>{publishedDate}</time>}
+        {publishedDate && article.publishedAt && (
+          <time dateTime={toISOString(article.publishedAt)}>{publishedDate}</time>
+        )}
       </div>
 
       {/* Title */}

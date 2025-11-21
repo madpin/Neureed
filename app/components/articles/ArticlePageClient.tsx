@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState, useCallback, useEffect } from "react";
+import { useRef, useState, useCallback } from "react";
 import { ArticleToolbar } from "./ArticleToolbar";
 import { ArticleSummary, ArticleSummaryRef } from "./ArticleSummary";
+import { useUserPreferences, type UserPreferences } from "@/hooks/queries/use-user-preferences";
 
 interface ReadingPreferences {
   readingFontFamily: string;
@@ -15,7 +16,7 @@ interface ReadingPreferences {
 
 function getReadingStyles(preferences: ReadingPreferences | null): React.CSSProperties {
   if (!preferences) return {};
-  
+
   return {
     fontFamily: preferences.readingFontFamily,
     fontSize: `${preferences.readingFontSize}px`,
@@ -23,6 +24,17 @@ function getReadingStyles(preferences: ReadingPreferences | null): React.CSSProp
     '--paragraph-spacing': `${preferences.readingParagraphSpacing}rem`,
     '--break-line-spacing': `${preferences.breakLineSpacing}rem`,
   } as React.CSSProperties;
+}
+
+function extractReadingPreferences(prefs: UserPreferences): ReadingPreferences {
+  return {
+    readingFontFamily: prefs.readingFontFamily || "Georgia",
+    readingFontSize: prefs.readingFontSize || 18,
+    readingLineHeight: prefs.readingLineHeight || 1.7,
+    readingParagraphSpacing: prefs.readingParagraphSpacing || 1.5,
+    breakLineSpacing: prefs.breakLineSpacing || 0.75,
+    showReadingTime: prefs.showReadingTime !== undefined ? prefs.showReadingTime : true,
+  };
 }
 
 interface ArticlePageClientProps {
@@ -51,42 +63,10 @@ export function ArticlePageClient({
   const summaryRef = useRef<ArticleSummaryRef>(null);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [hasSummary, setHasSummary] = useState(!!initialSummary);
-  const [preferences, setPreferences] = useState<ReadingPreferences | null>(null);
 
-  useEffect(() => {
-    const fetchPreferences = async () => {
-      try {
-        const response = await fetch("/api/user/preferences");
-        if (response.ok) {
-          const data = await response.json();
-          const prefs = data.data?.preferences;
-          if (prefs) {
-            setPreferences({
-              readingFontFamily: prefs.readingFontFamily || "Georgia",
-              readingFontSize: prefs.readingFontSize || 18,
-              readingLineHeight: prefs.readingLineHeight || 1.7,
-              readingParagraphSpacing: prefs.readingParagraphSpacing || 1.5,
-              breakLineSpacing: prefs.breakLineSpacing || 0.75,
-              showReadingTime: prefs.showReadingTime !== undefined ? prefs.showReadingTime : true,
-            });
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load preferences:", err);
-        // Use defaults if preferences can't be loaded
-        setPreferences({
-          readingFontFamily: "Georgia",
-          readingFontSize: 18,
-          readingLineHeight: 1.7,
-          readingParagraphSpacing: 1.5,
-          breakLineSpacing: 0.75,
-          showReadingTime: true,
-        });
-      }
-    };
-
-    fetchPreferences();
-  }, []);
+  // Use React Query to fetch preferences
+  const { data: preferencesData } = useUserPreferences();
+  const preferences = preferencesData ? extractReadingPreferences(preferencesData) : null;
 
   const handleGenerateSummary = useCallback(async () => {
     if (!summaryRef.current) return;

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, createContext, useContext } from "react";
 import { useSession } from "next-auth/react";
 import { Toaster } from "sonner";
+import { useUserPreferences } from "@/hooks/queries/use-user-preferences";
 
 type ThemeMode = "light" | "dark" | "nord-light" | "nord-dark" | "solarized-light" | "solarized-dark" | "barbie-light" | "barbie-dark" | "purple-light" | "purple-dark" | "orange-light" | "orange-dark" | "rainbow-light" | "rainbow-dark" | "system";
 
@@ -28,7 +29,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<ThemeMode>("system");
   const [fontSize, setFontSizeState] = useState<string>("medium");
   const [mounted, setMounted] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  
+  // Use React Query for preferences
+  const { data: preferences, isLoading: isLoadingPreferences } = useUserPreferences();
 
   // Apply font size to document
   const applyFontSize = useCallback((size: string) => {
@@ -80,51 +83,36 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     applyFontSize(newSize);
   };
 
-  // Load initial preferences
+  // Load initial preferences from localStorage
   useEffect(() => {
-    async function loadUserPreferences() {
-      // First, try to load from localStorage immediately
-      const savedTheme = localStorage.getItem('neureed-theme');
-      const savedFontSize = localStorage.getItem('neureed-fontSize');
-      
-      if (savedTheme && ["light", "dark", "nord-light", "nord-dark", "solarized-light", "solarized-dark", "barbie-light", "barbie-dark", "purple-light", "purple-dark", "orange-light", "orange-dark", "rainbow-light", "rainbow-dark", "system"].includes(savedTheme)) {
-        setThemeState(savedTheme as ThemeMode);
-        applyTheme(savedTheme as ThemeMode);
-      }
-      
-      if (savedFontSize) {
-        setFontSizeState(savedFontSize);
-        applyFontSize(savedFontSize);
-      }
-      
-      if (!session?.user) {
-        setMounted(true);
-        setIsLoading(false);
-        return;
-      }
+    const savedTheme = localStorage.getItem('neureed-theme');
+    const savedFontSize = localStorage.getItem('neureed-fontSize');
+    
+    if (savedTheme && ["light", "dark", "nord-light", "nord-dark", "solarized-light", "solarized-dark", "barbie-light", "barbie-dark", "purple-light", "purple-dark", "orange-light", "orange-dark", "rainbow-light", "rainbow-dark", "system"].includes(savedTheme)) {
+      setThemeState(savedTheme as ThemeMode);
+      applyTheme(savedTheme as ThemeMode);
+    }
+    
+    if (savedFontSize) {
+      setFontSizeState(savedFontSize);
+      applyFontSize(savedFontSize);
+    }
+    
+    setMounted(true);
+  }, [applyTheme, applyFontSize]);
 
-      try {
-        const response = await fetch("/api/user/preferences");
-        const data = await response.json();
-        const prefs = data.data?.preferences;
-
-        if (prefs?.theme && ["light", "dark", "nord-light", "nord-dark", "solarized-light", "solarized-dark", "barbie-light", "barbie-dark", "purple-light", "purple-dark", "orange-light", "orange-dark", "rainbow-light", "rainbow-dark", "system"].includes(prefs.theme)) {
-          setTheme(prefs.theme as ThemeMode);
-        }
-        
-        if (prefs?.fontSize) {
-          setFontSize(prefs.fontSize);
-        }
-      } catch (err) {
-        console.error("Failed to load theme settings:", err);
-      } finally {
-        setMounted(true);
-        setIsLoading(false);
+  // Update with data from API when available
+  useEffect(() => {
+    if (preferences && session?.user) {
+      if (preferences.theme && ["light", "dark", "nord-light", "nord-dark", "solarized-light", "solarized-dark", "barbie-light", "barbie-dark", "purple-light", "purple-dark", "orange-light", "orange-dark", "rainbow-light", "rainbow-dark", "system"].includes(preferences.theme)) {
+        setTheme(preferences.theme as ThemeMode);
+      }
+      
+      if (preferences.fontSize) {
+        setFontSize(preferences.fontSize);
       }
     }
-
-    loadUserPreferences();
-  }, [session]);
+  }, [preferences, session]); // Removed applyTheme/applyFontSize from deps to avoid re-running if they're stable, setTheme/setFontSize call them.
 
   // System theme listener
   useEffect(() => {
@@ -156,8 +144,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("preferencesUpdated" as any, handlePreferencesUpdate);
   }, []);
 
-  // Show loading state until theme is ready
-  if (isLoading) {
+  // Show loading state only on initial client-side load if we don't have local storage values
+  // But we set mounted=true after checking local storage, so this should be fast.
+  // If we rely on API for initial theme, we might flash.
+  // The previous implementation waited for API if logged in.
+  // Now we optimistically use local storage if available, then update with API.
+  // This prevents flashing if user has visited before.
+  
+  if (!mounted) {
     return (
       <div style={{ 
         position: 'fixed', 

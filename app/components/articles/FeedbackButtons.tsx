@@ -1,8 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import {
+  useArticleFeedback,
+  useSubmitArticleFeedback,
+  useDeleteArticleFeedback,
+} from "@/hooks/queries/use-articles";
 
 interface FeedbackButtonsProps {
   articleId: string;
@@ -16,70 +20,43 @@ export function FeedbackButtons({
   onFeedbackChange,
 }: FeedbackButtonsProps) {
   const { data: session } = useSession();
-  const [feedback, setFeedback] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch existing feedback on mount
-  useEffect(() => {
-    if (!session?.user) return;
+  const { data: feedbackData } = useArticleFeedback(articleId);
+  const submitFeedback = useSubmitArticleFeedback();
+  const deleteFeedback = useDeleteArticleFeedback();
 
-    const fetchFeedback = async () => {
-      try {
-        const response = await fetch(`/api/user/articles/${articleId}/feedback`);
-        if (response.ok) {
-          const result = await response.json();
-          // API wraps response in { success: true, data: { feedback: ... } }
-          if (result.data?.feedback) {
-            setFeedback(result.data.feedback.feedbackValue);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching feedback:", error);
-      }
-    };
+  const feedback = feedbackData?.feedbackValue ?? null;
+  const isLoading = submitFeedback.isPending || deleteFeedback.isPending;
 
-    fetchFeedback();
-  }, [articleId, session]);
-
-  const handleFeedback = async (value: number) => {
+  const handleFeedback = (value: number) => {
     if (!session?.user) {
       toast.error("Please sign in to provide feedback");
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      // If clicking the same button, remove feedback
-      if (feedback === value) {
-        const response = await fetch(`/api/user/articles/${articleId}/feedback`, {
-          method: "DELETE",
-        });
-
-        if (response.ok) {
-          setFeedback(null);
+    // If clicking the same button, remove feedback
+    if (feedback === value) {
+      deleteFeedback.mutate(articleId, {
+        onSuccess: () => {
           onFeedbackChange?.(null);
-        }
-      } else {
-        // Submit new feedback
-        const response = await fetch(`/api/user/articles/${articleId}/feedback`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+        },
+        onError: () => {
+          toast.error("Failed to remove feedback");
+        },
+      });
+    } else {
+      // Submit new feedback
+      submitFeedback.mutate(
+        { articleId, feedbackValue: value },
+        {
+          onSuccess: () => {
+            onFeedbackChange?.(value);
           },
-          body: JSON.stringify({ feedbackValue: value }),
-        });
-
-        if (response.ok) {
-          setFeedback(value);
-          onFeedbackChange?.(value);
+          onError: () => {
+            toast.error("Failed to submit feedback");
+          },
         }
-      }
-    } catch (error) {
-      console.error("Error submitting feedback:", error);
-      toast.error("Failed to submit feedback");
-    } finally {
-      setIsLoading(false);
+      );
     }
   };
 

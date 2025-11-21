@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ResizableSplitPane } from "./ResizableSplitPane";
 import { ArticlePanel } from "../articles/ArticlePanel";
+import { useUserPreferences, useUpdatePreference } from "@/hooks/queries/use-user-preferences";
 
 type Position = "right" | "left" | "top" | "bottom";
 
@@ -13,20 +14,16 @@ interface ReadingPanelLayoutProps {
   onArticleReadStatusChange?: () => void;
 }
 
-interface UserPreferences {
-  readingPanelEnabled: boolean;
-  readingPanelPosition: Position;
-  readingPanelSize: number;
-}
-
 export function ReadingPanelLayout({ children, onArticleReadStatusChange }: ReadingPanelLayoutProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
-  const [preferences, setPreferences] = useState<UserPreferences | null>(null);
-  const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+
+  // Use React Query for preferences
+  const { data: preferences, isLoading: isLoadingPreferences } = useUserPreferences();
+  const updatePreference = useUpdatePreference();
 
   // Check if mobile on mount and resize
   useEffect(() => {
@@ -38,37 +35,6 @@ export function ReadingPanelLayout({ children, onArticleReadStatusChange }: Read
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
-
-  // Load user preferences
-  useEffect(() => {
-    const loadPreferences = async () => {
-      if (!session?.user) {
-        setIsLoadingPreferences(false);
-        return;
-      }
-
-      try {
-        const response = await fetch("/api/user/preferences");
-        if (response.ok) {
-          const data = await response.json();
-          const prefs = data.data?.preferences;
-          if (prefs) {
-            setPreferences({
-              readingPanelEnabled: prefs.readingPanelEnabled ?? false,
-              readingPanelPosition: prefs.readingPanelPosition ?? "right",
-              readingPanelSize: prefs.readingPanelSize ?? 50,
-            });
-          }
-        }
-      } catch (error) {
-        console.error("Failed to load preferences:", error);
-      } finally {
-        setIsLoadingPreferences(false);
-      }
-    };
-
-    loadPreferences();
-  }, [session]);
 
   // Sync with URL state
   useEffect(() => {
@@ -109,45 +75,11 @@ export function ReadingPanelLayout({ children, onArticleReadStatusChange }: Read
 
   // Debounced save of panel size
   const handleResize = useCallback(
-    async (newSize: number) => {
+    (newSize: number) => {
       if (!session?.user) return;
-
-      try {
-        await fetch("/api/user/preferences", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            readingPanelSize: newSize,
-          }),
-        });
-
-        setPreferences((prev) => prev ? { ...prev, readingPanelSize: newSize } : null);
-      } catch (error) {
-        console.error("Failed to save panel size:", error);
-      }
+      updatePreference.mutate({ readingPanelSize: newSize });
     },
-    [session]
-  );
-
-  const handlePositionChange = useCallback(
-    async (newPosition: Position) => {
-      if (!session?.user) return;
-
-      try {
-        await fetch("/api/user/preferences", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            readingPanelPosition: newPosition,
-          }),
-        });
-
-        setPreferences((prev) => prev ? { ...prev, readingPanelPosition: newPosition } : null);
-      } catch (error) {
-        console.error("Failed to save panel position:", error);
-      }
-    },
-    [session]
+    [session, updatePreference]
   );
 
   // Check if panel should be active
@@ -187,8 +119,8 @@ export function ReadingPanelLayout({ children, onArticleReadStatusChange }: Read
 
   console.log("[ReadingPanelLayout] Panel active:", {
     selectedArticleId,
-    position: preferences.readingPanelPosition,
-    size: preferences.readingPanelSize,
+    position: preferences?.readingPanelPosition,
+    size: preferences?.readingPanelSize,
   });
 
   // If panel enabled but no article selected, show normal layout
@@ -196,12 +128,16 @@ export function ReadingPanelLayout({ children, onArticleReadStatusChange }: Read
     return <div className="h-full">{renderChildren()}</div>;
   }
 
+  // Safely cast preferences to required types since we verified they exist in isPanelActive
+  const panelPosition = (preferences?.readingPanelPosition as Position) || "right";
+  const panelSize = preferences?.readingPanelSize || 50;
+
   // Show split pane with article panel
   return (
     <div className="h-full">
       <ResizableSplitPane
-        position={preferences.readingPanelPosition}
-        size={preferences.readingPanelSize}
+        position={panelPosition}
+        size={panelSize}
         onResize={handleResize}
         panel={
           <ArticlePanel 

@@ -1,20 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { ArticleCard } from "./ArticleCard";
 import { RelevanceScore } from "./RelevanceScore";
 import { LoadingSpinner, LoadingSkeleton } from "@/app/components/layout/LoadingSpinner";
 import { EmptyState } from "@/app/components/layout/EmptyState";
-import type { articles, feeds } from "@prisma/client";
-import type { ArticleScore } from "@/lib/services/article-scoring-service";
-
-interface ArticleWithFeed extends articles {
-  feeds: feeds;
-}
+import { useArticleScores, type ArticleScore, type Article } from "@/hooks/queries/use-articles";
 
 interface ArticleListProps {
-  articles: ArticleWithFeed[];
+  articles: Article[];
   isLoading?: boolean;
   variant?: "compact" | "expanded";
   onArticleSelect?: (articleId: string) => void;
@@ -40,45 +35,27 @@ export function ArticleList({
   infiniteScrollMode = "both",
 }: ArticleListProps) {
   const { data: session } = useSession();
-  const [scores, setScores] = useState<Map<string, ArticleScore>>(new Map());
-  const [isLoadingScores, setIsLoadingScores] = useState(false);
 
-  // Fetch article scores when user is logged in
-  useEffect(() => {
-    if (!session?.user || articles.length === 0) return;
+  // Extract article IDs and use React Query to fetch scores
+  const articleIds = useMemo(
+    () => articles.map((a) => a.id),
+    [articles]
+  );
 
-    const fetchScores = async () => {
-      setIsLoadingScores(true);
-      try {
-        const articleIds = articles.map((a) => a.id);
-        const response = await fetch("/api/user/articles/scores", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ articleIds }),
-        });
+  const { data: scoresData } = useArticleScores(
+    session?.user ? articleIds : []
+  );
 
-        if (response.ok) {
-          const result = await response.json();
-          const scoresMap = new Map<string, ArticleScore>();
-          // API wraps response in { success: true, data: { scores: [...] } }
-          if (result.data?.scores) {
-            result.data.scores.forEach((score: ArticleScore) => {
-              scoresMap.set(score.articleId, score);
-            });
-          }
-          setScores(scoresMap);
-        }
-      } catch (error) {
-        console.error("Error fetching article scores:", error);
-      } finally {
-        setIsLoadingScores(false);
-      }
-    };
-
-    fetchScores();
-  }, [session, articles]);
+  // Convert scores array to Map for easy lookup
+  const scores = useMemo(() => {
+    const scoresMap = new Map<string, ArticleScore>();
+    if (scoresData) {
+      scoresData.forEach((score) => {
+        scoresMap.set(String(score.articleId), score);
+      });
+    }
+    return scoresMap;
+  }, [scoresData]);
 
   if (isLoading) {
     return <LoadingSkeleton count={5} />;

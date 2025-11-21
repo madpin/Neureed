@@ -1,89 +1,37 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-
-interface FeedbackStats {
-  totalFeedback: number;
-  thumbsUp: number;
-  thumbsDown: number;
-  bounces: number;
-  completions: number;
-  averageTimeSpent: number | null;
-}
-
-interface PatternStats {
-  totalPatterns: number;
-  positivePatterns: number;
-  negativePatterns: number;
-  strongestPositive: {
-    keyword: string;
-    weight: number;
-    feedbackCount: number;
-  } | null;
-  strongestNegative: {
-    keyword: string;
-    weight: number;
-    feedbackCount: number;
-  } | null;
-}
-
-interface Pattern {
-  id: string;
-  keyword: string;
-  weight: number;
-  feedbackCount: number;
-  updatedAt: string;
-}
+import { toast } from "sonner";
+import { 
+  useFeedbackStats, 
+  usePatternStats, 
+  usePatterns, 
+  useResetPatterns,
+  type FeedbackStats,
+  type PatternStats,
+  type Pattern
+} from "@/hooks/queries/use-analytics";
 
 export default function AnalyticsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [feedbackStats, setFeedbackStats] = useState<FeedbackStats | null>(null);
-  const [patternStats, setPatternStats] = useState<PatternStats | null>(null);
-  const [patterns, setPatterns] = useState<Pattern[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [showAllPatterns, setShowAllPatterns] = useState(false);
+  
+  const { data: feedbackStats, isLoading: loadingFeedback } = useFeedbackStats();
+  const { data: patternStats, isLoading: loadingPatternStats } = usePatternStats();
+  const { data: patterns = [], isLoading: loadingPatterns } = usePatterns();
+  
+  const resetPatternsMutation = useResetPatterns();
+  
+  const isLoading = loadingFeedback || loadingPatternStats || loadingPatterns;
 
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/");
-    } else if (status === "authenticated") {
-      loadAnalytics();
     }
   }, [status, router]);
-
-  const loadAnalytics = async () => {
-    setIsLoading(true);
-    try {
-      const [feedbackRes, patternStatsRes, patternsRes] = await Promise.all([
-        fetch("/api/user/feedback/stats"),
-        fetch("/api/user/patterns/stats"),
-        fetch("/api/user/patterns"),
-      ]);
-
-      if (feedbackRes.ok) {
-        const data = await feedbackRes.json();
-        setFeedbackStats(data.data?.stats || null);
-      }
-
-      if (patternStatsRes.ok) {
-        const data = await patternStatsRes.json();
-        setPatternStats(data.data?.stats || null);
-      }
-
-      if (patternsRes.ok) {
-        const data = await patternsRes.json();
-        setPatterns(data.data?.patterns || []);
-      }
-    } catch (error) {
-      console.error("Failed to load analytics:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   if (status === "loading" || isLoading) {
     return (
@@ -100,10 +48,48 @@ export default function AnalyticsPage() {
     return null;
   }
 
-  const displayedPatterns = showAllPatterns ? patterns : patterns.slice(0, 10);
-  const positivePatterns = patterns.filter((p) => p.weight > 0);
-  const negativePatterns = patterns.filter((p) => p.weight < 0);
+  const handleResetPatterns = async () => {
+    if (confirm("Are you sure you want to reset all learned patterns? This cannot be undone.")) {
+      try {
+        await resetPatternsMutation.mutateAsync();
+        toast.success("Patterns reset successfully!");
+      } catch (error) {
+        console.error("Failed to reset patterns:", error);
+        toast.error("Failed to reset patterns. Please try again.");
+      }
+    }
+  };
+  
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <AnalyticsContent 
+        feedbackStats={feedbackStats} 
+        patternStats={patternStats} 
+        patterns={patterns} 
+        onResetPatterns={handleResetPatterns}
+        isResetting={resetPatternsMutation.isPending}
+      />
+    </div>
+  );
+}
 
+function AnalyticsContent({ 
+  feedbackStats, 
+  patternStats, 
+  patterns,
+  onResetPatterns,
+  isResetting
+}: { 
+  feedbackStats: FeedbackStats | undefined, 
+  patternStats: PatternStats | undefined, 
+  patterns: Pattern[],
+  onResetPatterns: () => void,
+  isResetting: boolean
+}) {
+  const [showAllPatterns, setShowAllPatterns] = useState(false);
+  
+  const displayedPatterns = showAllPatterns ? patterns : patterns.slice(0, 10);
+  
   // Calculate progress towards effective personalization
   const MIN_FEEDBACK_FOR_PERSONALIZATION = 10;
   const totalFeedback = feedbackStats?.totalFeedback || 0;
@@ -118,7 +104,6 @@ export default function AnalyticsPage() {
   const isPersonalizationActive = totalFeedback >= MIN_FEEDBACK_FOR_PERSONALIZATION;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-6xl px-4 py-8">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
@@ -400,8 +385,8 @@ export default function AnalyticsPage() {
           </div>
         )}
 
-        {/* Empty State */}
-        {patterns.length === 0 && feedbackStats?.totalFeedback === 0 && (
+        {/* Empty State and Reset */}
+        {patterns.length === 0 && feedbackStats?.totalFeedback === 0 ? (
           <div className="rounded-lg border border-border bg-card p-12 text-center shadow-sm">
             <svg
               className="mx-auto mb-4 h-16 w-16 text-muted-foreground"
@@ -429,9 +414,18 @@ export default function AnalyticsPage() {
               Browse Articles
             </Link>
           </div>
+        ) : (
+          /* Reset Button */
+          <div className="mt-8 flex justify-end">
+            <button
+              onClick={onResetPatterns}
+              disabled={isResetting}
+              className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-100 disabled:opacity-50 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30"
+            >
+              {isResetting ? "Resetting..." : "Reset Learning Data"}
+            </button>
+          </div>
         )}
       </div>
-    </div>
   );
 }
-

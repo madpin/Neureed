@@ -1,38 +1,29 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import type { feeds, categories } from "@prisma/client";
-
-type Category = categories;
-
-interface FeedWithCategories extends feeds {
-  feedCategories?: Array<{
-    category: categories;
-  }>;
-}
-
-interface UserFeedSubscription {
-  feeds: FeedWithCategories;
-}
+import { useState, useRef, useEffect } from "react";
+import { useUserFeeds } from "@/hooks/queries/use-feeds";
+import { useCategories } from "@/hooks/queries/use-categories";
+import { useExportOpml } from "@/hooks/queries/use-opml";
 
 interface OpmlExportModalProps {
   onClose: () => void;
 }
 
 export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
-  const [loading, setLoading] = useState(true);
-  const [exporting, setExporting] = useState(false);
-  const [subscriptions, setSubscriptions] = useState<UserFeedSubscription[]>([]);
-  const [categories, setCategories] = useState<categories[]>([]);
   const [exportMode, setExportMode] = useState<"all" | "categories" | "feeds">("all");
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<string>>(new Set());
   const [selectedFeedIds, setSelectedFeedIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  // Use React Query hooks
+  const { data: subscriptions = [], isLoading: loadingFeeds } = useUserFeeds();
+  const { data: categoriesData = [], isLoading: loadingCategories } = useCategories();
+  
+  const exportMutation = useExportOpml();
+
+  const loading = loadingFeeds || loadingCategories;
+  const exporting = exportMutation.isPending;
 
   // Handle click outside modal
   useEffect(() => {
@@ -46,65 +37,23 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Load user's feeds
-      const feedsResponse = await fetch("/api/user/feeds");
-      if (!feedsResponse.ok) throw new Error("Failed to load feeds");
-      const feedsData = await feedsResponse.json();
-      setSubscriptions(feedsData.subscriptions || []);
-
-      // Load categories
-      const categoriesResponse = await fetch("/api/feeds?limit=1000");
-      if (!categoriesResponse.ok) throw new Error("Failed to load categories");
-      const categoriesData = await categoriesResponse.json();
-
-      // Extract unique categories from feeds
-      const uniqueCategories = new Map<string, Category>();
-      for (const subscription of feedsData.subscriptions || []) {
-        if (subscription.feeds?.feedCategories) {
-          for (const fc of subscription.feeds.feedCategories) {
-            if (fc.category && !uniqueCategories.has(fc.category.id)) {
-              uniqueCategories.set(fc.category.id, fc.category);
-            }
-          }
-        }
-      }
-      setCategories(Array.from(uniqueCategories.values()));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load data");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleExport = async () => {
     try {
-      setExporting(true);
       setError(null);
 
-      // Build query parameters
-      const params = new URLSearchParams();
+      // Build options
+      const options: { categoryIds?: string[]; feedIds?: string[] } = {};
 
       if (exportMode === "categories" && selectedCategoryIds.size > 0) {
-        selectedCategoryIds.forEach((id) => params.append("categoryIds", id));
+        options.categoryIds = Array.from(selectedCategoryIds);
       } else if (exportMode === "feeds" && selectedFeedIds.size > 0) {
-        selectedFeedIds.forEach((id) => params.append("feedIds", id));
+        options.feedIds = Array.from(selectedFeedIds);
       }
 
       // Make export request
-      const response = await fetch(`/api/user/opml/export?${params.toString()}`);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Export failed");
-      }
+      const blob = await exportMutation.mutateAsync(options);
 
       // Download file
-      const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -118,8 +67,6 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
       setTimeout(() => onClose(), 500);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Export failed");
-    } finally {
-      setExporting(false);
     }
   };
 
@@ -144,7 +91,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
   };
 
   const selectAllCategories = () => {
-    setSelectedCategoryIds(new Set(categories.map((c) => c.id)));
+    setSelectedCategoryIds(new Set(categoriesData.map((c) => c.id)));
   };
 
   const deselectAllCategories = () => {
@@ -152,7 +99,7 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
   };
 
   const selectAllFeeds = () => {
-    setSelectedFeedIds(new Set(subscriptions.map((s) => s.feeds.id)));
+    setSelectedFeedIds(new Set(subscriptions.map((s) => s.id)));
   };
 
   const deselectAllFeeds = () => {
@@ -162,10 +109,9 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
   const getExportCount = () => {
     if (exportMode === "all") return subscriptions.length;
     if (exportMode === "categories") {
+      // Count feeds in selected categories
       return subscriptions.filter((s) =>
-        s.feeds?.feedCategories?.some((fc) =>
-          selectedCategoryIds.has(fc.category.id)
-        )
+        s.category && selectedCategoryIds.has(s.category.id)
       ).length;
     }
     return selectedFeedIds.size;
@@ -273,10 +219,10 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
                     </div>
                   </div>
                   <div className="max-h-48 overflow-y-auto space-y-2 rounded-lg border border-border p-3 border-border">
-                    {categories.length === 0 ? (
+                    {categoriesData.length === 0 ? (
                       <p className="text-sm text-foreground/60">No categories found</p>
                     ) : (
-                      categories.map((category) => (
+                      categoriesData.map((category) => (
                         <label key={category.id} className="flex items-center gap-3 cursor-pointer">
                           <input
                             type="checkbox"
@@ -319,15 +265,15 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
                   </div>
                   <div className="max-h-64 overflow-y-auto space-y-2 rounded-lg border border-border p-3 border-border">
                     {subscriptions.map((subscription) => (
-                      <label key={subscription.feeds.id} className="flex items-center gap-3 cursor-pointer">
+                      <label key={subscription.id} className="flex items-center gap-3 cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={selectedFeedIds.has(subscription.feeds.id)}
-                          onChange={() => toggleFeed(subscription.feeds.id)}
+                          checked={selectedFeedIds.has(subscription.id)}
+                          onChange={() => toggleFeed(subscription.id)}
                           className="h-4 w-4 rounded text-blue-600"
                         />
                         <span className="text-sm text-foreground/70">
-                          {subscription.feeds.name}
+                          {subscription.name}
                         </span>
                       </label>
                     ))}
@@ -366,4 +312,3 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
     </div>
   );
 }
-

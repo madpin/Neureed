@@ -1,18 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { use } from "react";
-import { useSession } from "next-auth/react";
 import { ArticleList } from "@/app/components/articles/ArticleList";
 import { ArticleSortDropdown } from "@/app/components/articles/ArticleSortDropdown";
 import { ReadingPanelLayout } from "@/app/components/layout/ReadingPanelLayout";
-import type { articles, feeds } from "@prisma/client";
 import type { ArticleSortOrder, ArticleSortDirection } from "@/lib/validations/article-validation";
-
-interface ArticleWithFeed extends articles {
-  feeds: feeds;
-}
+import { useArticles } from "@/hooks/queries/use-articles";
+import { useUserPreferences, useUpdatePreference } from "@/hooks/queries/use-user-preferences";
 
 export default function TopicDetailPage({
   params,
@@ -20,70 +16,30 @@ export default function TopicDetailPage({
   params: Promise<{ topic: string }>;
 }) {
   const { topic } = use(params);
-  const { data: session } = useSession();
   const decodedTopic = decodeURIComponent(topic);
-  const [articles, setArticles] = useState<ArticleWithFeed[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [sortOrder, setSortOrder] = useState<ArticleSortOrder>("publishedAt");
-  const [sortDirection, setSortDirection] = useState<ArticleSortDirection>("desc");
+  
+  // Use React Query for preferences
+  const { data: preferences } = useUserPreferences();
+  const updatePreference = useUpdatePreference();
+  
+  // Local state for immediate UI updates (synced with preferences)
+  const sortOrder = (preferences?.articleSortOrder as ArticleSortOrder) || "publishedAt";
+  const sortDirection = (preferences?.articleSortDirection as ArticleSortDirection) || "desc";
 
-  useEffect(() => {
-    if (session?.user) {
-      loadUserPreferences();
-    }
-  }, [session]);
+  // Use React Query for articles
+  const { data: articlesData, isLoading } = useArticles({
+    topic: decodedTopic,
+    sortBy: sortOrder,
+    sortOrder: sortDirection
+  }, 50);
 
-  useEffect(() => {
-    loadArticles();
-  }, [topic, sortOrder, sortDirection]);
+  const articles = articlesData?.articles || [];
 
-  const loadUserPreferences = async () => {
-    try {
-      const response = await fetch("/api/user/preferences");
-      const data = await response.json();
-      if (data.data?.preferences) {
-        const prefs = data.data.preferences;
-        setSortOrder(prefs.articleSortOrder || "publishedAt");
-        setSortDirection(prefs.articleSortDirection || "desc");
-      }
-    } catch (error) {
-      console.error("Failed to load user preferences:", error);
-    }
-  };
-
-  const loadArticles = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(
-        `/api/articles/topics?topic=${encodeURIComponent(decodedTopic)}&limit=50&sortBy=${sortOrder}&sortDirection=${sortDirection}`
-      );
-      const data = await response.json();
-      setArticles(data.data?.articles || []);
-    } catch (error) {
-      console.error("Failed to load articles:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSortChange = async (newSortOrder: ArticleSortOrder, newSortDirection: ArticleSortDirection) => {
-    setSortOrder(newSortOrder);
-    setSortDirection(newSortDirection);
-
-    if (session?.user) {
-      try {
-        await fetch("/api/user/preferences", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            articleSortOrder: newSortOrder,
-            articleSortDirection: newSortDirection,
-          }),
-        });
-      } catch (error) {
-        console.error("Failed to update sort preferences:", error);
-      }
-    }
+  const handleSortChange = (newSortOrder: ArticleSortOrder, newSortDirection: ArticleSortDirection) => {
+    updatePreference.mutate({
+      articleSortOrder: newSortOrder,
+      articleSortDirection: newSortDirection,
+    });
   };
 
   return (

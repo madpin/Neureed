@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useValidateFeed } from "@/hooks/queries/use-feeds";
 
 interface AddFeedFormProps {
   onAdd: (url: string, name?: string) => Promise<void>;
@@ -12,50 +13,39 @@ export function AddFeedForm({ onAdd, onClose }: AddFeedFormProps) {
   const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isValidating, setIsValidating] = useState(false);
   const [feedInfo, setFeedInfo] = useState<{
     title: string;
     description?: string;
     itemCount: number;
   } | null>(null);
 
+  // Use React Query hook for validation
+  const validateMutation = useValidateFeed();
+
   const handleValidate = async () => {
     if (!url) return;
 
-    setIsValidating(true);
     setError(null);
     setFeedInfo(null);
 
     try {
-      const response = await fetch("/api/feeds/validate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
-      });
+      const result = await validateMutation.mutateAsync(url);
 
-      const data = await response.json();
-
-      console.log("Validation response:", data);
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to validate feed");
-      }
-
-      // Check if response has the data wrapper
-      const responseData = data.data || data;
-
-      if (responseData.valid && responseData.feedInfo) {
-        setFeedInfo(responseData.feedInfo);
-        if (!name) {
-          setName(responseData.feedInfo.title);
+      if (result.valid && result.feed) {
+        // Convert Feed to feedInfo format
+        setFeedInfo({
+          title: result.feed.name || "",
+          description: result.feed.description,
+          itemCount: 0, // API doesn't return item count in validation
+        });
+        if (!name && result.feed.name) {
+          setName(result.feed.name);
         }
       } else {
-        setError(responseData.error || "Invalid feed URL");
+        setError(result.error || "Invalid feed URL");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to validate feed");
-    } finally {
-      setIsValidating(false);
     }
   };
 
@@ -69,8 +59,7 @@ export function AddFeedForm({ onAdd, onClose }: AddFeedFormProps) {
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add feed");
-    } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Only set false on error, success unmounts
     }
   };
 
@@ -120,10 +109,10 @@ export function AddFeedForm({ onAdd, onClose }: AddFeedFormProps) {
               <button
                 type="button"
                 onClick={handleValidate}
-                disabled={!url || isValidating}
+                disabled={!url || validateMutation.isPending}
                 className="rounded-lg bg-muted px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50 bg-background"
               >
-                {isValidating ? "..." : "Validate"}
+                {validateMutation.isPending ? "..." : "Validate"}
               </button>
             </div>
           </div>
@@ -149,7 +138,8 @@ export function AddFeedForm({ onAdd, onClose }: AddFeedFormProps) {
                     Valid feed found!
                   </div>
                   <div className="mt-1 text-xs text-green-700 dark:text-green-300">
-                    {feedInfo.title} • {feedInfo.itemCount} articles
+                    {feedInfo.title}
+                    {feedInfo.description && ` • ${feedInfo.description}`}
                   </div>
                 </div>
               </div>

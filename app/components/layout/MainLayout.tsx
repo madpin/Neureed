@@ -1,10 +1,10 @@
 "use client";
 
-import { ReactNode, useState, useEffect } from "react";
+import { ReactNode } from "react";
 import { UserMenu } from "@/app/components/auth/UserMenu";
 import { ArticleSortDropdown } from "@/app/components/articles/ArticleSortDropdown";
-import Link from "next/link";
 import type { ArticleSortOrder, ArticleSortDirection } from "@/lib/validations/article-validation";
+import { useUserPreferences, useUpdatePreference } from "@/hooks/queries/use-user-preferences";
 
 interface MainLayoutProps {
   sidebar: ReactNode | ((props: { isCollapsed: boolean }) => ReactNode);
@@ -15,49 +15,21 @@ interface MainLayoutProps {
   isLoadingArticles?: boolean;
 }
 
-export function MainLayout({ 
-  sidebar, 
-  children, 
-  sortOrder, 
-  sortDirection, 
+export function MainLayout({
+  sidebar,
+  children,
+  sortOrder,
+  sortDirection,
   onSortChange,
-  isLoadingArticles 
+  isLoadingArticles
 }: MainLayoutProps) {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const { data: preferences } = useUserPreferences();
+  const updatePreference = useUpdatePreference();
 
-  const loadSidebarState = async () => {
-    try {
-      const response = await fetch("/api/user/preferences");
-      if (response.ok) {
-        const data = await response.json();
-        const collapsed = data.data?.preferences?.sidebarCollapsed ?? false;
-        setIsSidebarCollapsed(collapsed);
-      }
-    } catch (error) {
-      console.error("Failed to load sidebar state:", error);
-    }
-  };
+  const isSidebarCollapsed = preferences?.sidebarCollapsed ?? false;
 
-  // Load sidebar collapsed state from preferences
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadSidebarState();
-  }, []);
-
-  const toggleSidebarCollapse = async () => {
-    const newCollapsed = !isSidebarCollapsed;
-    setIsSidebarCollapsed(newCollapsed);
-
-    // Persist to backend
-    try {
-      await fetch("/api/user/preferences", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sidebarCollapsed: newCollapsed }),
-      });
-    } catch (error) {
-      console.error("Failed to save sidebar state:", error);
-    }
+  const toggleSidebarCollapse = () => {
+    updatePreference.mutate({ sidebarCollapsed: !isSidebarCollapsed });
   };
 
   const sidebarWidth = isSidebarCollapsed ? "w-20" : "w-64";
