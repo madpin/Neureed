@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { ThemePalette } from "./ThemePalette";
+import { DraggableOrderEditor } from "./DraggableOrderEditor";
+import { ArticleCard, type ArticleDisplayPreferences } from "@/app/components/articles/ArticleCard";
 import { useUserPreferences, useUpdateUserPreferences, useResetPatterns, type UserPreferences } from "@/hooks/queries/use-user-preferences";
 
-type ViewType = 'profile' | 'appearance' | 'reading' | 'learning' | 'llm' | 'feeds';
+type ViewType = 'profile' | 'appearance' | 'articleDisplay' | 'reading' | 'learning' | 'llm' | 'feeds';
 
 interface PreferencesModalProps {
   onClose: () => void;
@@ -79,6 +81,14 @@ export function PreferencesModal({
     readingParagraphSpacing: 1.5,
     breakLineSpacing: 0.75,
     showReadingTime: true,
+    // Article Display Customization
+    articleCardDensity: "normal",
+    showArticleImage: true,
+    showArticleExcerpt: true,
+    showArticleAuthor: true,
+    showArticleFeedInfo: true,
+    showArticleDate: true,
+    articleCardSectionOrder: ["feedInfo", "title", "excerpt", "actions"],
   });
 
   const hasUnsavedChanges = () => {
@@ -312,6 +322,20 @@ export function PreferencesModal({
               </button>
 
               <button
+                onClick={() => navigateToView('articleDisplay')}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                  currentView === 'articleDisplay'
+                    ? "bg-primary/10 text-primary dark:bg-primary/20"
+                    : "hover:bg-muted"
+                }`}
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 14a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2zM14 11a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z" />
+                </svg>
+                <span>Article Display</span>
+              </button>
+
+              <button
                 onClick={() => navigateToView('reading')}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                   currentView === 'reading'
@@ -387,6 +411,9 @@ export function PreferencesModal({
             )}
             {currentView === 'appearance' && (
               <AppearanceView preferences={localPreferences} updatePreference={updatePreference} />
+            )}
+            {currentView === 'articleDisplay' && (
+              <ArticleDisplayView preferences={localPreferences} updatePreference={updatePreference} />
             )}
             {currentView === 'reading' && (
               <ReadingView preferences={localPreferences} updatePreference={updatePreference} />
@@ -887,6 +914,207 @@ function LLMView({
             </p>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// Article Display View Component
+function ArticleDisplayView({
+  preferences,
+  updatePreference,
+}: {
+  preferences: UserPreferences;
+  updatePreference: <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => void;
+}) {
+  const densityOptions = [
+    {
+      value: "compact" as const,
+      label: "Compact",
+      description: "Minimal spacing, more articles visible",
+    },
+    {
+      value: "normal" as const,
+      label: "Normal",
+      description: "Balanced spacing and readability",
+    },
+    {
+      value: "comfortable" as const,
+      label: "Comfortable",
+      description: "Generous spacing, easier reading",
+    },
+  ];
+
+  const currentDensity = (preferences.articleCardDensity as "compact" | "normal" | "comfortable") || "normal";
+
+  // Sample article for preview
+  const sampleArticle = useMemo(() => ({
+    id: "preview-article",
+    title: "How to Customize Your RSS Reader Experience",
+    excerpt: "Learn how to personalize your article cards with custom layouts, density settings, and component visibility controls for the perfect reading experience.",
+    content: "Sample content",
+    url: "#",
+    feedId: "sample-feed",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishedAt: new Date(),
+    author: "John Doe",
+    imageUrl: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=300&fit=crop",
+    isRead: false,
+    feeds: {
+      id: "sample-feed",
+      name: "Tech News Daily",
+      url: "#",
+      imageUrl: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=32&h=32&fit=crop",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  }), []);
+
+  // Build display preferences from current settings
+  const displayPreferences = useMemo<ArticleDisplayPreferences>(() => ({
+    density: (preferences.articleCardDensity as "compact" | "normal" | "comfortable") || "normal",
+    showImage: preferences.showArticleImage ?? true,
+    showExcerpt: preferences.showArticleExcerpt ?? true,
+    showAuthor: preferences.showArticleAuthor ?? true,
+    showFeedInfo: preferences.showArticleFeedInfo ?? true,
+    showDate: preferences.showArticleDate ?? true,
+    sectionOrder: (preferences.articleCardSectionOrder as string[]) || ["feedInfo", "title", "excerpt", "actions"],
+  }), [preferences]);
+
+  const handleDensityChange = (density: "compact" | "normal" | "comfortable") => {
+    updatePreference("articleCardDensity", density);
+    
+    // Auto-adjust visibility toggles based on density
+    if (density === "compact") {
+      updatePreference("showArticleImage", false);
+      updatePreference("showArticleExcerpt", false);
+    } else if (density === "comfortable") {
+      updatePreference("showArticleImage", true);
+      updatePreference("showArticleExcerpt", true);
+    }
+  };
+
+  return (
+    <div>
+      <h2 className="mb-6 text-2xl font-bold">Article Display</h2>
+      
+      <div className="space-y-8">
+        {/* Live Preview - Sticky */}
+        <div className="sticky top-0 z-10 rounded-lg border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-6 shadow-lg backdrop-blur-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">Live Preview</h3>
+              <p className="text-sm text-foreground/70">
+                Changes apply instantly as you customize
+              </p>
+            </div>
+            <div className="rounded-full bg-green-500/20 px-3 py-1 text-xs font-medium text-green-600 dark:text-green-400">
+              ● Real-time
+            </div>
+          </div>
+          
+          <div className="rounded-lg border border-border bg-background p-4">
+            <ArticleCard 
+              article={sampleArticle as any}
+              displayPreferences={displayPreferences}
+            />
+          </div>
+        </div>
+
+        {/* Density Presets */}
+        <div>
+          <label className="mb-3 block text-sm font-medium">Display Density</label>
+          <div className="grid grid-cols-3 gap-3">
+            {densityOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => handleDensityChange(option.value)}
+                className={`
+                  flex flex-col items-start gap-2 rounded-lg border-2 p-4 text-left transition-all
+                  ${
+                    currentDensity === option.value
+                      ? "border-primary bg-primary/10 dark:bg-primary/20"
+                      : "border-border bg-background hover:bg-muted"
+                  }
+                `}
+              >
+                <span className="font-semibold text-sm">{option.label}</span>
+                <span className="text-xs text-foreground/60">{option.description}</span>
+                
+                {/* Visual indicator */}
+                <div className="mt-2 space-y-1 w-full">
+                  <div className={`h-2 rounded bg-foreground/20 ${option.value === "compact" ? "w-3/4" : option.value === "comfortable" ? "w-full" : "w-5/6"}`} />
+                  <div className={`h-1.5 rounded bg-foreground/10 ${option.value === "compact" ? "w-1/2" : "w-3/4"}`} />
+                  {option.value !== "compact" && (
+                    <div className="h-1 rounded bg-foreground/5 w-full" />
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Component Visibility Toggles */}
+        <div className="rounded-lg border border-border bg-muted p-6">
+          <h3 className="mb-4 text-lg font-semibold">Show/Hide Components</h3>
+          <p className="mb-4 text-sm text-foreground/70">
+            Choose which elements to display in article cards
+          </p>
+          
+          <div className="space-y-4">
+            <ToggleSwitch
+              label="Show Feed Information"
+              description="Display feed icon and name"
+              checked={preferences.showArticleFeedInfo ?? true}
+              onChange={(checked) => updatePreference("showArticleFeedInfo", checked)}
+            />
+            
+            <ToggleSwitch
+              label="Show Article Images"
+              description="Display featured images when available"
+              checked={preferences.showArticleImage ?? true}
+              onChange={(checked) => updatePreference("showArticleImage", checked)}
+            />
+            
+            <ToggleSwitch
+              label="Show Excerpts"
+              description="Display article summaries/descriptions"
+              checked={preferences.showArticleExcerpt ?? true}
+              onChange={(checked) => updatePreference("showArticleExcerpt", checked)}
+            />
+            
+            <ToggleSwitch
+              label="Show Author Names"
+              description="Display article author when available"
+              checked={preferences.showArticleAuthor ?? true}
+              onChange={(checked) => updatePreference("showArticleAuthor", checked)}
+            />
+            
+            <ToggleSwitch
+              label="Show Publication Dates"
+              description="Display when articles were published"
+              checked={preferences.showArticleDate ?? true}
+              onChange={(checked) => updatePreference("showArticleDate", checked)}
+            />
+          </div>
+        </div>
+
+        {/* Section Order Customization */}
+        <div className="rounded-lg border border-border bg-muted p-6">
+          <DraggableOrderEditor
+            sections={(preferences.articleCardSectionOrder as string[]) || ["feedInfo", "title", "excerpt", "actions"]}
+            onReorder={(newOrder) => updatePreference("articleCardSectionOrder", newOrder)}
+          />
+        </div>
+
+        {/* Info Box */}
+        <div className="rounded-lg border border-primary/20 bg-primary/10 p-4 dark:border-primary/30 dark:bg-primary/20">
+          <p className="text-sm text-primary dark:text-primary">
+            💡 <strong>Tip:</strong> Watch the live preview above update instantly as you make changes. 
+            All adjustments apply immediately to your feeds. You can reset to defaults anytime by selecting a density preset.
+          </p>
+        </div>
       </div>
     </div>
   );

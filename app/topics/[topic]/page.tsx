@@ -91,7 +91,6 @@ export default function TopicDetailPage({
             <ArticleList
               articles={articles}
               isLoading={isLoading}
-              variant="expanded"
               onArticleSelect={onArticleSelect}
             />
           </div>

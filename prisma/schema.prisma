@@ -283,6 +283,13 @@ model user_preferences {
   llmSummaryModel           String?
   llmEmbeddingModel         String?
   llmDigestModel            String?
+  showArticleImage          Boolean  @default(true)
+  showArticleExcerpt        Boolean  @default(true)
+  showArticleAuthor         Boolean  @default(true)
+  showArticleFeedInfo       Boolean  @default(true)
+  showArticleDate           Boolean  @default(true)
+  articleCardSectionOrder   Json?    @default("[\"feedInfo\",\"title\",\"excerpt\",\"actions\"]")
+  articleCardDensity        String   @default("normal")
   users                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 

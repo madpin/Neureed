@@ -16,6 +16,7 @@ export interface UserPreferences {
   theme?: string;
   fontSize?: string;
   articlesPerPage?: number;
+  /** @deprecated Use articleCardDensity instead */
   defaultView?: "compact" | "expanded";
   showReadArticles?: boolean;
   autoMarkAsRead?: boolean;
@@ -48,6 +49,14 @@ export interface UserPreferences {
   infiniteScrollMode?: string;
   searchRecencyWeight?: number;
   searchRecencyDecayDays?: number;
+  // Article Display Customization
+  articleCardDensity?: "compact" | "normal" | "comfortable";
+  showArticleImage?: boolean;
+  showArticleExcerpt?: boolean;
+  showArticleAuthor?: boolean;
+  showArticleFeedInfo?: boolean;
+  showArticleDate?: boolean;
+  articleCardSectionOrder?: string[];
 }
 
 interface UserPreferencesResponse {

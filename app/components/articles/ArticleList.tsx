@@ -2,11 +2,11 @@
 
 import { useMemo } from "react";
 import { useSession } from "next-auth/react";
-import { ArticleCard } from "./ArticleCard";
-import { RelevanceScore } from "./RelevanceScore";
+import { ArticleCard, type ArticleDisplayPreferences } from "./ArticleCard";
 import { LoadingSpinner, LoadingSkeleton } from "@/app/components/layout/LoadingSpinner";
 import { EmptyState } from "@/app/components/layout/EmptyState";
 import { useArticleScores, type ArticleScore, type Article } from "@/hooks/queries/use-articles";
+import { useUserPreferences } from "@/hooks/queries/use-user-preferences";
 
 interface ArticleListProps {
   articles: Article[];
@@ -35,6 +35,7 @@ export function ArticleList({
   infiniteScrollMode = "both",
 }: ArticleListProps) {
   const { data: session } = useSession();
+  const { data: preferences } = useUserPreferences();
 
   // Extract article IDs and use React Query to fetch scores
   const articleIds = useMemo(
@@ -56,6 +57,17 @@ export function ArticleList({
     }
     return scoresMap;
   }, [scoresData]);
+
+  // Build display preferences from user preferences
+  const displayPreferences = useMemo<ArticleDisplayPreferences>(() => ({
+    density: (preferences?.articleCardDensity as "compact" | "normal" | "comfortable") || "normal",
+    showImage: preferences?.showArticleImage ?? true,
+    showExcerpt: preferences?.showArticleExcerpt ?? true,
+    showAuthor: preferences?.showArticleAuthor ?? true,
+    showFeedInfo: preferences?.showArticleFeedInfo ?? true,
+    showDate: preferences?.showArticleDate ?? true,
+    sectionOrder: (preferences?.articleCardSectionOrder as string[]) || ["feedInfo", "title", "excerpt", "actions"],
+  }), [preferences]);
 
   if (isLoading) {
     return <LoadingSkeleton count={5} />;
@@ -92,33 +104,21 @@ export function ArticleList({
     <div className="space-y-4">
       {articles.map((article) => {
         const score = scores.get(article.id);
-        const shouldDim = score && score.score < 0.4;
-        const opacity = shouldDim ? 0.6 : 1;
         const hasSimilarity = 'similarity' in article && article.similarity !== undefined;
+        const similarity = hasSimilarity ? (article as any).similarity : undefined;
 
         return (
-          <div
+          <ArticleCard 
             key={article.id}
-            style={{ opacity }}
-            className="relative transition-opacity"
-          >
-            {(score || hasSimilarity) && (
-              <div className="absolute right-4 top-4 z-10 flex items-center gap-2">
-                {hasSimilarity && (
-                  <div className="rounded-full bg-blue-600 px-3 py-1 text-xs font-medium text-white shadow-lg">
-                    {Math.round((article as any).similarity * 100)}% match
-                  </div>
-                )}
-                {score && <RelevanceScore score={score} />}
-              </div>
-            )}
-            <ArticleCard 
-              article={article} 
-              variant={variant} 
-              onArticleClick={onArticleSelect}
-              onReadStatusChange={onReadStatusChange}
-            />
-          </div>
+            article={article}
+            displayPreferences={displayPreferences}
+            variant={variant}
+            onArticleClick={onArticleSelect}
+            onReadStatusChange={onReadStatusChange}
+            showRelevanceScore={!!score}
+            relevanceScore={score}
+            similarity={similarity}
+          />
         );
       })}
 

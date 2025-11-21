@@ -434,25 +434,11 @@ export default function Home() {
               <ArticleList
                 articles={articles}
                 isLoading={isLoadingArticles}
-                variant="expanded"
                 onArticleSelect={onArticleSelect}
                 onReadStatusChange={handleArticleReadStatusChange}
                 hasMore={hasNextPage}
                 isLoadingMore={isFetchingNextPage}
                 onLoadMore={fetchNextPage}
-                // loadMoreRef is not needed if using fetchNextPage directly on button or hook's ref if provided
-                // ArticleList uses IntersectionObserver with ref.
-                // If I pass onLoadMore as fetchNextPage, ArticleList needs to call it.
-                // useInfiniteScroll hook returned loadMoreRef.
-                // useInfiniteArticles doesn't return a ref. I might need to use useInView from react-intersection-observer inside ArticleList or here.
-                // But ArticleList likely expects a ref to attach to the sentinel.
-                // For now, I'll pass null or mock ref if ArticleList handles it?
-                // Wait, ArticleList uses `loadMoreRef` prop.
-                // I should probably verify ArticleList implementation.
-                // If it expects a RefObject, I might need to provide one that triggers fetchNextPage.
-                // But since I'm refactoring ArticleList later, I can check what it does.
-                // Use `useInView` here?
-                
                 infiniteScrollMode={infiniteScrollMode as "auto" | "button" | "both" | undefined}
               />
             )}

@@ -67,6 +67,14 @@ const preferencesSchema = z.object({
   // Semantic Search Recency Settings
   searchRecencyWeight: z.number().min(0).max(1).optional(),
   searchRecencyDecayDays: z.number().int().min(1).max(365).optional(),
+  // Article Display Customization Settings
+  articleCardDensity: z.enum(["compact", "normal", "comfortable"]).optional(),
+  showArticleImage: z.boolean().optional(),
+  showArticleExcerpt: z.boolean().optional(),
+  showArticleAuthor: z.boolean().optional(),
+  showArticleFeedInfo: z.boolean().optional(),
+  showArticleDate: z.boolean().optional(),
+  articleCardSectionOrder: z.array(z.string()).optional(),
 });
 
 /**

@@ -80,7 +80,7 @@ export function RelevanceScore({
   );
 
   return (
-    <div className="group relative inline-flex items-center">
+    <div className="group/relevance relative inline-flex items-center">
       <div
         className={`flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${colors.bg} ${colors.text} ${colors.border}`}
       >
@@ -89,7 +89,7 @@ export function RelevanceScore({
       </div>
 
       {showTooltip && (
-        <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 transform rounded-lg bg-foreground px-3 py-2 text-xs text-background shadow-lg group-hover:block">
+        <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 transform rounded-lg bg-foreground px-3 py-2 text-xs text-background shadow-lg group-hover/relevance:block">
           {tooltipContent}
           <div className="absolute left-1/2 top-full -translate-x-1/2 transform border-4 border-transparent border-t-foreground" />
         </div>

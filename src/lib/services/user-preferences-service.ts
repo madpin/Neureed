@@ -213,6 +213,14 @@ export async function getDefaultPreferences(): Promise<
     infiniteScrollMode: "both",
     searchRecencyWeight: adminDefaults.searchRecencyWeight, // Inherit from admin
     searchRecencyDecayDays: adminDefaults.searchRecencyDecayDays, // Inherit from admin
+    // Article Display Customization
+    showArticleImage: true,
+    showArticleExcerpt: true,
+    showArticleAuthor: true,
+    showArticleFeedInfo: true,
+    showArticleDate: true,
+    articleCardSectionOrder: ["feedInfo", "title", "excerpt", "actions"],
+    articleCardDensity: "normal",
   };
 }
 
