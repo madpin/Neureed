@@ -73,6 +73,6 @@ export const GET = createHandler(
       throw error;
     }
   },
-  { requireAuth: true }
+  { requireAdmin: true }
 );
 

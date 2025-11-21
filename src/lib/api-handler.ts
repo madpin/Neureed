@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { apiResponse, apiError } from "@/lib/api-response";
+import { requireAdmin, requireUserOrAbove } from "@/lib/middleware/auth-middleware";
 import type { Session } from "next-auth";
 
 /**
@@ -40,6 +41,16 @@ export interface HandlerOptions<TBody = unknown, TQuery = unknown> {
    * Whether authentication is required
    */
   requireAuth?: boolean;
+  
+  /**
+   * Whether admin role is required
+   */
+  requireAdmin?: boolean;
+  
+  /**
+   * Whether at least USER role is required (not GUEST)
+   */
+  requireUserOrAbove?: boolean;
 }
 
 /**
@@ -99,6 +110,40 @@ export function createHandler<TBody = unknown, TQuery = unknown, TResult = unkno
       // Check authentication
       if (options.requireAuth && !session?.user) {
         return apiError("Unauthorized. Please sign in.", 401);
+      }
+      
+      // Check admin authorization
+      if (options.requireAdmin) {
+        try {
+          await requireAdmin();
+        } catch (error) {
+          if (error instanceof Error) {
+            if (error.message === "Unauthorized") {
+              return apiError("Unauthorized. Please sign in.", 401);
+            }
+            if (error.message.startsWith("Forbidden")) {
+              return apiError("Forbidden. Admin access required.", 403);
+            }
+          }
+          throw error;
+        }
+      }
+      
+      // Check user or above authorization
+      if (options.requireUserOrAbove) {
+        try {
+          await requireUserOrAbove();
+        } catch (error) {
+          if (error instanceof Error) {
+            if (error.message === "Unauthorized") {
+              return apiError("Unauthorized. Please sign in.", 401);
+            }
+            if (error.message.startsWith("Forbidden")) {
+              return apiError("Forbidden. User access required.", 403);
+            }
+          }
+          throw error;
+        }
       }
 
       // Parse URL params (await if it's a Promise)

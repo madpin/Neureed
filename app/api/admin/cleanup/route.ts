@@ -1,12 +1,9 @@
-import { NextRequest } from "next/server";
 import { z } from "zod";
 import {
-
-
   cleanupOldArticles,
   getCleanupStats,
 } from "@/lib/services/article-cleanup-service";
-import { apiResponse, apiError } from "@/lib/api-response";
+import { createHandler } from "@/lib/api-handler";
 
 export const dynamic = "force-dynamic";
 
@@ -22,30 +19,10 @@ const cleanupSchema = z.object({
 /**
  * POST /api/admin/cleanup
  * Manually trigger article cleanup
- * 
- * This endpoint should be protected with admin authentication
  */
-export async function POST(request: NextRequest) {
-  try {
-    // TODO: Add admin authentication check here
-    // const session = await getServerSession();
-    // if (!session || !session.user.isAdmin) {
-    //   return apiError("Unauthorized", 401);
-    // }
-
-    const body = await request.json();
-
-    // Validate input
-    const validationResult = cleanupSchema.safeParse(body);
-    if (!validationResult.success) {
-      return apiError(
-        "Invalid input",
-        400,
-        validationResult.error.errors
-      );
-    }
-
-    const { maxAge, maxArticlesPerFeed, dryRun } = validationResult.data;
+export const POST = createHandler(
+  async ({ body }) => {
+    const { maxAge, maxArticlesPerFeed, dryRun } = body;
 
     // Execute cleanup
     const result = await cleanupOldArticles({
@@ -55,43 +32,26 @@ export async function POST(request: NextRequest) {
       dryRun,
     });
 
-    return apiResponse({
+    return {
       success: true,
       deleted: result.deleted,
       preserved: result.preserved,
       dryRun: result.dryRun,
       details: result.details,
-    });
-  } catch (error) {
-    console.error("Error running cleanup:", error);
-    return apiError(
-      "Failed to run cleanup",
-      500,
-      error instanceof Error ? error.message : undefined
-    );
-  }
-}
+    };
+  },
+  { bodySchema: cleanupSchema, requireAdmin: true }
+);
 
 /**
  * GET /api/admin/cleanup
  * Get cleanup statistics
  */
-export async function GET() {
-  try {
-    // TODO: Add admin authentication check here
-
+export const GET = createHandler(
+  async () => {
     const stats = await getCleanupStats();
-
-    return apiResponse({
-      stats,
-    });
-  } catch (error) {
-    console.error("Error getting cleanup stats:", error);
-    return apiError(
-      "Failed to get cleanup stats",
-      500,
-      error instanceof Error ? error.message : undefined
-    );
-  }
-}
+    return { stats };
+  },
+  { requireAdmin: true }
+);
 

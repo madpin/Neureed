@@ -230,7 +230,7 @@ export async function cacheIncrement(
  */
 export function getCacheStats(): CacheStats {
   const total = stats.hits + stats.misses;
-  stats.hitRate = total > 0 ? stats.hits / total : 0;
+  stats.hitRate = total > 0 ? (stats.hits / total) * 100 : 0;
   return { ...stats };
 }
 

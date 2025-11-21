@@ -32,7 +32,7 @@ export const GET = createHandler(
       })),
     };
   },
-  { requireAuth: true }
+  { requireAdmin: true }
 );
 
 const generateEmbeddingsSchema = z.object({
@@ -100,7 +100,7 @@ export const POST = createHandler(
       };
     }
   },
-  { bodySchema: generateEmbeddingsSchema, requireAuth: true }
+  { bodySchema: generateEmbeddingsSchema, requireAdmin: true }
 );
 
 /**
@@ -117,6 +117,6 @@ export const DELETE = createHandler(
       message: `Cleared embeddings for ${count} articles`,
     };
   },
-  { requireAuth: true }
+  { requireAdmin: true }
 );
 

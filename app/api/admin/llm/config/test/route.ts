@@ -46,6 +46,6 @@ export const POST = createHandler(
       message: "Configuration test successful",
     };
   },
-  { bodySchema: testLLMConfigSchema, requireAuth: true }
+  { bodySchema: testLLMConfigSchema, requireAdmin: true }
 );
 

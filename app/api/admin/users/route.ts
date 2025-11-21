@@ -1,22 +1,55 @@
-import { NextRequest } from "next/server";
-import { apiResponse, apiError } from "@/lib/api-response";
+import { createHandler } from "@/lib/api-handler";
 import { prisma } from "@/lib/db";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 
 /**
+ * Query params schema
+ */
+const querySchema = z.object({
+  search: z.string().optional(),
+  page: z.string().optional(),
+  limit: z.string().optional(),
+  sortBy: z.enum(["name", "email", "createdAt"]).optional(),
+  sortOrder: z.enum(["asc", "desc"]).optional(),
+});
+
+/**
  * GET /api/admin/users
  * Get list of all users with statistics
+ * Supports search, pagination, and sorting
  */
-export async function GET(request: NextRequest) {
-  try {
-    // Get all users with their related data counts
+export const GET = createHandler(
+  async ({ query }) => {
+    const search = query.search;
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 20;
+    const sortBy = query.sortBy || "createdAt";
+    const sortOrder = query.sortOrder || "desc";
+
+    // Build where clause for search
+    const where = search
+      ? {
+          OR: [
+            { name: { contains: search, mode: "insensitive" as const } },
+            { email: { contains: search, mode: "insensitive" as const } },
+          ],
+        }
+      : {};
+
+    // Get total count for pagination
+    const totalUsers = await prisma.user.count({ where });
+
+    // Get paginated users with their related data counts
     const users = await prisma.user.findMany({
+      where,
       select: {
         id: true,
         name: true,
         email: true,
         image: true,
+        role: true,
         createdAt: true,
         updatedAt: true,
         emailVerified: true,
@@ -30,25 +63,41 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: {
-        createdAt: "desc",
+        [sortBy]: sortOrder,
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    // Get additional statistics (from all users, not just current page)
+    const allUsers = await prisma.user.findMany({
+      select: {
+        _count: {
+          select: {
+            read_articles: true,
+            article_feedback: true,
+          },
+        },
       },
     });
 
-    // Get additional statistics
     const stats = {
-      totalUsers: users.length,
-      activeUsers: users.filter(u => u._count.read_articles > 0).length,
-      usersWithFeedback: users.filter(u => u._count.article_feedback > 0).length,
+      totalUsers,
+      activeUsers: allUsers.filter((u) => u._count.read_articles > 0).length,
+      usersWithFeedback: allUsers.filter((u) => u._count.article_feedback > 0).length,
     };
 
-    return apiResponse({ users, stats });
-  } catch (error) {
-    console.error("Error fetching users:", error);
-    return apiError(
-      "Failed to fetch users",
-      500,
-      error instanceof Error ? error.message : undefined
-    );
-  }
-}
+    return {
+      users,
+      stats,
+      pagination: {
+        page,
+        limit,
+        totalUsers,
+        totalPages: Math.ceil(totalUsers / limit),
+      },
+    };
+  },
+  { querySchema, requireAdmin: true }
+);
 

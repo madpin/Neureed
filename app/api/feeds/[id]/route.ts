@@ -51,7 +51,7 @@ export const PATCH = createHandler(
 
     return { feed };
   },
-  { bodySchema: updateFeedSchema }
+  { bodySchema: updateFeedSchema, requireUserOrAbove: true }
 );
 
 /**

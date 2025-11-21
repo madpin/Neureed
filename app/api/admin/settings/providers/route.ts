@@ -26,7 +26,7 @@ export const GET = createHandler(
       message: "Provider status retrieved successfully",
     };
   },
-  { requireAuth: true }
+  { requireAdmin: true }
 );
 
 /**
@@ -53,6 +53,6 @@ export const PUT = createHandler(
       message: "Provider status updated successfully",
     };
   },
-  { bodySchema: providerStatusSchema, requireAuth: true }
+  { bodySchema: providerStatusSchema, requireAdmin: true }
 );
 

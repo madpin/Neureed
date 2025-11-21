@@ -152,6 +152,6 @@ export const POST = createHandler(
       };
     }
   },
-  { bodySchema: createFeedSchema }
+  { bodySchema: createFeedSchema, requireUserOrAbove: true }
 );
 

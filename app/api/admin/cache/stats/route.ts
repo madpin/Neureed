@@ -3,8 +3,7 @@
  * GET /api/admin/cache/stats - Get cache statistics
  */
 
-import { NextRequest } from "next/server";
-import { apiResponse, apiError } from "@/lib/api-response";
+import { createHandler } from "@/lib/api-handler";
 import { getCacheStats, getCacheInfo } from "@/lib/cache/cache-service";
 import { getRedisStatus } from "@/lib/cache/redis-client";
 
@@ -14,23 +13,31 @@ export const dynamic = "force-dynamic";
  * GET /api/admin/cache/stats
  * Get cache statistics
  */
-export async function GET(_request: NextRequest) {
-  try {
+export const GET = createHandler(
+  async () => {
     const stats = getCacheStats();
     const status = getRedisStatus();
     const info = await getCacheInfo();
 
-    return apiResponse({
-      stats,
-      status,
-      info,
-    });
-  } catch (error) {
-    console.error("Error fetching cache stats:", error);
-    return apiError(
-      error instanceof Error ? error.message : "Failed to fetch cache stats",
-      500
-    );
-  }
-}
+    // Calculate hit rate
+    const hits = stats.hits || 0;
+    const misses = stats.misses || 0;
+    const total = hits + misses;
+    const hitRate = total > 0 ? (hits / total) * 100 : 0;
+    
+    // Get keys count from info
+    const keys = info?.keys || 0;
+
+    return {
+      hits,
+      misses,
+      keys,
+      memory: info?.memory || "0 MB",
+      hitRate,
+      connected: status.connected,
+      enabled: status.enabled,
+    };
+  },
+  { requireAdmin: true }
+);
 

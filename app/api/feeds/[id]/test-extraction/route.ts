@@ -83,6 +83,6 @@ export const POST = createHandler(
 
     return { result };
   },
-  { bodySchema: testExtractionSchema }
+  { bodySchema: testExtractionSchema, requireUserOrAbove: true }
 );
 

@@ -27,7 +27,7 @@ export const GET = createHandler(
       message: "System LLM credentials retrieved successfully",
     };
   },
-  { requireAuth: true }
+  { requireAdmin: true }
 );
 
 /**
@@ -53,6 +53,6 @@ export const PUT = createHandler(
       message: "System LLM credentials updated successfully",
     };
   },
-  { bodySchema: systemLLMCredentialsSchema, requireAuth: true }
+  { bodySchema: systemLLMCredentialsSchema, requireAdmin: true }
 );
 

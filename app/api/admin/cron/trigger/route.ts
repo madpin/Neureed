@@ -45,7 +45,7 @@ export const POST = createHandler(
     };
   },
   { 
-    requireAuth: true,
+    requireAdmin: true,
     bodySchema: triggerSchema,
   }
 );

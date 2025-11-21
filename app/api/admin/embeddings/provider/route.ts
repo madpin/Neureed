@@ -108,7 +108,7 @@ export const GET = createHandler(
         : "OpenAI available - users can provide API keys in preferences",
     };
   },
-  { requireAuth: true }
+  { requireAdmin: true }
 );
 
 const updateProviderSchema = z.object({
@@ -182,7 +182,7 @@ export const PUT = createHandler(
 
     throw new Error(`Unknown provider: ${provider}`);
   },
-  { bodySchema: updateProviderSchema, requireAuth: true }
+  { bodySchema: updateProviderSchema, requireAdmin: true }
 );
 
 /**
@@ -204,6 +204,6 @@ export const POST = createHandler(
       usingUserConfig: userId && testResult.success,
     };
   },
-  { bodySchema: updateProviderSchema, requireAuth: true }
+  { bodySchema: updateProviderSchema, requireAdmin: true }
 );
 

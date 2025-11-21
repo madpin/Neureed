@@ -43,6 +43,15 @@ export interface AdminMetrics {
 }
 
 /**
+ * Log entry for cron jobs
+ */
+export interface JobLogEntry {
+  level: string;
+  message: string;
+  timestamp?: string;
+}
+
+/**
  * Cron job status
  */
 export interface CronJobStatus {
@@ -52,6 +61,44 @@ export interface CronJobStatus {
   nextRun?: string;
   status: "idle" | "running" | "error";
   lastError?: string;
+  logs?: JobLogEntry[];
+}
+
+/**
+ * Job run entry with logs
+ */
+export interface JobRunEntry {
+  id: number;
+  status: string;
+  startedAt: string;
+  completedAt?: string;
+  duration?: number;
+  result?: any;
+  error?: string;
+  logs?: JobLogEntry[];
+}
+
+/**
+ * Job with history
+ */
+export interface JobWithHistory {
+  name: string;
+  schedule: string;
+  lastRun?: JobRunEntry;
+  nextRun?: string;
+  status: "idle" | "running" | "error";
+  lastError?: string;
+  logs?: JobLogEntry[];
+  recentRuns: JobRunEntry[];
+}
+
+/**
+ * Cron history response
+ */
+export interface CronHistoryResponse {
+  enabled: boolean;
+  initialized: boolean;
+  jobs: JobWithHistory[];
 }
 
 /**
@@ -116,6 +163,7 @@ export interface AdminUser {
   name: string | null;
   email: string;
   image: string | null;
+  role: "ADMIN" | "USER" | "GUEST";
   createdAt: string;
   _count: {
     userFeeds: number;
@@ -132,6 +180,23 @@ export interface AdminUser {
 interface AdminUsersResponse {
   users: AdminUser[];
   stats: UserStats;
+  pagination?: {
+    page: number;
+    limit: number;
+    totalUsers: number;
+    totalPages: number;
+  };
+}
+
+/**
+ * Admin users query params
+ */
+interface AdminUsersQueryParams {
+  search?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: "name" | "email" | "createdAt";
+  sortOrder?: "asc" | "desc";
 }
 
 /**
@@ -253,6 +318,13 @@ async function fetchAdminSettings(): Promise<AdminSettings> {
 }
 
 /**
+ * Fetch complete admin config
+ */
+async function fetchAdminConfig(): Promise<any> {
+  return await apiGet("/api/admin/config");
+}
+
+/**
  * Fetch cron job status
  */
 async function fetchCronStatus(): Promise<CronJobStatus[]> {
@@ -272,10 +344,17 @@ async function fetchCronHistory(jobName?: string): Promise<CronJobHistoryEntry[]
 }
 
 /**
+ * Fetch cron job history with all runs
+ */
+async function fetchCronHistoryFull(): Promise<CronHistoryResponse> {
+  return await apiGet<CronHistoryResponse>("/api/admin/cron/history");
+}
+
+/**
  * Trigger a cron job manually
  */
 async function triggerCronJob(jobName: string): Promise<void> {
-  await apiPost("/api/admin/cron/trigger", { jobName });
+  await apiPost("/api/admin/cron/trigger", { job: jobName });
 }
 
 /**
@@ -296,7 +375,18 @@ async function clearCache(pattern?: string): Promise<void> {
  * Fetch embedding config
  */
 async function fetchEmbeddingConfig(): Promise<EmbeddingConfig> {
-  return await apiGet<EmbeddingConfig>("/api/admin/embeddings/config");
+  const response = await apiGet<{
+    config: { provider: string; model: string; dimensions: number };
+    autoGenerate: boolean;
+    providers?: any;
+  }>("/api/admin/embeddings/config");
+  
+  return {
+    provider: (response.config?.provider || "openai") as "openai" | "local",
+    model: response.config?.model || "unknown",
+    dimensions: response.config?.dimensions || 0,
+    enabled: response.autoGenerate || false,
+  };
 }
 
 /**
@@ -304,6 +394,13 @@ async function fetchEmbeddingConfig(): Promise<EmbeddingConfig> {
  */
 async function updateEmbeddingConfig(config: Partial<EmbeddingConfig>): Promise<void> {
   await apiPost("/api/admin/embeddings/config", config);
+}
+
+/**
+ * Update embedding provider
+ */
+async function updateEmbeddingProvider(provider: "openai" | "local"): Promise<void> {
+  await apiPut("/api/admin/embeddings/provider", { provider });
 }
 
 /**
@@ -317,9 +414,20 @@ async function fetchEmbeddingStats(): Promise<EmbeddingStats> {
 /**
  * Fetch admin users
  */
-async function fetchAdminUsers(): Promise<AdminUsersResponse> {
-  const response = await apiGet<{ users: AdminUser[]; stats: UserStats }>("/api/admin/users");
-  return { users: response.users, stats: response.stats };
+async function fetchAdminUsers(params?: AdminUsersQueryParams): Promise<AdminUsersResponse> {
+  const queryParams = new URLSearchParams();
+  
+  if (params?.search) queryParams.append("search", params.search);
+  if (params?.page) queryParams.append("page", params.page.toString());
+  if (params?.limit) queryParams.append("limit", params.limit.toString());
+  if (params?.sortBy) queryParams.append("sortBy", params.sortBy);
+  if (params?.sortOrder) queryParams.append("sortOrder", params.sortOrder);
+  
+  const queryString = queryParams.toString();
+  const url = queryString ? `/api/admin/users?${queryString}` : "/api/admin/users";
+  
+  const response = await apiGet<AdminUsersResponse>(url);
+  return response;
 }
 
 /**
@@ -391,6 +499,13 @@ async function triggerEmbeddingGeneration(params: { batchSize: number; maxBatche
 }
 
 /**
+ * Delete all embeddings
+ */
+async function deleteAllEmbeddings(): Promise<{ cleared: number }> {
+  return await apiDelete("/api/admin/embeddings");
+}
+
+/**
  * Hook to fetch admin metrics with optional polling
  *
  * @param refetchInterval - Optional interval in milliseconds for auto-refresh (default: disabled)
@@ -442,6 +557,16 @@ export function useAdminSettings() {
 }
 
 /**
+ * Hook to fetch complete admin config
+ */
+export function useAdminConfig() {
+  return useQuery({
+    queryKey: queryKeys.admin.config(),
+    queryFn: fetchAdminConfig,
+  });
+}
+
+/**
  * Hook to fetch cron job status with optional polling
  */
 export function useCronStatus(refetchInterval?: number) {
@@ -459,6 +584,17 @@ export function useCronHistory(jobName?: string) {
   return useQuery({
     queryKey: queryKeys.admin.cron.history(jobName),
     queryFn: () => fetchCronHistory(jobName),
+  });
+}
+
+/**
+ * Hook to fetch full cron job history with all runs
+ */
+export function useCronHistoryFull(refetchInterval?: number) {
+  return useQuery({
+    queryKey: queryKeys.admin.cron.history(),
+    queryFn: fetchCronHistoryFull,
+    refetchInterval,
   });
 }
 
@@ -531,6 +667,26 @@ export function useUpdateEmbeddingConfig() {
 }
 
 /**
+ * Hook to update embedding provider
+ */
+export function useUpdateEmbeddingProvider() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateEmbeddingProvider,
+    onSuccess: () => {
+      // Force immediate refetch by invalidating and refetching
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.embeddings.config() });
+      queryClient.refetchQueries({ queryKey: queryKeys.admin.embeddings.config() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.embeddings.all() });
+      queryClient.refetchQueries({ queryKey: queryKeys.admin.embeddings.all() });
+      // Also invalidate metrics since they show embedding stats
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.metrics() });
+    },
+  });
+}
+
+/**
  * Hook to fetch embedding stats
  */
 export function useEmbeddingStats(refetchInterval?: number) {
@@ -544,10 +700,10 @@ export function useEmbeddingStats(refetchInterval?: number) {
 /**
  * Hook to fetch admin users
  */
-export function useAdminUsers(refetchInterval?: number) {
+export function useAdminUsers(params?: AdminUsersQueryParams, refetchInterval?: number) {
   return useQuery({
-    queryKey: queryKeys.admin.users(),
-    queryFn: fetchAdminUsers,
+    queryKey: [...queryKeys.admin.users(), params],
+    queryFn: () => fetchAdminUsers(params),
     refetchInterval,
   });
 }
@@ -608,6 +764,42 @@ export function useTriggerEmbeddingGeneration() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.embeddings.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.metrics() });
+    },
+  });
+}
+
+/**
+ * Hook to delete all embeddings
+ */
+export function useDeleteAllEmbeddings() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteAllEmbeddings,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.embeddings.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.metrics() });
+    },
+  });
+}
+
+/**
+ * Update user role
+ */
+async function updateUserRole(userId: string, role: string): Promise<void> {
+  await apiPut(`/api/admin/users/${userId}/role`, { role });
+}
+
+/**
+ * Hook to update user role
+ */
+export function useUpdateUserRole() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: string }) => updateUserRole(userId, role),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.users() });
     },
   });
 }

@@ -26,7 +26,7 @@ export const GET = createHandler(
       message: "System LLM configuration retrieved successfully",
     };
   },
-  { requireAuth: true }
+  { requireAdmin: true }
 );
 
 const updateLLMConfigSchema = z.object({
@@ -57,6 +57,6 @@ export const PUT = createHandler(
       message: "System LLM configuration updated successfully",
     };
   },
-  { bodySchema: updateLLMConfigSchema, requireAuth: true }
+  { bodySchema: updateLLMConfigSchema, requireAdmin: true }
 );
 

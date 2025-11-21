@@ -26,7 +26,7 @@ export const GET = createHandler(
       message: "Default user preferences retrieved successfully",
     };
   },
-  { requireAuth: true }
+  { requireAdmin: true }
 );
 
 /**
@@ -51,6 +51,6 @@ export const PUT = createHandler(
       throw error;
     }
   },
-  { bodySchema: defaultUserPreferencesSchema, requireAuth: true }
+  { bodySchema: defaultUserPreferencesSchema, requireAdmin: true }
 );
 

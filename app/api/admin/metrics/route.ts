@@ -84,5 +84,5 @@ export const GET = createHandler(
       },
     };
   },
-  { requireAuth: true }
+  { requireAdmin: true }
 );

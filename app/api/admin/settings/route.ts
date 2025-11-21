@@ -44,5 +44,5 @@ export const GET = createHandler(
       message: "Admin settings retrieved successfully",
     };
   },
-  { requireAuth: true }
+  { requireAdmin: true }
 );

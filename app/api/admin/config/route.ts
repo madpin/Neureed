@@ -1,8 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { env } from "@/env";
 import fs from "fs";
 import path from "path";
+import { createHandler } from "@/lib/api-handler";
 
 /**
  * Admin Configuration API
@@ -143,16 +142,8 @@ function getTypeScriptConfig() {
   }
 }
 
-export async function GET(request: NextRequest) {
-  try {
-    // Check authentication
-    const session = await auth();
-    if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+export const GET = createHandler(
+  async () => {
 
     // Get environment configuration
     const authProviders = [];
@@ -324,16 +315,11 @@ export async function GET(request: NextRequest) {
       },
     };
 
-    return NextResponse.json({
+    return {
       success: true,
       data: config,
-    });
-  } catch (error) {
-    console.error("Failed to fetch configuration:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch configuration" },
-      { status: 500 }
-    );
-  }
-}
+    };
+  },
+  { requireAdmin: true }
+);
 

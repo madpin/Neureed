@@ -26,7 +26,7 @@ export const GET = createHandler(
       message: "User preference constraints retrieved successfully",
     };
   },
-  { requireAuth: true }
+  { requireAdmin: true }
 );
 
 /**
@@ -52,6 +52,6 @@ export const PUT = createHandler(
       throw error;
     }
   },
-  { bodySchema: userConstraintsSchema, requireAuth: true }
+  { bodySchema: userConstraintsSchema, requireAdmin: true }
 );
 

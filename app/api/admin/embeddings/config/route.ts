@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
  */
 export const GET = createHandler(
   async ({ session }) => {
-    const config = getEmbeddingConfig();
+    const envConfig = getEmbeddingConfig();
     const embeddingConfig = await getEmbeddingConfiguration();
     const userId = session?.user?.id;
 
@@ -65,8 +65,19 @@ export const GET = createHandler(
       };
     });
 
+    // Use provider from database (embeddingConfig), not environment (envConfig)
+    // Get dimensions from the active provider's test result
+    const activeProviderTest = embeddingConfig.provider === "openai" ? openaiTest : localTest;
+    const dimensions = activeProviderTest.success ? activeProviderTest.dimensions : 0;
+    
     return {
-      config,
+      config: {
+        provider: embeddingConfig.provider,
+        model: embeddingConfig.model,
+        dimensions,
+        batchSize: embeddingConfig.batchSize,
+        apiKey: envConfig.apiKey,
+      },
       providers: {
         openai: {
           ...openaiTest,
@@ -86,7 +97,7 @@ export const GET = createHandler(
       message: "OpenAI always available - admin controls enable/disable, users provide credentials",
     };
   },
-  { requireAuth: true }
+  { requireAdmin: true }
 );
 
 const testProviderSchema = z.object({
@@ -112,6 +123,6 @@ export const POST = createHandler(
       usingUserConfig: userId && result.success,
     };
   },
-  { bodySchema: testProviderSchema, requireAuth: true }
+  { bodySchema: testProviderSchema, requireAdmin: true }
 );
 
