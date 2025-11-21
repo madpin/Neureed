@@ -198,6 +198,7 @@ export async function getDefaultPreferences(): Promise<
     readingPanelPosition: "right",
     readingPanelSize: 50,
     sidebarCollapsed: false,
+    sidebarWidth: 20, // Percentage width (10-40)
     categoryStates: null,
     readingFontFamily: "Georgia",
     readingFontSize: 18,
@@ -221,6 +222,10 @@ export async function getDefaultPreferences(): Promise<
     showArticleDate: true,
     articleCardSectionOrder: ["feedInfo", "title", "excerpt", "actions"],
     articleCardDensity: "normal",
+    articleCardBorderWidth: "normal",
+    articleCardBorderRadius: "normal",
+    articleCardBorderContrast: "medium",
+    articleCardSpacing: "normal",
   };
 }
 

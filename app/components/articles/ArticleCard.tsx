@@ -21,6 +21,9 @@ export interface ArticleDisplayPreferences {
   showFeedInfo: boolean;
   showDate: boolean;
   sectionOrder: string[];
+  borderWidth?: "none" | "thin" | "normal" | "thick";
+  borderRadius?: "sharp" | "slight" | "normal" | "rounded";
+  borderContrast?: "subtle" | "medium" | "strong";
 }
 
 interface ArticleCardProps {
@@ -44,6 +47,9 @@ const DEFAULT_PREFERENCES: ArticleDisplayPreferences = {
   showFeedInfo: true,
   showDate: true,
   sectionOrder: ["feedInfo", "title", "excerpt", "actions"],
+  borderWidth: "normal",
+  borderRadius: "normal",
+  borderContrast: "medium",
 };
 
 // Convert legacy variant prop to display preferences
@@ -93,6 +99,66 @@ function getDensityClasses(density: string) {
         metaSize: "text-sm",
         imageSize: "h-24 w-24",
       };
+  }
+}
+
+// Border width CSS classes
+function getBorderWidthClasses(width?: string) {
+  switch (width) {
+    case "none":
+      return "border-0";
+    case "thin":
+      return "border";
+    case "thick":
+      return "border-4";
+    case "normal":
+    default:
+      return "border-2";
+  }
+}
+
+// Border radius CSS classes
+function getBorderRadiusClasses(radius?: string) {
+  switch (radius) {
+    case "sharp":
+      return "rounded-none";
+    case "slight":
+      return "rounded";
+    case "rounded":
+      return "rounded-xl";
+    case "normal":
+    default:
+      return "rounded-lg";
+  }
+}
+
+// Border contrast CSS classes (only controls color/opacity, NOT width)
+function getBorderContrastClasses(contrast?: string, isRead?: boolean) {
+  const baseClass = "border-border";
+  
+  if (isRead) {
+    // Read articles - HIGHER contrast on borders to show they've been read
+    // Takes the configured level and adds MORE visibility
+    switch (contrast) {
+      case "subtle":
+        return `${baseClass}/70`; // Subtle (50%) + extra visibility for read = 70%
+      case "strong":
+        return `${baseClass} ring-2 ring-border/50`; // Full opacity + prominent ring for emphasis
+      case "medium":
+      default:
+        return `${baseClass} ring-1 ring-border/30`; // Full opacity + subtle ring
+    }
+  }
+  
+  // Unread articles - use configured contrast as-is (only opacity, no width)
+  switch (contrast) {
+    case "subtle":
+      return `${baseClass}/50`;
+    case "strong":
+      return `${baseClass} shadow-[0_0_0_1px_rgba(0,0,0,0.05)]`; // Full opacity + subtle outline shadow
+    case "medium":
+    default:
+      return `${baseClass}`; // Full opacity
   }
 }
 
@@ -321,11 +387,16 @@ export const ArticleCard = React.memo(({
   const hasImage = preferences.showImage && article.imageUrl;
   const imageInOrder = preferences.sectionOrder.includes("image");
 
+  // Get border styling classes
+  const borderWidthClass = getBorderWidthClasses(preferences.borderWidth);
+  const borderRadiusClass = getBorderRadiusClasses(preferences.borderRadius);
+  const borderContrastClass = getBorderContrastClasses(preferences.borderContrast, isRead);
+
   return (
-    <article className={`group rounded-lg border ${densityClasses.padding} transition-all relative ${
+    <article className={`group ${borderRadiusClass} ${borderWidthClass} ${borderContrastClass} ${densityClasses.padding} transition-all relative ${
       isRead
-        ? "border-border bg-muted opacity-75"
-        : "border-border bg-background hover:shadow-md"
+        ? "bg-muted opacity-75"
+        : "bg-background hover:shadow-md"
     }`}>
       {/* Overlays (top-right) */}
       <div className="absolute right-2 top-2 z-20 flex items-center gap-2 pointer-events-none">

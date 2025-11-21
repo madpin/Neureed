@@ -19,8 +19,8 @@ export function PreferencesModal({
   onClose,
   initialView = 'profile',
 }: PreferencesModalProps) {
-  const { data: session } = useSession();
-  const { data: cachedPreferences, isLoading } = useUserPreferences();
+  const { data: session, status: sessionStatus } = useSession();
+  const { data: cachedPreferences, isLoading, error } = useUserPreferences();
   const updatePreferencesMutation = useUpdateUserPreferences();
   
   const [currentView, setCurrentView] = useState<ViewType>(initialView);
@@ -45,12 +45,13 @@ export function PreferencesModal({
         setOriginalPreferences(prefs);
       }
     } else if (!isLoading && !localPreferences) {
-       // Fallback if no data
+       // Fallback if no data, auth error, or if unauthenticated
+       // Use defaults for preview/unauthenticated state
        const defaultPrefs = getDefaultPreferences();
        setLocalPreferences(defaultPrefs);
        setOriginalPreferences(defaultPrefs);
     }
-  }, [cachedPreferences, isLoading]);
+  }, [cachedPreferences, isLoading, localPreferences, error]);
 
   const getDefaultPreferences = (): UserPreferences => ({
     theme: "system",
@@ -89,6 +90,10 @@ export function PreferencesModal({
     showArticleFeedInfo: true,
     showArticleDate: true,
     articleCardSectionOrder: ["feedInfo", "title", "excerpt", "actions"],
+    articleCardBorderWidth: "normal",
+    articleCardBorderRadius: "normal",
+    articleCardBorderContrast: "medium",
+    articleCardSpacing: "normal",
   });
 
   const hasUnsavedChanges = () => {
@@ -202,6 +207,42 @@ export function PreferencesModal({
     setIsSaving(true);
     setSaveMessage(null);
 
+    console.log("=== SAVING PREFERENCES ===");
+    console.log("Full preferences object:", JSON.stringify(localPreferences, null, 2));
+    console.log("Article card preferences:", JSON.stringify({
+      articleCardDensity: localPreferences.articleCardDensity,
+      articleCardBorderWidth: localPreferences.articleCardBorderWidth,
+      articleCardBorderRadius: localPreferences.articleCardBorderRadius,
+      articleCardBorderContrast: localPreferences.articleCardBorderContrast,
+      articleCardSpacing: localPreferences.articleCardSpacing,
+    }, null, 2));
+
+    // Client-side validation for common issues
+    const validationIssues = [];
+    
+    if (localPreferences.articleCardBorderWidth && !["none", "thin", "normal", "thick"].includes(localPreferences.articleCardBorderWidth)) {
+      validationIssues.push(`Invalid borderWidth: ${localPreferences.articleCardBorderWidth}`);
+    }
+    if (localPreferences.articleCardBorderRadius && !["sharp", "slight", "normal", "rounded"].includes(localPreferences.articleCardBorderRadius)) {
+      validationIssues.push(`Invalid borderRadius: ${localPreferences.articleCardBorderRadius}`);
+    }
+    if (localPreferences.articleCardBorderContrast && !["subtle", "medium", "strong"].includes(localPreferences.articleCardBorderContrast)) {
+      validationIssues.push(`Invalid borderContrast: ${localPreferences.articleCardBorderContrast}`);
+    }
+    if (localPreferences.articleCardSpacing && !["none", "compact", "normal", "comfortable", "spacious"].includes(localPreferences.articleCardSpacing)) {
+      validationIssues.push(`Invalid spacing: ${localPreferences.articleCardSpacing}`);
+    }
+    
+    if (validationIssues.length > 0) {
+      console.error("Client-side validation failed:", validationIssues);
+      setSaveMessage({
+        type: "error",
+        text: `Invalid values: ${validationIssues.join(", ")}`
+      });
+      setIsSaving(false);
+      return;
+    }
+
     try {
       // Use the mutation to save
       await updatePreferencesMutation.mutateAsync(localPreferences);
@@ -213,11 +254,23 @@ export function PreferencesModal({
       window.dispatchEvent(new CustomEvent("preferencesUpdated", { detail: localPreferences }));
       
       setTimeout(() => setSaveMessage(null), 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save preferences:", error);
+      console.error("Error details:", error.data);
+      
+      let errorMessage = "Failed to save preferences. Please try again.";
+      
+      if (error.data && Array.isArray(error.data)) {
+        // Zod validation errors
+        const fieldErrors = error.data.map((e: any) => `${e.path.join(".")}: ${e.message}`).join(", ");
+        errorMessage = `Validation error: ${fieldErrors}`;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       setSaveMessage({
         type: "error",
-        text: error instanceof Error ? error.message : "Failed to save preferences. Please try again."
+        text: errorMessage
       });
     } finally {
       setIsSaving(false);
@@ -947,29 +1000,53 @@ function ArticleDisplayView({
 
   const currentDensity = (preferences.articleCardDensity as "compact" | "normal" | "comfortable") || "normal";
 
-  // Sample article for preview
-  const sampleArticle = useMemo(() => ({
-    id: "preview-article",
-    title: "How to Customize Your RSS Reader Experience",
-    excerpt: "Learn how to personalize your article cards with custom layouts, density settings, and component visibility controls for the perfect reading experience.",
-    content: "Sample content",
-    url: "#",
-    feedId: "sample-feed",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    publishedAt: new Date(),
-    author: "John Doe",
-    imageUrl: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=300&fit=crop",
-    isRead: false,
-    feeds: {
-      id: "sample-feed",
-      name: "Tech News Daily",
+  // Sample articles for preview - one unread, one read
+  const sampleArticles = useMemo(() => [
+    {
+      id: "preview-article-1",
+      title: "How to Customize Your RSS Reader Experience",
+      excerpt: "Learn how to personalize your article cards with custom layouts, density settings, and component visibility controls for the perfect reading experience.",
+      content: "Sample content",
       url: "#",
-      imageUrl: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=32&h=32&fit=crop",
+      feedId: "sample-feed",
       createdAt: new Date(),
       updatedAt: new Date(),
+      publishedAt: new Date(),
+      author: "John Doe",
+      imageUrl: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=300&fit=crop",
+      isRead: false, // Unread article
+      feeds: {
+        id: "sample-feed",
+        name: "Tech News Daily",
+        url: "#",
+        imageUrl: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=32&h=32&fit=crop",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     },
-  }), []);
+    {
+      id: "preview-article-2",
+      title: "Building Modern Web Applications",
+      excerpt: "Explore the latest techniques and best practices for creating responsive, performant web applications with modern frameworks.",
+      content: "Sample content",
+      url: "#",
+      feedId: "sample-feed",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      publishedAt: new Date(Date.now() - 3600000),
+      author: "Jane Smith",
+      imageUrl: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400&h=300&fit=crop",
+      isRead: true, // Read article
+      feeds: {
+        id: "sample-feed",
+        name: "Tech News Daily",
+        url: "#",
+        imageUrl: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=32&h=32&fit=crop",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    },
+  ], []);
 
   // Build display preferences from current settings
   const displayPreferences = useMemo<ArticleDisplayPreferences>(() => ({
@@ -980,7 +1057,28 @@ function ArticleDisplayView({
     showFeedInfo: preferences.showArticleFeedInfo ?? true,
     showDate: preferences.showArticleDate ?? true,
     sectionOrder: (preferences.articleCardSectionOrder as string[]) || ["feedInfo", "title", "excerpt", "actions"],
+    borderWidth: (preferences.articleCardBorderWidth as "none" | "thin" | "normal" | "thick") || "normal",
+    borderRadius: (preferences.articleCardBorderRadius as "sharp" | "slight" | "normal" | "rounded") || "normal",
+    borderContrast: (preferences.articleCardBorderContrast as "subtle" | "medium" | "strong") || "medium",
   }), [preferences]);
+
+  // Get spacing class for preview
+  const previewSpacingClass = useMemo(() => {
+    const spacing = preferences.articleCardSpacing || "normal";
+    switch (spacing) {
+      case "none":
+        return "space-y-0";
+      case "compact":
+        return "space-y-2";
+      case "comfortable":
+        return "space-y-6";
+      case "spacious":
+        return "space-y-8";
+      case "normal":
+      default:
+        return "space-y-4";
+    }
+  }, [preferences.articleCardSpacing]);
 
   const handleDensityChange = (density: "compact" | "normal" | "comfortable") => {
     updatePreference("articleCardDensity", density);
@@ -1015,10 +1113,15 @@ function ArticleDisplayView({
           </div>
           
           <div className="rounded-lg border border-border bg-background p-4">
-            <ArticleCard 
-              article={sampleArticle as any}
-              displayPreferences={displayPreferences}
-            />
+            <div className={previewSpacingClass}>
+              {sampleArticles.map((article) => (
+                <ArticleCard 
+                  key={article.id}
+                  article={article as any}
+                  displayPreferences={displayPreferences}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
@@ -1097,6 +1200,175 @@ function ArticleDisplayView({
               checked={preferences.showArticleDate ?? true}
               onChange={(checked) => updatePreference("showArticleDate", checked)}
             />
+          </div>
+        </div>
+
+        {/* Border Appearance */}
+        <div className="rounded-lg border border-border bg-muted p-6">
+          <h3 className="mb-4 text-lg font-semibold">Border Appearance</h3>
+          <p className="mb-6 text-sm text-foreground/70">
+            Customize borders to create a card-like or table-like appearance
+          </p>
+          
+          <div className="space-y-6">
+            {/* Border Width */}
+            <div>
+              <label className="mb-3 block text-sm font-medium">Border Width</label>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {[
+                  { value: "none", label: "None", description: "No borders (minimal)" },
+                  { value: "thin", label: "Thin", description: "Subtle borders" },
+                  { value: "normal", label: "Normal", description: "Standard borders" },
+                  { value: "thick", label: "Thick", description: "Prominent (table-like)" },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => updatePreference("articleCardBorderWidth", option.value as "none" | "thin" | "normal" | "thick")}
+                    className={`
+                      flex flex-col items-center gap-2 rounded-lg border-2 p-4 text-left transition-all
+                      ${
+                        (preferences.articleCardBorderWidth || "normal") === option.value
+                          ? "border-primary bg-primary/10 dark:bg-primary/20"
+                          : "border-border bg-background hover:bg-muted"
+                      }
+                    `}
+                  >
+                    <span className="text-sm font-semibold">{option.label}</span>
+                    <span className="text-xs text-foreground/60 text-center">{option.description}</span>
+                    <div className="mt-2 w-full h-8 bg-foreground/5 rounded flex items-center justify-center">
+                      <div 
+                        className={`bg-foreground/30 rounded ${
+                          option.value === "none" ? "w-12 h-0" :
+                          option.value === "thin" ? "w-12 h-0.5" :
+                          option.value === "thick" ? "w-12 h-2" :
+                          "w-12 h-1"
+                        }`}
+                      />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Border Radius */}
+            <div>
+              <label className="mb-3 block text-sm font-medium">Border Radius</label>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {[
+                  { value: "sharp", label: "Sharp", description: "Square corners (table)" },
+                  { value: "slight", label: "Slight", description: "Slightly rounded" },
+                  { value: "normal", label: "Normal", description: "Rounded corners" },
+                  { value: "rounded", label: "Rounded", description: "Very rounded (card)" },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => updatePreference("articleCardBorderRadius", option.value as "sharp" | "slight" | "normal" | "rounded")}
+                    className={`
+                      flex flex-col items-center gap-2 rounded-lg border-2 p-4 text-left transition-all
+                      ${
+                        (preferences.articleCardBorderRadius || "normal") === option.value
+                          ? "border-primary bg-primary/10 dark:bg-primary/20"
+                          : "border-border bg-background hover:bg-muted"
+                      }
+                    `}
+                  >
+                    <span className="text-sm font-semibold">{option.label}</span>
+                    <span className="text-xs text-foreground/60 text-center">{option.description}</span>
+                    <div className="mt-2 w-full h-8 bg-foreground/5 flex items-center justify-center">
+                      <div 
+                        className={`w-12 h-6 bg-foreground/30 border-2 border-foreground/40 ${
+                          option.value === "sharp" ? "rounded-none" :
+                          option.value === "slight" ? "rounded" :
+                          option.value === "rounded" ? "rounded-xl" :
+                          "rounded-lg"
+                        }`}
+                      />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Border Contrast */}
+            <div>
+              <label className="mb-3 block text-sm font-medium">Border Contrast</label>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { value: "subtle", label: "Subtle", description: "Low visibility" },
+                  { value: "medium", label: "Medium", description: "Balanced (default)" },
+                  { value: "strong", label: "Strong", description: "Maximum contrast" },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => updatePreference("articleCardBorderContrast", option.value as "subtle" | "medium" | "strong")}
+                    className={`
+                      flex flex-col items-center gap-2 rounded-lg border-2 p-4 text-left transition-all
+                      ${
+                        (preferences.articleCardBorderContrast || "medium") === option.value
+                          ? "border-primary bg-primary/10 dark:bg-primary/20"
+                          : "border-border bg-background hover:bg-muted"
+                      }
+                    `}
+                  >
+                    <span className="text-sm font-semibold">{option.label}</span>
+                    <span className="text-xs text-foreground/60 text-center">{option.description}</span>
+                    <div className="mt-2 w-full h-8 bg-foreground/5 rounded flex items-center justify-center">
+                      <div 
+                        className={`w-12 h-6 rounded ${
+                          option.value === "subtle" ? "border border-foreground/40" :
+                          option.value === "strong" ? "border-4 border-foreground" :
+                          "border-2 border-foreground/80"
+                        }`}
+                      />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Card Spacing */}
+            <div>
+              <label className="mb-3 block text-sm font-medium">Card Spacing</label>
+              <p className="mb-3 text-xs text-foreground/60">
+                Space between article cards in the feed
+              </p>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                {[
+                  { value: "none", label: "None", description: "No spacing (table)" },
+                  { value: "compact", label: "Compact", description: "Minimal spacing" },
+                  { value: "normal", label: "Normal", description: "Standard spacing" },
+                  { value: "comfortable", label: "Comfortable", description: "Generous spacing" },
+                  { value: "spacious", label: "Spacious", description: "Maximum spacing" },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => updatePreference("articleCardSpacing", option.value as "none" | "compact" | "normal" | "comfortable" | "spacious")}
+                    className={`
+                      flex flex-col items-center gap-2 rounded-lg border-2 p-4 text-left transition-all
+                      ${
+                        (preferences.articleCardSpacing || "normal") === option.value
+                          ? "border-primary bg-primary/10 dark:bg-primary/20"
+                          : "border-border bg-background hover:bg-muted"
+                      }
+                    `}
+                  >
+                    <span className="text-sm font-semibold">{option.label}</span>
+                    <span className="text-xs text-foreground/60 text-center">{option.description}</span>
+                    <div className="mt-2 w-full h-8 bg-foreground/5 rounded flex flex-col items-center justify-center gap-0.5">
+                      <div className={`w-12 h-1 bg-foreground/30 rounded`} />
+                      <div className={`w-12 ${
+                        option.value === "none" ? "h-0" :
+                        option.value === "compact" ? "h-0.5" :
+                        option.value === "comfortable" ? "h-2" :
+                        option.value === "spacious" ? "h-3" :
+                        "h-1"
+                      }`} />
+                      <div className={`w-12 h-1 bg-foreground/30 rounded`} />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 

@@ -33,7 +33,7 @@ const preferencesSchema = z.object({
   // LLM Settings - Shared
   llmProvider: z.enum(["openai", "ollama"]).nullable().optional(),
   llmApiKey: z.string().nullable().optional(),
-  llmBaseUrl: z.string().url().nullable().optional(),
+  llmBaseUrl: z.string().url().or(z.literal("")).nullable().optional(),
   // LLM Settings - Feature-specific Models
   llmSummaryModel: z.string().nullable().optional(),
   llmEmbeddingModel: z.string().nullable().optional(),
@@ -75,6 +75,11 @@ const preferencesSchema = z.object({
   showArticleFeedInfo: z.boolean().optional(),
   showArticleDate: z.boolean().optional(),
   articleCardSectionOrder: z.array(z.string()).optional(),
+  // Article Border & Spacing Customization
+  articleCardBorderWidth: z.enum(["none", "thin", "normal", "thick"]).optional(),
+  articleCardBorderRadius: z.enum(["sharp", "slight", "normal", "rounded"]).optional(),
+  articleCardBorderContrast: z.enum(["subtle", "medium", "strong"]).optional(),
+  articleCardSpacing: z.enum(["none", "compact", "normal", "comfortable", "spacious"]).optional(),
 });
 
 /**
@@ -83,8 +88,7 @@ const preferencesSchema = z.object({
  */
 export const PUT = createHandler(
   async ({ body, session }) => {
-    console.log("Received preferences update:", body);
-    console.log("Validated data:", body);
+    console.log("Received preferences update:", JSON.stringify(body, null, 2));
     
     const preferences = await updateUserPreferences(session!.user!.id, body);
     console.log("Updated preferences:", preferences);

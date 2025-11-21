@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useState, useRef, useEffect } from "react";
 import { UserMenu } from "@/app/components/auth/UserMenu";
 import { ArticleSortDropdown } from "@/app/components/articles/ArticleSortDropdown";
 import type { ArticleSortOrder, ArticleSortDirection } from "@/lib/validations/article-validation";
@@ -27,18 +27,79 @@ export function MainLayout({
   const updatePreference = useUpdatePreference();
 
   const isSidebarCollapsed = preferences?.sidebarCollapsed ?? false;
+  const storedSidebarWidth = preferences?.sidebarWidth ?? 20;
+
+  // Local state for resizing
+  const [currentSidebarWidth, setCurrentSidebarWidth] = useState(storedSidebarWidth);
+  const [isDragging, setIsDragging] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const widthRef = useRef(storedSidebarWidth); // Track current width for saving
+
+  // Update local state when preferences change from server (but not while dragging)
+  // Note: We don't include isDragging in deps to avoid resetting width when drag ends
+  useEffect(() => {
+    if (!isDragging) {
+      setCurrentSidebarWidth(storedSidebarWidth);
+      widthRef.current = storedSidebarWidth;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storedSidebarWidth]);
+
+  // Handle resize dragging
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!containerRef.current) return;
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const totalWidth = rect.width;
+      const distanceFromLeft = e.clientX - rect.left;
+      let newWidth = (distanceFromLeft / totalWidth) * 100;
+
+      // Clamp between 10% and 40%
+      newWidth = Math.max(10, Math.min(40, newWidth));
+      setCurrentSidebarWidth(newWidth);
+      widthRef.current = newWidth; // Update ref immediately
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      // Save to preferences using the ref value (has the latest width, rounded to integer)
+      const roundedWidth = Math.round(widthRef.current);
+      updatePreference.mutate({ sidebarWidth: roundedWidth });
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging, updatePreference]);
+
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
 
   const toggleSidebarCollapse = () => {
     updatePreference.mutate({ sidebarCollapsed: !isSidebarCollapsed });
   };
 
-  const sidebarWidth = isSidebarCollapsed ? "w-20" : "w-64";
+  // Calculate actual width based on collapsed state (round to avoid sub-pixel issues)
+  const actualSidebarWidth = isSidebarCollapsed ? 5 : Math.round(currentSidebarWidth);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-muted">
+    <div ref={containerRef} className="flex h-screen overflow-hidden bg-muted">
       {/* Sidebar */}
       <aside
-        className={`${sidebarWidth} flex-shrink-0 overflow-hidden border-r border-border bg-background transition-all duration-300`}
+        style={{ 
+          width: `${actualSidebarWidth}%`,
+          transition: isDragging ? "none" : "width 0.3s ease-in-out"
+        }}
+        className="flex-shrink-0 overflow-hidden border-r border-border bg-background relative"
       >
         <div className="flex h-full flex-col">
           {/* Header */}
@@ -86,6 +147,22 @@ export function MainLayout({
             </button>
           </div>
         </div>
+
+        {/* Resize Handle */}
+        {!isSidebarCollapsed && (
+          <div
+            onMouseDown={handleResizeStart}
+            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 transition-colors group z-10"
+            style={{
+              backgroundColor: isDragging ? "rgb(59, 130, 246)" : "transparent"
+            }}
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize sidebar"
+          >
+            <div className="absolute right-0 top-0 bottom-0 w-1 group-hover:bg-blue-500" />
+          </div>
+        )}
       </aside>
 
       {/* Main Content */}

@@ -67,7 +67,28 @@ export function ArticleList({
     showFeedInfo: preferences?.showArticleFeedInfo ?? true,
     showDate: preferences?.showArticleDate ?? true,
     sectionOrder: (preferences?.articleCardSectionOrder as string[]) || ["feedInfo", "title", "excerpt", "actions"],
+    borderWidth: (preferences?.articleCardBorderWidth as "none" | "thin" | "normal" | "thick") || "normal",
+    borderRadius: (preferences?.articleCardBorderRadius as "sharp" | "slight" | "normal" | "rounded") || "normal",
+    borderContrast: (preferences?.articleCardBorderContrast as "subtle" | "medium" | "strong") || "medium",
   }), [preferences]);
+
+  // Get spacing class based on user preference
+  const spacingClass = useMemo(() => {
+    const spacing = preferences?.articleCardSpacing || "normal";
+    switch (spacing) {
+      case "none":
+        return "space-y-0";
+      case "compact":
+        return "space-y-2";
+      case "comfortable":
+        return "space-y-6";
+      case "spacious":
+        return "space-y-8";
+      case "normal":
+      default:
+        return "space-y-4";
+    }
+  }, [preferences?.articleCardSpacing]);
 
   if (isLoading) {
     return <LoadingSkeleton count={5} />;
@@ -101,7 +122,7 @@ export function ArticleList({
   const showButton = infiniteScrollMode === "button" || infiniteScrollMode === "both";
 
   return (
-    <div className="space-y-4">
+    <div className={`${spacingClass} transition-all duration-300 ease-in-out`}>
       {articles.map((article) => {
         const score = scores.get(article.id);
         const hasSimilarity = 'similarity' in article && article.similarity !== undefined;

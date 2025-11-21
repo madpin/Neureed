@@ -5,6 +5,7 @@ export type ApiResponse<T = unknown> = {
   data?: T;
   error?: string;
   message?: string;
+  details?: unknown;
 };
 
 /**
@@ -30,15 +31,19 @@ export function successResponse<T>(
  */
 export function errorResponse(
   error: string,
-  status: number = 500
+  status: number = 500,
+  details?: unknown
 ): NextResponse<ApiResponse> {
-  return NextResponse.json(
-    {
-      success: false,
-      error,
-    },
-    { status }
-  );
+  const response: ApiResponse = {
+    success: false,
+    error,
+  };
+  
+  if (details !== undefined) {
+    response.details = details;
+  }
+
+  return NextResponse.json(response, { status });
 }
 
 /**
@@ -114,6 +119,6 @@ export function apiError(
     console.error("API Error Details:", errorDetails);
   }
   
-  return errorResponse(error, status);
+  return errorResponse(error, status, errorDetails);
 }
 

@@ -47,6 +47,13 @@ async function fetchApi<T>(
   const data: ApiResponse<T> = await response.json();
 
   if (!response.ok) {
+    console.error("API Error Response:", JSON.stringify({
+      status: response.status,
+      statusText: response.statusText,
+      data,
+      url,
+    }, null, 2));
+    
     throw new ApiError(
       data.error || data.message || "An error occurred",
       response.status,

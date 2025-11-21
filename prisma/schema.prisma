@@ -265,6 +265,7 @@ model user_preferences {
   readingPanelSize          Int      @default(50)
   categoryStates            Json?
   sidebarCollapsed          Boolean  @default(false)
+  sidebarWidth              Int      @default(20) // Percentage width (10-40)
   readingFontFamily         String   @default("Georgia")
   readingFontSize           Int      @default(18)
   readingLineHeight         Float    @default(1.7)
@@ -290,6 +291,10 @@ model user_preferences {
   showArticleDate           Boolean  @default(true)
   articleCardSectionOrder   Json?    @default("[\"feedInfo\",\"title\",\"excerpt\",\"actions\"]")
   articleCardDensity        String   @default("normal")
+  articleCardBorderWidth    String   @default("normal")
+  articleCardBorderRadius   String   @default("normal")
+  articleCardBorderContrast String   @default("medium")
+  articleCardSpacing        String   @default("normal")
   users                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 

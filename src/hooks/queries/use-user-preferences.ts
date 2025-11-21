@@ -7,7 +7,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/query-keys";
-import { apiGet, apiPut } from "@/lib/query/api-client";
+import { apiGet, apiPut, ApiError } from "@/lib/query/api-client";
 
 /**
  * User preferences type (matching the API response)
@@ -34,6 +34,7 @@ export interface UserPreferences {
   readingPanelPosition?: string;
   readingPanelSize?: number;
   sidebarCollapsed?: boolean;
+  sidebarWidth?: number;
   categoryStates?: Record<string, boolean> | null;
   readingFontFamily?: string;
   readingFontSize?: number;
@@ -57,6 +58,10 @@ export interface UserPreferences {
   showArticleFeedInfo?: boolean;
   showArticleDate?: boolean;
   articleCardSectionOrder?: string[];
+  articleCardBorderWidth?: "none" | "thin" | "normal" | "thick";
+  articleCardBorderRadius?: "sharp" | "slight" | "normal" | "rounded";
+  articleCardBorderContrast?: "subtle" | "medium" | "strong";
+  articleCardSpacing?: "none" | "compact" | "normal" | "comfortable" | "spacious";
 }
 
 interface UserPreferencesResponse {
@@ -66,9 +71,18 @@ interface UserPreferencesResponse {
 /**
  * Fetch user preferences
  */
-async function fetchUserPreferences(): Promise<UserPreferences> {
-  const response = await apiGet<UserPreferencesResponse>("/api/user/preferences");
-  return response.preferences;
+async function fetchUserPreferences(): Promise<UserPreferences | null> {
+  try {
+    const response = await apiGet<UserPreferencesResponse>("/api/user/preferences");
+    return response.preferences;
+  } catch (error) {
+    // Return null on auth errors (401) instead of throwing
+    // This allows the component to use defaults gracefully
+    if (error instanceof ApiError && error.status === 401) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 /**
@@ -77,9 +91,50 @@ async function fetchUserPreferences(): Promise<UserPreferences> {
 async function updateUserPreferences(
   preferences: Partial<UserPreferences>
 ): Promise<UserPreferences> {
+  // Clean preferences: filter undefined, convert empty strings to null, round integers
+  const cleanedPreferences: Record<string, any> = {};
+  
+  // Fields that should be integers (rounded if they're floats)
+  const integerFields = new Set([
+    "articlesPerPage",
+    "readingPanelSize",
+    "sidebarWidth",
+    "readingFontSize",
+    "defaultRefreshInterval",
+    "defaultMaxArticlesPerFeed",
+    "defaultMaxArticleAge",
+    "searchRecencyDecayDays",
+  ]);
+  
+  for (const [key, value] of Object.entries(preferences)) {
+    // Skip undefined values
+    if (value === undefined) continue;
+    
+    // Convert empty strings to null for URL and nullable string fields
+    if (value === "" && (
+      key === "llmBaseUrl" || 
+      key === "llmApiKey" || 
+      key === "llmProvider" ||
+      key === "llmSummaryModel" ||
+      key === "llmEmbeddingModel" ||
+      key === "llmDigestModel"
+    )) {
+      cleanedPreferences[key] = null;
+    }
+    // Round float values to integers for integer fields
+    else if (integerFields.has(key) && typeof value === "number") {
+      cleanedPreferences[key] = Math.round(value);
+    }
+    else {
+      cleanedPreferences[key] = value;
+    }
+  }
+  
+  console.log("Cleaned preferences being sent:", JSON.stringify(cleanedPreferences, null, 2));
+  
   const response = await apiPut<UserPreferencesResponse>(
     "/api/user/preferences",
-    preferences
+    cleanedPreferences
   );
   return response.preferences;
 }
@@ -89,6 +144,9 @@ async function updateUserPreferences(
  *
  * This hook provides cached access to user preferences with automatic
  * background updates. The data is shared across all components.
+ * 
+ * Note: This hook automatically handles authentication state. When the user
+ * is not authenticated, the query is disabled and no API call is made.
  *
  * @example
  * ```tsx
@@ -106,6 +164,7 @@ export function useUserPreferences() {
     queryKey: queryKeys.user.preferences(),
     queryFn: fetchUserPreferences,
     staleTime: 5 * 60 * 1000, // 5 minutes - preferences don't change often
+    retry: false, // Don't retry on auth errors
   });
 }
 
@@ -146,7 +205,10 @@ export function useUpdateUserPreferences() {
       // Optimistically update to the new value
       queryClient.setQueryData<UserPreferences>(
         queryKeys.user.preferences(),
-        (old) => ({ ...old, ...newPreferences })
+        (old) => {
+          if (!old) return newPreferences as UserPreferences;
+          return { ...old, ...newPreferences };
+        }
       );
 
       // Return context with the previous value
