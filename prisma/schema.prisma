@@ -298,23 +298,40 @@ model user_preferences {
   users                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model user_notifications {
+  id        String   @id
+  userId    String
+  type      String   // 'feed_refresh', 'info', 'warning', 'error'
+  title     String
+  message   String
+  metadata  Json?    // Additional data like stats
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  users     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, read])
+}
+
 model User {
-  id               String             @id
-  name             String?
-  email            String             @unique
-  emailVerified    DateTime?
-  image            String?
-  role             UserRole           @default(USER)
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime
-  accounts         Account[]
-  article_feedback article_feedback[]
-  read_articles    read_articles[]
-  sessions         Session[]
-  user_categories  user_categories[]
-  user_feeds       user_feeds[]
-  user_patterns    user_patterns[]
-  user_preferences user_preferences?
+  id                 String               @id
+  name               String?
+  email              String               @unique
+  emailVerified      DateTime?
+  image              String?
+  role               UserRole             @default(USER)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime
+  accounts           Account[]
+  article_feedback   article_feedback[]
+  read_articles      read_articles[]
+  sessions           Session[]
+  user_categories    user_categories[]
+  user_feeds         user_feeds[]
+  user_patterns      user_patterns[]
+  user_preferences   user_preferences?
+  user_notifications user_notifications[]
 
   @@map("users")
 }

@@ -923,14 +923,73 @@ function FeedSettingsView({
   const handleRefreshFeed = async () => {
     try {
       setIsRefreshing(true);
+      const feedName = feed?.name || "Feed";
+      const toastId = `refresh-modal-${feedId}`;
+      
+      toast.loading(
+        <div 
+          className="cursor-pointer" 
+          onClick={(e) => {
+            e.stopPropagation();
+            toast.dismiss(toastId);
+          }}
+        >
+          Refreshing {feedName}...
+        </div>, 
+        { id: toastId }
+      );
+      
       // Let's check use-feeds.ts. useRefreshFeed expects `feedId: string`.
       // So removing parseInt.
-      await refreshFeedMutation.mutateAsync(feedId);
-      toast.success("Feed refreshed successfully");
+      const data = await refreshFeedMutation.mutateAsync(feedId);
+      const result = (data as any)?.data || data;
+      const hasUpdates = (result?.newArticles || 0) > 0 || (result?.updatedArticles || 0) > 0;
+      
+      if (hasUpdates) {
+        toast.success(
+          <div 
+            className="flex flex-col gap-2 cursor-pointer" 
+            onClick={(e) => {
+              e.stopPropagation();
+              toast.dismiss(toastId);
+            }}
+          >
+            <div className="font-semibold">{feedName} refreshed</div>
+            <div className="flex flex-wrap gap-2 text-xs">
+              {result.newArticles > 0 && (
+                <span className="flex items-center gap-1 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded">
+                  📰 {result.newArticles} new
+                </span>
+              )}
+              {result.updatedArticles > 0 && (
+                <span className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded">
+                  🔄 {result.updatedArticles} updated
+                </span>
+              )}
+              {result.articlesCleanedUp > 0 && (
+                <span className="flex items-center gap-1 bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 rounded">
+                  🧹 {result.articlesCleanedUp} cleaned
+                </span>
+              )}
+              {result.embeddingsGenerated > 0 && (
+                <span className="flex items-center gap-1 bg-purple-100 dark:bg-purple-900/30 px-2 py-0.5 rounded">
+                  🧠 {result.embeddingsGenerated} embeddings
+                </span>
+              )}
+            </div>
+            <div className="text-xs text-gray-500 italic">Click to dismiss</div>
+          </div>,
+          { id: toastId, duration: 6000 }
+        );
+      } else {
+        toast.success(`${feedName} refreshed - No new articles`, { id: toastId });
+      }
       onRefreshData?.();
     } catch (error) {
       console.error("Failed to refresh feed:", error);
-      toast.error("Failed to refresh feed");
+      const feedName = feed?.name || "Feed";
+      const toastId = `refresh-modal-${feedId}`;
+      toast.error(`Failed to refresh ${feedName}`, { id: toastId });
     } finally {
       setIsRefreshing(false);
     }

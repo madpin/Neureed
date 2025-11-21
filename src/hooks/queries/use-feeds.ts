@@ -332,9 +332,14 @@ export function useRefreshFeed() {
 
   return useMutation({
     mutationFn: refreshFeed,
+    onMutate: async () => {
+      // Show loading toast immediately
+      return { toastId: Date.now() };
+    },
     onSuccess: () => {
-      // Invalidate articles to show newly fetched content
+      // Invalidate articles and notifications to show newly fetched content
       queryClient.invalidateQueries({ queryKey: queryKeys.articles.all });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
   });
 }
@@ -442,12 +447,9 @@ export function useBulkUpdateFeedSettings() {
         errors,
       };
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.feeds.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.articles.all });
-      
-      // Log success statistics
-      console.log(`Bulk update completed: ${data.successful}/${data.total} successful`);
     },
     onError: (error) => {
       console.error("Bulk update failed:", error);

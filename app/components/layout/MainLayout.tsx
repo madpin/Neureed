@@ -3,6 +3,7 @@
 import { ReactNode, useState, useRef, useEffect } from "react";
 import { UserMenu } from "@/app/components/auth/UserMenu";
 import { ArticleSortDropdown } from "@/app/components/articles/ArticleSortDropdown";
+import { NotificationBell } from "@/app/components/notifications/NotificationBell";
 import type { ArticleSortOrder, ArticleSortDirection } from "@/lib/validations/article-validation";
 import { useUserPreferences, useUpdatePreference } from "@/hooks/queries/use-user-preferences";
 
@@ -185,6 +186,9 @@ export function MainLayout({
                 isLoading={isLoadingArticles}
               />
             )}
+
+            {/* Notification Bell */}
+            <NotificationBell />
 
             {/* User Menu */}
             <UserMenu />

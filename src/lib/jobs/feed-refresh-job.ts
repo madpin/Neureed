@@ -5,6 +5,7 @@ import { logger } from "@/lib/logger";
 import { createJobExecutor, type JobResult } from "./job-executor";
 import { createScheduledJob } from "./job-scheduler";
 import { JobLogger } from "./job-logger";
+import { createFeedRefreshNotification, cleanupOldNotifications } from "../services/notification-service";
 
 /**
  * Cron job for refreshing feeds
@@ -142,12 +143,84 @@ async function runFeedRefresh(): Promise<JobResult> {
   // Refresh feeds (no specific userId for cleanup - use system defaults)
   // Individual users' cleanup will happen on their personal schedule
   jobLogger.info("Starting feed refresh process");
+  
+  // Get feed details for better logging
+  const feedDetails = await prisma.feeds.findMany({
+    where: { id: { in: feedIds } },
+    select: { id: true, name: true, url: true },
+  });
+  
+  const feedMap = new Map(feedDetails.map(f => [f.id, f]));
+  
   const results = await refreshFeeds(feedIds);
   const stats = getRefreshStats(results);
+
+  // Log detailed results for each feed
+  for (const result of results) {
+    const feed = feedMap.get(result.feedId);
+    const feedName = feed?.name || feed?.url || result.feedId;
+    
+    if (result.success) {
+      const details: any = {
+        feedId: result.feedId,
+        feedName,
+        newArticles: result.newArticles,
+        updatedArticles: result.updatedArticles,
+        duration: `${(result.duration / 1000).toFixed(2)}s`,
+      };
+      
+      if (result.embeddingsGenerated) {
+        details.embeddingsGenerated = result.embeddingsGenerated;
+        details.embeddingTokens = result.embeddingTokens;
+      }
+      
+      if (result.extractionUsed) {
+        details.extractionMethod = result.extractionMethod;
+      }
+      
+      if (result.cleanupResult && result.cleanupResult.deleted > 0) {
+        details.articlesCleanedUp = result.cleanupResult.deleted;
+        details.cleanupDetails = {
+          byAge: result.cleanupResult.byAge,
+          byCount: result.cleanupResult.byCount,
+        };
+      }
+      
+      const totalArticles = result.newArticles + result.updatedArticles;
+      if (totalArticles > 0) {
+        jobLogger.info(`✓ ${feedName}: +${result.newArticles} new, ~${result.updatedArticles} updated`, details);
+        logger.info(`Feed refreshed: ${feedName}`, details);
+      } else {
+        jobLogger.info(`✓ ${feedName}: No new articles`, details);
+        logger.info(`Feed refreshed (no changes): ${feedName}`, details);
+      }
+    } else {
+      jobLogger.error(`✗ ${feedName}: ${result.error}`, {
+        feedId: result.feedId,
+        feedName,
+        error: result.error,
+        duration: `${(result.duration / 1000).toFixed(2)}s`,
+      });
+      logger.error(`Feed refresh failed: ${feedName}`, {
+        feedId: result.feedId,
+        error: result.error,
+      });
+    }
+  }
 
   // Calculate cleanup stats
   const totalCleaned = results.reduce(
     (sum, r) => sum + (r.cleanupResult?.deleted || 0),
+    0
+  );
+  
+  const totalEmbeddings = results.reduce(
+    (sum, r) => sum + (r.embeddingsGenerated || 0),
+    0
+  );
+  
+  const totalTokens = results.reduce(
+    (sum, r) => sum + (r.embeddingTokens || 0),
     0
   );
 
@@ -156,22 +229,53 @@ async function runFeedRefresh(): Promise<JobResult> {
     logger.error("Feed refresh errors", { errors: stats.errors });
   }
 
-  jobLogger.info("Feed refresh completed", {
+  const summaryDetails: any = {
     totalFeeds: stats.totalFeeds,
     successful: stats.successful,
     failed: stats.failed,
     newArticles: stats.totalNewArticles,
     updatedArticles: stats.totalUpdatedArticles,
     articlesCleanedUp: totalCleaned,
-  });
-  logger.info("Feed refresh completed", {
-    totalFeeds: stats.totalFeeds,
-    successful: stats.successful,
-    failed: stats.failed,
-    newArticles: stats.totalNewArticles,
-    updatedArticles: stats.totalUpdatedArticles,
-    articlesCleanedUp: totalCleaned,
-  });
+    averageDuration: `${(stats.averageDuration / 1000).toFixed(2)}s`,
+  };
+  
+  if (totalEmbeddings > 0) {
+    summaryDetails.embeddingsGenerated = totalEmbeddings;
+    summaryDetails.totalTokens = totalTokens;
+  }
+  
+  jobLogger.info("Feed refresh completed", summaryDetails);
+  logger.info("Feed refresh completed", summaryDetails);
+
+  // Create notifications for all affected users
+  const affectedUserIds = Array.from(new Set(userFeeds.map(uf => uf.userId)));
+  jobLogger.info(`Creating notifications for ${affectedUserIds.length} user(s)`);
+  
+  for (const userId of affectedUserIds) {
+    try {
+      const notification = await createFeedRefreshNotification(userId, {
+        totalFeeds: stats.totalFeeds,
+        successful: stats.successful,
+        failed: stats.failed,
+        newArticles: stats.totalNewArticles,
+        updatedArticles: stats.totalUpdatedArticles,
+        articlesCleanedUp: totalCleaned,
+        embeddingsGenerated: totalEmbeddings > 0 ? totalEmbeddings : undefined,
+        totalTokens: totalTokens > 0 ? totalTokens : undefined,
+        duration: `${(stats.averageDuration / 1000).toFixed(2)}s`,
+      });
+      
+      if (notification) {
+        jobLogger.info(`Notification created for user ${userId}`);
+      }
+      
+      // Cleanup old notifications (keep last 100)
+      await cleanupOldNotifications(userId);
+    } catch (error) {
+      logger.error(`Failed to create notification for user ${userId}`, { error });
+      // Don't fail the job if notification fails
+    }
+  }
 
   return {
     success: true,
@@ -201,16 +305,132 @@ export async function executeFeedRefreshJob(): Promise<void> {
  */
 export async function executeUserFeedRefreshJob(userId: string): Promise<void> {
   await executeJob(async () => {
+    const jobLogger = new JobLogger();
+    
+    jobLogger.info(`Starting feed refresh for user ${userId}`);
+    logger.info(`Starting user feed refresh`, { userId });
+    
     const result = await refreshUserFeeds(userId);
     const stats = getRefreshStats(result.results);
+    
+    // Get feed details for better logging
+    const feedIds = result.results.map(r => r.feedId);
+    const feedDetails = await prisma.feeds.findMany({
+      where: { id: { in: feedIds } },
+      select: { id: true, name: true, url: true },
+    });
+    
+    const feedMap = new Map(feedDetails.map(f => [f.id, f]));
+    
+    // Log detailed results for each feed
+    for (const feedResult of result.results) {
+      const feed = feedMap.get(feedResult.feedId);
+      const feedName = feed?.name || feed?.url || feedResult.feedId;
+      
+      if (feedResult.success) {
+        const details: any = {
+          feedId: feedResult.feedId,
+          feedName,
+          newArticles: feedResult.newArticles,
+          updatedArticles: feedResult.updatedArticles,
+          duration: `${(feedResult.duration / 1000).toFixed(2)}s`,
+        };
+        
+        if (feedResult.embeddingsGenerated) {
+          details.embeddingsGenerated = feedResult.embeddingsGenerated;
+          details.embeddingTokens = feedResult.embeddingTokens;
+        }
+        
+        if (feedResult.extractionUsed) {
+          details.extractionMethod = feedResult.extractionMethod;
+        }
+        
+        if (feedResult.cleanupResult && feedResult.cleanupResult.deleted > 0) {
+          details.articlesCleanedUp = feedResult.cleanupResult.deleted;
+          details.cleanupDetails = {
+            byAge: feedResult.cleanupResult.byAge,
+            byCount: feedResult.cleanupResult.byCount,
+          };
+        }
+        
+        const totalArticles = feedResult.newArticles + feedResult.updatedArticles;
+        if (totalArticles > 0) {
+          jobLogger.info(`✓ ${feedName}: +${feedResult.newArticles} new, ~${feedResult.updatedArticles} updated`, details);
+        } else {
+          jobLogger.info(`✓ ${feedName}: No new articles`, details);
+        }
+      } else {
+        jobLogger.error(`✗ ${feedName}: ${feedResult.error}`, {
+          feedId: feedResult.feedId,
+          feedName,
+          error: feedResult.error,
+          duration: `${(feedResult.duration / 1000).toFixed(2)}s`,
+        });
+      }
+    }
 
     const totalCleaned = result.results.reduce(
       (sum, r) => sum + (r.cleanupResult?.deleted || 0),
       0
     );
+    
+    const totalEmbeddings = result.results.reduce(
+      (sum, r) => sum + (r.embeddingsGenerated || 0),
+      0
+    );
+    
+    const totalTokens = result.results.reduce(
+      (sum, r) => sum + (r.embeddingTokens || 0),
+      0
+    );
 
     if (stats.errors.length > 0) {
+      jobLogger.error("User feed refresh errors", { userId, errorCount: stats.errors.length });
       logger.error("User feed refresh errors", { userId, errors: stats.errors });
+    }
+    
+    const summaryDetails: any = {
+      userId,
+      totalFeeds: stats.totalFeeds,
+      successful: stats.successful,
+      failed: stats.failed,
+      newArticles: stats.totalNewArticles,
+      updatedArticles: stats.totalUpdatedArticles,
+      articlesCleanedUp: totalCleaned,
+      averageDuration: `${(stats.averageDuration / 1000).toFixed(2)}s`,
+    };
+    
+    if (totalEmbeddings > 0) {
+      summaryDetails.embeddingsGenerated = totalEmbeddings;
+      summaryDetails.totalTokens = totalTokens;
+    }
+    
+    jobLogger.info("User feed refresh completed", summaryDetails);
+    logger.info("User feed refresh completed", summaryDetails);
+
+    // Create notification for the user
+    try {
+      const notification = await createFeedRefreshNotification(userId, {
+        totalFeeds: stats.totalFeeds,
+        successful: stats.successful,
+        failed: stats.failed,
+        newArticles: stats.totalNewArticles,
+        updatedArticles: stats.totalUpdatedArticles,
+        articlesCleanedUp: totalCleaned,
+        embeddingsGenerated: totalEmbeddings > 0 ? totalEmbeddings : undefined,
+        totalTokens: totalTokens > 0 ? totalTokens : undefined,
+        duration: `${(stats.averageDuration / 1000).toFixed(2)}s`,
+      });
+      
+      if (notification) {
+        jobLogger.info(`Notification created for user ${userId}`);
+      }
+      
+      // Cleanup old notifications (keep last 100)
+      await cleanupOldNotifications(userId);
+    } catch (error) {
+      logger.error(`Failed to create notification for user ${userId}`, { error });
+      // Don't fail the job if notification fails
     }
 
     return {
@@ -223,8 +443,11 @@ export async function executeUserFeedRefreshJob(userId: string): Promise<void> {
         newArticles: stats.totalNewArticles,
         updatedArticles: stats.totalUpdatedArticles,
         articlesCleanedUp: totalCleaned,
+        embeddingsGenerated: totalEmbeddings,
+        totalTokens,
         errors: stats.errors.slice(0, 5),
       },
+      logs: jobLogger.getLogs(),
     };
   }, "MANUAL");
 }

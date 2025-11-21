@@ -49,7 +49,6 @@ export function ReadingPanelLayout({ children, onArticleReadStatusChange }: Read
   // Update URL when article selection changes
   const handleArticleSelect = useCallback(
     (articleId: string | null) => {
-      console.log("[ReadingPanelLayout] Article selected:", articleId);
       setSelectedArticleId(articleId);
 
       // Get current query params to preserve feed/category filters
@@ -102,26 +101,13 @@ export function ReadingPanelLayout({ children, onArticleReadStatusChange }: Read
 
   // If loading preferences, show loading state
   if (isLoadingPreferences) {
-    console.log("[ReadingPanelLayout] Loading preferences...");
     return <>{renderChildren()}</>;
   }
 
   // If not logged in, no preferences, panel disabled, or mobile, show normal layout
   if (!isPanelActive) {
-    console.log("[ReadingPanelLayout] Panel disabled:", {
-      hasSession: !!session?.user,
-      hasPreferences: !!preferences,
-      panelEnabled: preferences?.readingPanelEnabled,
-      isMobile,
-    });
     return <>{renderChildren()}</>;
   }
-
-  console.log("[ReadingPanelLayout] Panel active:", {
-    selectedArticleId,
-    position: preferences?.readingPanelPosition,
-    size: preferences?.readingPanelSize,
-  });
 
   // If panel enabled but no article selected, show normal layout
   if (!selectedArticleId) {

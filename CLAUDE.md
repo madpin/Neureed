@@ -79,6 +79,7 @@ feed-refresh-service.ts
 - **Articles** → article_feedback (per-user feedback)
 - **Articles** → read_articles (per-user read tracking)
 - **Users** → user_patterns (learned preferences via TF-IDF)
+- **Users** → user_notifications (in-app notifications)
 
 **Important: pgvector Operations**
 - Prisma doesn't natively support pgvector, so raw SQL is used for vector operations
@@ -115,9 +116,34 @@ Implementation: [src/lib/services/feed-settings-cascade.ts](src/lib/services/fee
 - Admin can view history and trigger jobs manually
 
 **Key Jobs:**
-- `feed-refresh-job.ts`: Refreshes feeds every 30 minutes (configurable)
+- `feed-refresh-job.ts`: Refreshes feeds every 30 minutes (configurable), creates notifications for users
 - `cleanup-job.ts`: Removes old articles daily at 3 AM
 - Pattern decay job: Time-based decay of user preferences
+
+### Notification System
+
+**Architecture:**
+- In-app notifications stored in `user_notifications` table
+- Notifications created automatically for feed refresh events
+- Real-time updates via React Query polling (30s interval)
+- Toast notifications for new items
+
+**Notification Types:**
+- `feed_refresh`: Feed update notifications with stats (new/updated articles, embeddings, cleanup)
+- `info`, `warning`, `error`, `success`: General notifications
+
+**Service Layer** ([notification-service.ts](src/lib/services/notification-service.ts)):
+- `createNotification()`: Create any notification
+- `createFeedRefreshNotification()`: Specialized for feed updates
+- `getUserNotifications()`: Fetch with pagination
+- `markNotificationAsRead()`: Mark single notification as read
+- `markAllNotificationsAsRead()`: Bulk mark as read
+- `cleanupOldNotifications()`: Keep only last 100 per user
+
+**UI Components:**
+- `NotificationBell`: Header component with unread count badge
+- Dropdown panel with notification list
+- Toast notifications for new items with rich metadata display
 
 ### Embedding & Semantic Search Flow
 
@@ -229,7 +255,7 @@ export const POST = createHandler(
 **API Organization:**
 - `/api/articles/*` - Article operations and search
 - `/api/feeds/*` - Feed management
-- `/api/user/*` - User-specific data (preferences, subscriptions)
+- `/api/user/*` - User-specific data (preferences, subscriptions, notifications)
 - `/api/admin/*` - Administrative operations
 - `/api/jobs/*` - Manual job triggers
 

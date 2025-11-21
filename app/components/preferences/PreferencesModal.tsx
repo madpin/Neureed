@@ -207,16 +207,6 @@ export function PreferencesModal({
     setIsSaving(true);
     setSaveMessage(null);
 
-    console.log("=== SAVING PREFERENCES ===");
-    console.log("Full preferences object:", JSON.stringify(localPreferences, null, 2));
-    console.log("Article card preferences:", JSON.stringify({
-      articleCardDensity: localPreferences.articleCardDensity,
-      articleCardBorderWidth: localPreferences.articleCardBorderWidth,
-      articleCardBorderRadius: localPreferences.articleCardBorderRadius,
-      articleCardBorderContrast: localPreferences.articleCardBorderContrast,
-      articleCardSpacing: localPreferences.articleCardSpacing,
-    }, null, 2));
-
     // Client-side validation for common issues
     const validationIssues = [];
     

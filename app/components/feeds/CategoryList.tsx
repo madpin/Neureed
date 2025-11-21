@@ -331,7 +331,71 @@ export function CategoryList({
           >
             <button
               onClick={() => {
-                refreshFeed.mutate(feed.id);
+                const feedName = (feed as any).customName || feed.name;
+                const toastId = `refresh-${feed.id}`;
+                
+                toast.loading(
+                  <div 
+                    className="cursor-pointer" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toast.dismiss(toastId);
+                    }}
+                  >
+                    Refreshing {feedName}...
+                  </div>, 
+                  { id: toastId }
+                );
+                
+                refreshFeed.mutate(feed.id, {
+                  onSuccess: (data: any) => {
+                    const result = data?.data || data;
+                    const hasUpdates = (result?.newArticles || 0) > 0 || (result?.updatedArticles || 0) > 0;
+                    
+                    if (hasUpdates) {
+                      toast.success(
+                        <div 
+                          className="flex flex-col gap-2 cursor-pointer" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toast.dismiss(toastId);
+                          }}
+                        >
+                          <div className="font-semibold">{feedName} refreshed</div>
+                          <div className="flex flex-wrap gap-2 text-xs">
+                            {result.newArticles > 0 && (
+                              <span className="flex items-center gap-1 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded">
+                                📰 {result.newArticles} new
+                              </span>
+                            )}
+                            {result.updatedArticles > 0 && (
+                              <span className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded">
+                                🔄 {result.updatedArticles} updated
+                              </span>
+                            )}
+                            {result.articlesCleanedUp > 0 && (
+                              <span className="flex items-center gap-1 bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 rounded">
+                                🧹 {result.articlesCleanedUp} cleaned
+                              </span>
+                            )}
+                            {result.embeddingsGenerated > 0 && (
+                              <span className="flex items-center gap-1 bg-purple-100 dark:bg-purple-900/30 px-2 py-0.5 rounded">
+                                🧠 {result.embeddingsGenerated} embeddings
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500 italic">Click to dismiss</div>
+                        </div>,
+                        { id: toastId, duration: 6000 }
+                      );
+                    } else {
+                      toast.success(`${feedName} refreshed - No new articles`, { id: toastId });
+                    }
+                  },
+                  onError: (error) => {
+                    toast.error(`Failed to refresh ${feedName}: ${error instanceof Error ? error.message : 'Unknown error'}`, { id: toastId });
+                  },
+                });
                 setExpandedFeedId(null);
               }}
               className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-muted"
