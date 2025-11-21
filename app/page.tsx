@@ -19,7 +19,6 @@ import { useUserPreferences, useUpdatePreference } from "@/hooks/queries/use-use
 import { useInfiniteArticles } from "@/hooks/queries/use-articles";
 import { 
   useAddFeed,
-  useFeeds
 } from "@/hooks/queries/use-feeds";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/query-keys";
@@ -49,7 +48,6 @@ export default function Home() {
   const { data: preferences } = useUserPreferences();
   const updatePreference = useUpdatePreference();
   const addFeed = useAddFeed();
-  const { refetch: refetchFeeds } = useFeeds(); // For FeedBrowser reload
 
   // Derived State from Preferences
   const sortOrder = (preferences?.articleSortOrder as ArticleSortOrder) || "publishedAt";
@@ -461,7 +459,7 @@ export default function Home() {
       {isFeedBrowserOpen && (
         <FeedBrowser onClose={() => {
           setIsFeedBrowserOpen(false);
-          refetchFeeds(); // Reload feeds after browsing
+          // No need to refetch - FeedBrowser mutations already invalidate queries
         }} />
       )}
 

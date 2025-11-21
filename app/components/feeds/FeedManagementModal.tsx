@@ -827,19 +827,19 @@ function FeedSettingsView({
   onRefreshData?: () => void;
   onClose: () => void;
 }) {
-  // Hooks
-  const { data: feeds = [] } = useFeeds();
-  const { data: subscriptions = [] } = useUserFeeds();
-  const { data: categories = [] } = useCategories();
+  // Only fetch what we need - categories and user subscriptions
+  // We get the specific feed from the subscriptions list which already contains all feed data
+  const { data: subscriptions = [], isLoading: loadingSubscriptions } = useUserFeeds();
+  const { data: categories = [], isLoading: loadingCategories } = useCategories();
   
   const updateFeedSettingsMutation = useUpdateFeedSettings();
   const refreshFeedMutation = useRefreshFeed();
   const deleteFeedMutation = useDeleteFeed();
   const unsubscribeFeedMutation = useUnsubscribeFeed();
   
-  // Find the feed and subscription
-  const feed = feeds.find(f => f.id === feedId);
+  // Find the subscription - it contains all the feed data we need
   const subscription = subscriptions.find(s => (s as any).id === feedId || (s as any).feedId === feedId);
+  const feed = subscription; // Use subscription data which includes the feed details
   
   // Local State
   const [customName, setCustomName] = useState("");
@@ -1043,15 +1043,25 @@ function FeedSettingsView({
     }, 1000);
   };
 
-  if (!feed && !subscription) {
+  // Show loading state while fetching data
+  if (loadingSubscriptions || loadingCategories) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="text-gray-500">Feed not found</div>
+        <div className="text-gray-500">Loading feed settings...</div>
       </div>
     );
   }
 
-  const displayFeed = feed || subscription;
+  // Check if feed exists
+  if (!subscription) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-gray-500">Feed not found or not subscribed</div>
+      </div>
+    );
+  }
+
+  const displayFeed = subscription;
 
   return (
     <div className="p-6">

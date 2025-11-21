@@ -205,6 +205,8 @@ export function useUserFeeds(includeAll = false) {
   return useQuery({
     queryKey: [...queryKeys.feeds.userFeeds(), includeAll ? "all" : "subscribed"],
     queryFn: () => fetchUserFeeds(includeAll),
+    staleTime: 2 * 60 * 1000, // Consider data fresh for 2 minutes
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
 }
 
