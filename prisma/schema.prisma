@@ -35,7 +35,7 @@ model admin_settings {
   value       Json
   description String?
   createdAt   DateTime @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime @updatedAt
 
   @@index([key])
 }
@@ -49,7 +49,7 @@ model article_feedback {
   timeSpent     Int?
   estimatedTime Int?
   createdAt     DateTime @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime @updatedAt
   articles      articles @relation(fields: [articleId], references: [id], onDelete: Cascade)
   users         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -69,7 +69,7 @@ model articles {
   publishedAt      DateTime?              @db.Timestamptz
   embedding        Unsupported("vector")?
   createdAt        DateTime               @default(now()) @db.Timestamptz
-  updatedAt        DateTime               @db.Timestamptz
+  updatedAt        DateTime               @updatedAt @db.Timestamptz
   author           String?
   contentHash      String?
   excerpt          String?
@@ -95,7 +95,7 @@ model categories {
   name            String            @unique
   description     String?
   createdAt       DateTime          @default(now())
-  updatedAt       DateTime
+  updatedAt       DateTime          @updatedAt
   feed_categories feed_categories[]
 }
 
@@ -136,7 +136,7 @@ model feeds {
   lastFetched     DateTime?
   settings        Json?
   createdAt       DateTime          @default(now())
-  updatedAt       DateTime
+  updatedAt       DateTime          @updatedAt
   description     String?
   errorCount      Int               @default(0)
   etag            String?
@@ -187,7 +187,7 @@ model user_categories {
   order                Int                    @default(0)
   settings             Json?
   createdAt            DateTime               @default(now())
-  updatedAt            DateTime
+  updatedAt            DateTime               @updatedAt
   icon                 String?                @default("📁")
   users                User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   user_feed_categories user_feed_categories[]
@@ -217,7 +217,7 @@ model user_feeds {
   customName           String?
   settings             Json?
   subscribedAt         DateTime               @default(now())
-  updatedAt            DateTime
+  updatedAt            DateTime               @updatedAt
   user_feed_categories user_feed_categories[]
   feeds                feeds                  @relation(fields: [feedId], references: [id], onDelete: Cascade)
   users                User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -234,7 +234,7 @@ model user_patterns {
   weight        Float
   feedbackCount Int      @default(1)
   createdAt     DateTime @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime @updatedAt
   users         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, keyword])
@@ -253,7 +253,7 @@ model user_preferences {
   showReadArticles          Boolean  @default(true)
   autoMarkAsRead            Boolean  @default(false)
   createdAt                 DateTime @default(now())
-  updatedAt                 DateTime
+  updatedAt                 DateTime @updatedAt
   showRelatedExcerpts       Boolean  @default(false)
   bounceThreshold           Float    @default(0.25)
   showLowRelevanceArticles  Boolean  @default(true)
@@ -307,7 +307,7 @@ model user_notifications {
   metadata  Json?    // Additional data like stats
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
-  updatedAt DateTime
+  updatedAt DateTime @updatedAt
   users     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
@@ -322,7 +322,7 @@ model User {
   image              String?
   role               UserRole             @default(USER)
   createdAt          DateTime             @default(now())
-  updatedAt          DateTime
+  updatedAt          DateTime             @updatedAt
   accounts           Account[]
   article_feedback   article_feedback[]
   read_articles      read_articles[]
