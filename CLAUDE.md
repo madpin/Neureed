@@ -43,6 +43,25 @@ curl -X POST http://localhost:3000/api/jobs/refresh-feeds
 curl -X POST http://localhost:3000/api/jobs/generate-embeddings
 ```
 
+### CI/CD Workflows
+```bash
+# The project uses GitHub Actions for continuous integration and deployment
+# Two main workflows:
+
+# 1. main.yml - Primary workflow (runs on push/PR)
+#    - Lint and type checking
+#    - Next.js build
+#    - Docker build and push (skipped on PRs)
+#    - Auto-deploy to Dokploy (main branch only)
+
+# 2. release.yml - Release workflow (runs on version tags)
+#    - Multi-platform Docker builds (amd64 + arm64)
+#    - Automatic changelog generation
+#    - GitHub release creation
+
+# See docs/GITHUB_ACTIONS_CONSOLIDATION.md for details
+```
+
 ## High-Level Architecture
 
 ### Application Structure
@@ -267,6 +286,7 @@ export const POST = createHandler(
 - **NEVER** use `prisma db push` in development (only for prototyping)
 - Test migrations locally before committing
 - Regeneration of Prisma Client happens automatically after migrations
+- **Important:** Prisma CLI is in `dependencies` (not `devDependencies`) to ensure it's available in CI/CD and Docker builds
 
 ### Working with pgvector
 - Prisma doesn't support vector types natively

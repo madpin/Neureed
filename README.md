@@ -1,7 +1,6 @@
 # NeuReed - Intelligent RSS Reader
 
-![CI](https://github.com/madpin/Neureed/workflows/CI/badge.svg)
-![Docker Build](https://github.com/madpin/Neureed/workflows/Docker%20Build%20and%20Push/badge.svg)
+![Build & Deploy](https://github.com/madpin/Neureed/workflows/Build%20and%20Deploy/badge.svg)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 NeuReed is a highly customizable, LLM-focused RSS reader with semantic search capabilities, built on Next.js with PostgreSQL/pgvector for intelligent content discovery and personalization.

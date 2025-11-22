@@ -10,11 +10,11 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json .npmrc ./
-
 # Install dependencies stage
 FROM base AS deps
+
+# Copy package files
+COPY package.json package-lock.json .npmrc ./
 
 # Set npm configurations for better timeout handling
 ENV NPM_CONFIG_FETCH_TIMEOUT=900000 \
@@ -25,8 +25,8 @@ ENV NPM_CONFIG_FETCH_TIMEOUT=900000 \
     PUPPETEER_SKIP_DOWNLOAD=1 \
     CI=true
 
-# Install dependencies with extended timeout and fallback
-RUN npm ci --loglevel=error 2>&1 || npm install --loglevel=error
+# Install dependencies (includes prisma in dependencies now)
+RUN npm ci --prefer-offline --no-audit --no-fund 2>&1 || npm install --loglevel=error
 
 # Build stage
 FROM base AS builder
@@ -39,11 +39,10 @@ COPY . .
 
 # Set environment variables for build
 ENV SKIP_ENV_VALIDATION=1 \
-    NODE_ENV=production \
-    NODE_OPTIONS=--max-old-space-size=4096
+    NODE_ENV=production
 
 # Generate Prisma Client
-RUN npx prisma generate
+RUN npm run db:generate
 
 # Build the application
 RUN npm run build
