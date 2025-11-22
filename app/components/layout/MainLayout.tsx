@@ -98,7 +98,7 @@ export function MainLayout({
       {/* Mobile Menu Backdrop */}
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className="fixed inset-0 bg-black/50 z-[60] md:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
@@ -112,7 +112,7 @@ export function MainLayout({
         className={`
           flex-shrink-0 overflow-hidden border-r border-border bg-background
           md:relative md:translate-x-0 md:z-auto
-          fixed inset-y-0 left-0 z-50 w-64
+          fixed inset-y-0 left-0 z-[70] w-64
           transform transition-transform duration-300 ease-in-out
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
@@ -182,7 +182,7 @@ export function MainLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="flex flex-1 flex-col overflow-hidden">
+      <main className="flex flex-1 flex-col overflow-hidden relative z-0">
         {/* Top Bar */}
         <header className="flex items-center justify-between border-b border-border bg-background px-6 py-4">
           <div className="flex items-center gap-4">
