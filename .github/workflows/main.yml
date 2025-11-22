@@ -27,28 +27,33 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          # Temporarily disable cache to avoid corruption issues
+          # cache: 'npm'
 
-      - name: Clean npm cache
-        run: npm cache clean --force
-        
       - name: Install dependencies
         run: |
-          # Retry npm ci up to 3 times to handle transient failures
-          for i in 1 2 3; do
-            echo "Attempt $i of 3..."
-            if npm ci --prefer-offline --no-audit --no-fund; then
-              echo "✅ Dependencies installed successfully"
-              exit 0
-            fi
-            echo "⚠️ Attempt $i failed, retrying..."
-            npm cache clean --force
-            sleep 5
-          done
-          echo "❌ Failed to install dependencies after 3 attempts"
+          # Try npm ci first (faster), fallback to npm install if it fails
+          echo "📦 Attempting npm ci..."
+          if npm ci --no-audit --no-fund 2>&1 | tee npm-ci.log; then
+            echo "✅ Dependencies installed with npm ci"
+            exit 0
+          fi
+          
+          echo "⚠️ npm ci failed, trying npm install as fallback..."
+          npm cache clean --force
+          
+          if npm install --no-audit --no-fund; then
+            echo "✅ Dependencies installed with npm install"
+            exit 0
+          fi
+          
+          echo "❌ Both npm ci and npm install failed"
+          echo "Last npm ci log:"
+          cat npm-ci.log || true
           exit 1
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+          PUPPETEER_SKIP_DOWNLOAD: 1
 
       - name: Generate Prisma Client
         run: npm run db:generate
