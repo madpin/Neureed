@@ -169,7 +169,7 @@ model read_articles {
 }
 
 model Session {
-  id           String   @id
+  id           String   @id @default(cuid())
   sessionToken String   @unique
   userId       String
   expires      DateTime
@@ -315,7 +315,7 @@ model user_notifications {
 }
 
 model User {
-  id                 String               @id
+  id                 String               @id @default(cuid())
   name               String?
   email              String               @unique
   emailVerified      DateTime?
