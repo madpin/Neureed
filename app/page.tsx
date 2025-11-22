@@ -38,11 +38,12 @@ export default function Home() {
   const [isAddFeedOpen, setIsAddFeedOpen] = useState(false);
   const [isFeedBrowserOpen, setIsFeedBrowserOpen] = useState(false);
   const [isManagementModalOpen, setIsManagementModalOpen] = useState(false);
-  
+
   // Search State
   const [searchMode, setSearchMode] = useState<"semantic" | "hybrid">("semantic");
-  const [searchMinScore, setSearchMinScore] = useState(0.7);
+  const [searchMinScore, setSearchMinScore] = useState(0.5);
   const [showSearchFilters, setShowSearchFilters] = useState(false);
+  const [missingEmbeddingsCount, setMissingEmbeddingsCount] = useState<number | null>(null);
 
   // Queries & Mutations
   const { data: preferences } = useUserPreferences();
@@ -93,6 +94,24 @@ export default function Home() {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [refetchArticles]);
+
+  // Check for missing embeddings when search returns no results
+  useEffect(() => {
+    if (searchQuery && !isLoadingArticles && articles.length === 0 && missingEmbeddingsCount === null) {
+      // Fetch missing embeddings count
+      fetch('/api/admin/embedding-stats')
+        .then(res => res.json())
+        .then(data => {
+          if (data.data) {
+            setMissingEmbeddingsCount(data.data.articlesWithoutEmbeddings || 0);
+          }
+        })
+        .catch(() => {
+          // Silently fail - this is just for informational purposes
+          setMissingEmbeddingsCount(0);
+        });
+    }
+  }, [searchQuery, isLoadingArticles, articles.length, missingEmbeddingsCount]);
 
   // Handlers
   const handleSelectFeed = (feedId: string | null) => {
@@ -407,26 +426,52 @@ export default function Home() {
 
             {/* Article List */}
             {!isLoadingArticles && searchQuery && articles.length === 0 ? (
-              <div className="rounded-lg border border-border bg-background p-12 text-center">
-                <svg
-                  className="mx-auto h-12 w-12 text-foreground/50"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <h3 className="mt-4 text-lg font-medium text-foreground">
-                  No results found
-                </h3>
-                <p className="mt-2 text-foreground/70">
-                  Try adjusting your search query or lowering the similarity threshold
-                </p>
+              <div className="space-y-4">
+                <div className="rounded-lg border border-border bg-background p-12 text-center">
+                  <svg
+                    className="mx-auto h-12 w-12 text-foreground/50"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <h3 className="mt-4 text-lg font-medium text-foreground">
+                    No results found
+                  </h3>
+                  <p className="mt-2 text-foreground/70">
+                    Try adjusting your search query or lowering the similarity threshold
+                  </p>
+                </div>
+
+                {/* Alert about missing embeddings */}
+                {missingEmbeddingsCount !== null && missingEmbeddingsCount > 0 && (
+                  <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-4">
+                    <div className="flex gap-3">
+                      <svg className="h-5 w-5 flex-shrink-0 text-yellow-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      <div className="flex-1">
+                        <p className="font-medium text-yellow-600 dark:text-yellow-500">
+                          Limited Search Coverage
+                        </p>
+                        <p className="text-sm text-foreground/80 mt-1">
+                          {missingEmbeddingsCount} article{missingEmbeddingsCount !== 1 ? 's' : ''} {missingEmbeddingsCount !== 1 ? 'don\'t' : 'doesn\'t'} have embeddings yet and won't appear in semantic search results.
+                          Generating embeddings manually can improve your search experience.
+                        </p>
+                        <p className="text-xs text-foreground/60 mt-2">
+                          💡 Tip: Navigate to the Admin Dashboard to generate embeddings for your articles.
+                          Note: This may incur API costs if using OpenAI embeddings.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <ArticleList

@@ -37,7 +37,7 @@ export async function searchSimilarArticles(
 ): Promise<SearchResult[]> {
   const {
     limit = 10,
-    minScore = 0.7,
+    minScore = 0.5,
     feedIds,
     since,
     until,
@@ -79,7 +79,7 @@ export async function searchByEmbedding(
 ): Promise<SearchResult[]> {
   const {
     limit = 10,
-    minScore = 0.7,
+    minScore = 0.5,
     feedIds,
     since,
     until,
@@ -210,7 +210,7 @@ export async function findRelatedArticles(
 ): Promise<SearchResult[]> {
   const {
     limit = 10,
-    minScore = 0.7,
+    minScore = 0.5,
     since,
     until,
     excludeSameFeed = false,
