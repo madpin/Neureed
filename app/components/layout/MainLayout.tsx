@@ -110,11 +110,11 @@ export function MainLayout({
           transition: isDragging ? "none" : "width 0.3s ease-in-out"
         }}
         className={`
-          flex-shrink-0 overflow-hidden border-r border-border bg-background relative
-          md:relative md:translate-x-0
+          flex-shrink-0 overflow-hidden border-r border-border bg-background
+          md:relative md:translate-x-0 md:z-auto
           fixed inset-y-0 left-0 z-50 w-64
           transform transition-transform duration-300 ease-in-out
-          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
       >
         <div className="flex h-full flex-col">

@@ -406,8 +406,8 @@ export function PreferencesModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div ref={modalRef} className="flex h-[90vh] w-full max-w-6xl overflow-hidden rounded-lg bg-background shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 md:p-6">
+      <div ref={modalRef} className="flex h-full md:h-[90vh] w-full max-w-6xl overflow-hidden rounded-lg bg-background shadow-xl">
         {/* Sidebar Navigation - Desktop Only */}
         <aside className="hidden md:flex w-52 flex-shrink-0 border-r border-border bg-muted">
           <div className="flex h-full flex-col">
@@ -445,9 +445,9 @@ export function PreferencesModal({
         </aside>
 
         {/* Content Area */}
-        <main className="flex flex-1 flex-col overflow-y-auto">
+        <main className="flex flex-1 flex-col overflow-hidden">
           {/* Mobile Navigation Dropdown */}
-          <div className="md:hidden border-b border-border p-4">
+          <div className="md:hidden border-b border-border p-4 flex-shrink-0">
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -486,7 +486,7 @@ export function PreferencesModal({
             </div>
           </div>
 
-          <div className="flex-1 p-6">
+          <div className="flex-1 p-6 overflow-y-auto">
             {saveMessage && (
               <div
                 className={`mb-6 rounded-lg p-4 ${
@@ -520,7 +520,7 @@ export function PreferencesModal({
           </div>
 
           {/* Save Button Footer */}
-          <div className="border-t border-border bg-background p-4">
+          <div className="border-t border-border bg-background p-4 flex-shrink-0">
             <div className="flex justify-end gap-3">
               <button
                 onClick={handleClose}
