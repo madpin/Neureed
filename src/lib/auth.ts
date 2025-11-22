@@ -101,22 +101,29 @@ export const authConfig: NextAuthConfig = {
     async createUser({ user }) {
       // Create default preferences for new users
       if (user.id) {
-        await prisma.user_preferences.create({
-          data: {
-            id: `pref_${user.id}`,
-            userId: user.id,
-            theme: "system",
-            fontSize: "medium",
-            articlesPerPage: 20,
-            defaultView: "expanded",
-            showReadArticles: true,
-            autoMarkAsRead: false,
-            showRelatedExcerpts: false,
-            bounceThreshold: 0.25,
-            showLowRelevanceArticles: true,
-            updatedAt: new Date(),
-          },
+        // Check if preferences already exist (e.g., when linking accounts)
+        const existingPreferences = await prisma.user_preferences.findUnique({
+          where: { userId: user.id },
         });
+
+        if (!existingPreferences) {
+          await prisma.user_preferences.create({
+            data: {
+              id: `pref_${user.id}`,
+              userId: user.id,
+              theme: "system",
+              fontSize: "medium",
+              articlesPerPage: 20,
+              defaultView: "expanded",
+              showReadArticles: true,
+              autoMarkAsRead: false,
+              showRelatedExcerpts: false,
+              bounceThreshold: 0.25,
+              showLowRelevanceArticles: true,
+              updatedAt: new Date(),
+            },
+          });
+        }
       }
     },
   },
