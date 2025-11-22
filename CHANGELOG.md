@@ -14,6 +14,18 @@ All notable changes to NeuReed are documented in this file.
   - Enhanced support for media enclosures and feed metadata
 
 ### Added
+- **Default Feed Subscriptions for New Users**
+  - New users automatically subscribed to 9 curated feeds on signup
+  - Technology: TechCrunch, The Verge, Hacker News
+  - News: BBC News
+  - Science: Nature, Science Daily
+  - Positive News: Good News Network, Positive News
+  - Satire: The Onion
+  - Feeds and categories auto-created if missing
+  - Idempotent subscription process (safe to run multiple times)
+  - Users can unsubscribe from any feed after signup
+
+
 - **Nested Route Navigation with Browser History Support**
   - Implemented nested URL structure for feeds and articles (`/feeds/[feedId]`, `/feeds/[feedId]/articles/[articleId]`)
   - Browser back button now works granularly through feed changes and article navigation

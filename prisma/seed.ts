@@ -17,6 +17,50 @@ async function main() {
     },
   });
 
+  const newsCategory = await prisma.categories.upsert({
+    where: { name: "News" },
+    update: {},
+    create: {
+      id: "cat_news_001",
+      name: "News",
+      description: "General news content",
+      updatedAt: new Date(),
+    },
+  });
+
+  const scienceCategory = await prisma.categories.upsert({
+    where: { name: "Science" },
+    update: {},
+    create: {
+      id: "cat_science_001",
+      name: "Science",
+      description: "Science and research content",
+      updatedAt: new Date(),
+    },
+  });
+
+  const positiveNewsCategory = await prisma.categories.upsert({
+    where: { name: "Positive News" },
+    update: {},
+    create: {
+      id: "cat_positive_001",
+      name: "Positive News",
+      description: "Uplifting and positive news stories",
+      updatedAt: new Date(),
+    },
+  });
+
+  const satireCategory = await prisma.categories.upsert({
+    where: { name: "Satire" },
+    update: {},
+    create: {
+      id: "cat_satire_001",
+      name: "Satire",
+      description: "Satirical news and comedy",
+      updatedAt: new Date(),
+    },
+  });
+
   const aiCategory = await prisma.categories.upsert({
     where: { name: "AI & Machine Learning" },
     update: {},
@@ -41,13 +85,41 @@ async function main() {
 
   console.log("✅ Categories created");
 
-  // Create sample feeds
+  // Create default feeds that all new users will be subscribed to
+  const techCrunchFeed = await prisma.feeds.upsert({
+    where: { url: "https://techcrunch.com/feed" },
+    update: {},
+    create: {
+      id: "feed_techcrunch_001",
+      name: "TechCrunch",
+      url: "https://techcrunch.com/feed",
+      settings: {
+        refreshInterval: 3600,
+      },
+      updatedAt: new Date(),
+    },
+  });
+
+  const vergeFeed = await prisma.feeds.upsert({
+    where: { url: "https://www.theverge.com/rss/index.xml" },
+    update: {},
+    create: {
+      id: "feed_verge_001",
+      name: "The Verge",
+      url: "https://www.theverge.com/rss/index.xml",
+      settings: {
+        refreshInterval: 3600,
+      },
+      updatedAt: new Date(),
+    },
+  });
+
   const hackerNewsFeed = await prisma.feeds.upsert({
     where: { url: "https://hnrss.org/frontpage" },
     update: {},
     create: {
       id: "feed_hn_001",
-      name: "Hacker News - Front Page",
+      name: "Hacker News",
       url: "https://hnrss.org/frontpage",
       settings: {
         refreshInterval: 3600,
@@ -56,6 +128,91 @@ async function main() {
     },
   });
 
+  const bbcNewsFeed = await prisma.feeds.upsert({
+    where: { url: "https://feeds.bbci.co.uk/news/rss.xml" },
+    update: {},
+    create: {
+      id: "feed_bbc_001",
+      name: "BBC News",
+      url: "https://feeds.bbci.co.uk/news/rss.xml",
+      settings: {
+        refreshInterval: 1800, // 30 minutes for news
+      },
+      updatedAt: new Date(),
+    },
+  });
+
+  const natureFeed = await prisma.feeds.upsert({
+    where: { url: "https://www.nature.com/nature.rss" },
+    update: {},
+    create: {
+      id: "feed_nature_001",
+      name: "Nature",
+      url: "https://www.nature.com/nature.rss",
+      settings: {
+        refreshInterval: 7200, // 2 hours for science journals
+      },
+      updatedAt: new Date(),
+    },
+  });
+
+  const scienceDailyFeed = await prisma.feeds.upsert({
+    where: { url: "https://www.sciencedaily.com/rss/all.xml" },
+    update: {},
+    create: {
+      id: "feed_sciencedaily_001",
+      name: "Science Daily",
+      url: "https://www.sciencedaily.com/rss/all.xml",
+      settings: {
+        refreshInterval: 7200,
+      },
+      updatedAt: new Date(),
+    },
+  });
+
+  const goodNewsNetworkFeed = await prisma.feeds.upsert({
+    where: { url: "https://www.goodnewsnetwork.org/feed" },
+    update: {},
+    create: {
+      id: "feed_goodnews_001",
+      name: "Good News Network",
+      url: "https://www.goodnewsnetwork.org/feed",
+      settings: {
+        refreshInterval: 7200,
+      },
+      updatedAt: new Date(),
+    },
+  });
+
+  const positiveNewsFeed = await prisma.feeds.upsert({
+    where: { url: "https://www.positive.news/feed" },
+    update: {},
+    create: {
+      id: "feed_positivenews_001",
+      name: "Positive News",
+      url: "https://www.positive.news/feed",
+      settings: {
+        refreshInterval: 7200,
+      },
+      updatedAt: new Date(),
+    },
+  });
+
+  const onionFeed = await prisma.feeds.upsert({
+    where: { url: "https://www.theonion.com/rss" },
+    update: {},
+    create: {
+      id: "feed_onion_001",
+      name: "The Onion",
+      url: "https://www.theonion.com/rss",
+      settings: {
+        refreshInterval: 3600,
+      },
+      updatedAt: new Date(),
+    },
+  });
+
+  // Additional sample feeds for variety
   const vercelBlogFeed = await prisma.feeds.upsert({
     where: { url: "https://vercel.com/blog/rss.xml" },
     update: {},
@@ -87,6 +244,35 @@ async function main() {
   console.log("✅ Feeds created");
 
   // Associate feeds with categories
+  // Technology feeds
+  await prisma.feed_categories.upsert({
+    where: {
+      feedId_categoryId: {
+        feedId: techCrunchFeed.id,
+        categoryId: techCategory.id,
+      },
+    },
+    update: {},
+    create: {
+      feedId: techCrunchFeed.id,
+      categoryId: techCategory.id,
+    },
+  });
+
+  await prisma.feed_categories.upsert({
+    where: {
+      feedId_categoryId: {
+        feedId: vergeFeed.id,
+        categoryId: techCategory.id,
+      },
+    },
+    update: {},
+    create: {
+      feedId: vergeFeed.id,
+      categoryId: techCategory.id,
+    },
+  });
+
   await prisma.feed_categories.upsert({
     where: {
       feedId_categoryId: {
@@ -101,6 +287,95 @@ async function main() {
     },
   });
 
+  // News feeds
+  await prisma.feed_categories.upsert({
+    where: {
+      feedId_categoryId: {
+        feedId: bbcNewsFeed.id,
+        categoryId: newsCategory.id,
+      },
+    },
+    update: {},
+    create: {
+      feedId: bbcNewsFeed.id,
+      categoryId: newsCategory.id,
+    },
+  });
+
+  // Science feeds
+  await prisma.feed_categories.upsert({
+    where: {
+      feedId_categoryId: {
+        feedId: natureFeed.id,
+        categoryId: scienceCategory.id,
+      },
+    },
+    update: {},
+    create: {
+      feedId: natureFeed.id,
+      categoryId: scienceCategory.id,
+    },
+  });
+
+  await prisma.feed_categories.upsert({
+    where: {
+      feedId_categoryId: {
+        feedId: scienceDailyFeed.id,
+        categoryId: scienceCategory.id,
+      },
+    },
+    update: {},
+    create: {
+      feedId: scienceDailyFeed.id,
+      categoryId: scienceCategory.id,
+    },
+  });
+
+  // Positive News feeds
+  await prisma.feed_categories.upsert({
+    where: {
+      feedId_categoryId: {
+        feedId: goodNewsNetworkFeed.id,
+        categoryId: positiveNewsCategory.id,
+      },
+    },
+    update: {},
+    create: {
+      feedId: goodNewsNetworkFeed.id,
+      categoryId: positiveNewsCategory.id,
+    },
+  });
+
+  await prisma.feed_categories.upsert({
+    where: {
+      feedId_categoryId: {
+        feedId: positiveNewsFeed.id,
+        categoryId: positiveNewsCategory.id,
+      },
+    },
+    update: {},
+    create: {
+      feedId: positiveNewsFeed.id,
+      categoryId: positiveNewsCategory.id,
+    },
+  });
+
+  // Satire feeds
+  await prisma.feed_categories.upsert({
+    where: {
+      feedId_categoryId: {
+        feedId: onionFeed.id,
+        categoryId: satireCategory.id,
+      },
+    },
+    update: {},
+    create: {
+      feedId: onionFeed.id,
+      categoryId: satireCategory.id,
+    },
+  });
+
+  // Additional feeds
   await prisma.feed_categories.upsert({
     where: {
       feedId_categoryId: {
@@ -136,28 +411,46 @@ async function main() {
     {
       id: "art_001",
       feedId: hackerNewsFeed.id,
-      title: "Sample Tech Article",
-      content: "This is a sample technology article for testing purposes.",
-      url: "https://example.com/tech-article-1",
+      title: "Sample Tech Article from Hacker News",
+      content: "This is a sample technology article for testing purposes from Hacker News.",
+      url: "https://example.com/tech-article-hn",
       publishedAt: new Date("2024-01-01"),
       updatedAt: new Date(),
     },
     {
       id: "art_002",
-      feedId: vercelBlogFeed.id,
-      title: "Next.js 15 Released",
-      content: "Sample content about Next.js 15 features and improvements.",
-      url: "https://example.com/nextjs-15",
+      feedId: techCrunchFeed.id,
+      title: "Startup Raises $50M in Series A",
+      content: "Sample content about a tech startup raising funding.",
+      url: "https://example.com/startup-funding",
       publishedAt: new Date("2024-01-02"),
       updatedAt: new Date(),
     },
     {
       id: "art_003",
-      feedId: openAIBlogFeed.id,
-      title: "Advances in AI Research",
-      content: "Sample content about recent advances in artificial intelligence.",
-      url: "https://example.com/ai-research",
+      feedId: bbcNewsFeed.id,
+      title: "Breaking News: Global Summit Announced",
+      content: "Sample content about international news.",
+      url: "https://example.com/global-summit",
       publishedAt: new Date("2024-01-03"),
+      updatedAt: new Date(),
+    },
+    {
+      id: "art_004",
+      feedId: natureFeed.id,
+      title: "New Discovery in Quantum Physics",
+      content: "Sample content about scientific breakthrough.",
+      url: "https://example.com/quantum-discovery",
+      publishedAt: new Date("2024-01-04"),
+      updatedAt: new Date(),
+    },
+    {
+      id: "art_005",
+      feedId: goodNewsNetworkFeed.id,
+      title: "Community Comes Together to Help Local Charity",
+      content: "Sample content about positive community action.",
+      url: "https://example.com/community-help",
+      publishedAt: new Date("2024-01-05"),
       updatedAt: new Date(),
     },
   ];

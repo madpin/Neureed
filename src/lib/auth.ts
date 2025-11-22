@@ -124,6 +124,15 @@ export const authConfig: NextAuthConfig = {
             },
           });
         }
+
+        // Subscribe new user to default feeds
+        const { subscribeUserToDefaultFeeds } = await import(
+          "@/lib/services/default-feeds-service"
+        );
+        await subscribeUserToDefaultFeeds(user.id).catch((error) => {
+          console.error("Failed to subscribe user to default feeds:", error);
+          // Don't fail user creation if feed subscription fails
+        });
       }
     },
   },

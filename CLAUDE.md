@@ -197,6 +197,7 @@ Implementation: [src/lib/services/feed-settings-cascade.ts](src/lib/services/fee
 - Dynamic OAuth providers (Google, GitHub, Generic OAuth2)
 - JWT strategy with secure HTTP-only cookies
 - Custom callbacks add user ID to JWT token
+- Automatic default feed subscription on user creation
 
 **Authorization Pattern:**
 ```typescript
@@ -359,12 +360,30 @@ export const POST = createHandler(
 - Ensure same embedding provider used for query and articles
 - Verify HNSW index exists: `\d articles` in psql
 
+## Default Feeds for New Users
+
+New users are automatically subscribed to a curated set of 9 feeds covering:
+- **Technology**: TechCrunch, The Verge, Hacker News
+- **News**: BBC News
+- **Science**: Nature, Science Daily
+- **Positive News**: Good News Network, Positive News
+- **Satire**: The Onion
+
+**Implementation:**
+- Feeds created on-demand in [src/lib/services/default-feeds-service.ts](src/lib/services/default-feeds-service.ts)
+- Subscription happens in `createUser` event in auth.ts
+- Categories and feeds auto-created if missing
+- Idempotent (safe to run multiple times)
+
+See [docs/DEFAULT_FEEDS.md](docs/DEFAULT_FEEDS.md) for full documentation.
+
 ## Key Files to Reference
 
 - [src/lib/api-handler.ts](src/lib/api-handler.ts) - API route wrapper pattern
 - [src/lib/auth.ts](src/lib/auth.ts) - Authentication configuration
 - [src/lib/services/feed-refresh-service.ts](src/lib/services/feed-refresh-service.ts) - Core feed refresh logic
 - [src/lib/services/semantic-search-service.ts](src/lib/services/semantic-search-service.ts) - Vector search implementation
+- [src/lib/services/default-feeds-service.ts](src/lib/services/default-feeds-service.ts) - Default feed subscription
 - [src/lib/jobs/scheduler.ts](src/lib/jobs/scheduler.ts) - Cron job initialization
 - [prisma/schema.prisma](prisma/schema.prisma) - Database schema
 - [src/env.ts](src/env.ts) - Environment variable definitions
