@@ -7,12 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:generate": "npx prisma generate",
-    "db:push": "npx prisma db push",
-    "db:migrate": "npx prisma migrate dev",
-    "db:studio": "npx prisma studio",
+    "db:generate": "npm exec prisma generate",
+    "db:push": "npm exec prisma db push",
+    "db:migrate": "npm exec prisma migrate dev",
+    "db:studio": "npm exec prisma studio",
     "db:seed": "tsx prisma/seed.ts",
-    "db:reset": "npx prisma migrate reset"
+    "db:reset": "npm exec prisma migrate reset"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",

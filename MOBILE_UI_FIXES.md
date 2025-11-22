@@ -6,36 +6,80 @@
 
 **Problem**: The sidebar was appearing behind the list of news articles on mobile devices, making it unusable.
 
-**Root Cause**: 
-- The sidebar had `z-50` on mobile, but lacked proper responsive z-index handling
-- The sidebar was always transformed off-screen on mobile, even when it should be visible in desktop mode
-- Missing `md:translate-x-0` in the conditional transform class
+**Root Causes**: 
+1. The sidebar had conflicting width styles (both percentage and fixed `w-64`)
+2. Z-index wasn't high enough above all content elements
+3. Collapse state was interfering with mobile sidebar visibility
+4. Resize functionality was enabled on mobile (unnecessary)
+5. The main content area didn't have an explicit z-index, causing stacking context issues
 
 **Solution** (in `app/components/layout/MainLayout.tsx`):
+
+#### Key Changes:
+
+1. **Separate Mobile and Desktop Width Handling**
+   - Mobile: Fixed width of `w-80` (320px)
+   - Desktop: Dynamic percentage width based on user preferences
+   - Uses `isMobile` state to conditionally apply percentage width
+
+2. **Increased Z-Index Values**
+   - Sidebar: `z-[70]` (highest)
+   - Backdrop: `z-[60]` (middle)
+   - Main content: `z-0` (lowest)
+
+3. **Disabled Desktop Features on Mobile**
+   - Collapse button hidden on mobile (`hidden md:block`)
+   - Resize handle hidden on mobile (`hidden md:block`)
+   - Sidebar content always expanded on mobile (`isCollapsed: isMobile ? false : isSidebarCollapsed`)
+
+4. **Mobile Detection**
+   ```tsx
+   const [isMobile, setIsMobile] = useState(false);
+   
+   useEffect(() => {
+     const checkMobile = () => {
+       setIsMobile(window.innerWidth < 768);
+     };
+     checkMobile();
+     window.addEventListener('resize', checkMobile);
+     return () => window.removeEventListener('resize', checkMobile);
+   }, []);
+   ```
+
+5. **Conditional Width Application**
+   ```tsx
+   <aside
+     style={{ 
+       // Only apply percentage width on desktop
+       ...(!isMobile ? { width: `${actualSidebarWidth}%` } : {}),
+     }}
+     className="fixed inset-y-0 left-0 z-[70] w-80 md:relative md:z-auto"
+   >
+   ```
+
+**Before and After**:
+
 ```tsx
 // Before:
-className={`
-  flex-shrink-0 overflow-hidden border-r border-border bg-background relative
-  md:relative md:translate-x-0
-  fixed inset-y-0 left-0 z-50 w-64
-  transform transition-transform duration-300 ease-in-out
-  ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-`}
+<aside
+  style={{ width: `${actualSidebarWidth}%` }}  // Always percentage
+  className="fixed inset-y-0 left-0 z-50 w-64"  // Conflicting widths!
+>
+  <div className="border-t p-4">  // Collapse button always visible
+    <button onClick={toggleSidebarCollapse}>...</button>
+  </div>
+</aside>
 
 // After:
-className={`
-  flex-shrink-0 overflow-hidden border-r border-border bg-background
-  md:relative md:translate-x-0 md:z-auto
-  fixed inset-y-0 left-0 z-50 w-64
-  transform transition-transform duration-300 ease-in-out
-  ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-`}
+<aside
+  style={{ ...(!isMobile ? { width: `${actualSidebarWidth}%` } : {}) }}  // Conditional
+  className="fixed inset-y-0 left-0 z-[70] w-80 md:relative md:z-auto"  // Clear hierarchy
+>
+  <div className="hidden md:block border-t p-4">  // Desktop only
+    <button onClick={toggleSidebarCollapse}>...</button>
+  </div>
+</aside>
 ```
-
-**Changes**:
-1. Removed redundant `relative` class
-2. Added `md:z-auto` to reset z-index on desktop
-3. Added `md:translate-x-0` to the conditional transform to ensure sidebar is visible on desktop
 
 ### 2. Preference Modal Cutting Off Top and Bottom on Mobile
 

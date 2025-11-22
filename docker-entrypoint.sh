@@ -2,7 +2,7 @@
 set -e
 
 echo "🔄 Running database migrations..."
-npx prisma migrate deploy
+npm exec prisma migrate deploy
 
 echo "✅ Migrations complete"
 echo "🚀 Starting application..."

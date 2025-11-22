@@ -34,8 +34,23 @@ export function MainLayout({
   const [currentSidebarWidth, setCurrentSidebarWidth] = useState(storedSidebarWidth);
   const [isDragging, setIsDragging] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const widthRef = useRef(storedSidebarWidth); // Track current width for saving
+
+  // Detect if we're on mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    // Check on mount
+    checkMobile();
+    
+    // Check on resize
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Update local state when preferences change from server (but not while dragging)
   // Note: We don't include isDragging in deps to avoid resetting width when drag ends
@@ -106,41 +121,36 @@ export function MainLayout({
       {/* Sidebar */}
       <aside
         style={{ 
-          width: `${actualSidebarWidth}%`,
-          transition: isDragging ? "none" : "width 0.3s ease-in-out"
+          // Only apply percentage width on desktop
+          ...(!isMobile ? { width: `${actualSidebarWidth}%` } : {}),
         }}
         className={`
           flex-shrink-0 overflow-hidden border-r border-border bg-background
+          fixed inset-y-0 left-0 z-[70] w-80
           md:relative md:translate-x-0 md:z-auto
-          fixed inset-y-0 left-0 z-[70] w-64
           transform transition-transform duration-300 ease-in-out
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
       >
         <div className="flex h-full flex-col">
           {/* Header */}
-          <div className={`flex items-center border-b border-border p-4 ${isSidebarCollapsed ? "justify-center" : "justify-center"}`}>
-            {!isSidebarCollapsed && (
-              <h1 className="text-xl font-bold text-primary">
-                NeuReed
-              </h1>
-            )}
-            {isSidebarCollapsed && (
-              <h1 className="text-xl font-bold text-primary">
-                N
-              </h1>
-            )}
+          <div className="flex items-center justify-center border-b border-border p-4">
+            <h1 className="text-xl font-bold text-primary">
+              {/* On mobile, always show full name. On desktop, respect collapse state */}
+              <span className="md:hidden">NeuReed</span>
+              <span className="hidden md:inline">{isSidebarCollapsed ? "N" : "NeuReed"}</span>
+            </h1>
           </div>
 
           {/* Sidebar Content */}
           <div className="flex-1 overflow-y-auto p-4">
             {typeof sidebar === "function"
-              ? sidebar({ isCollapsed: isSidebarCollapsed })
+              ? sidebar({ isCollapsed: isMobile ? false : isSidebarCollapsed })
               : sidebar}
           </div>
 
-          {/* Collapse Toggle Button */}
-          <div className="border-t border-border p-4">
+          {/* Collapse Toggle Button - Desktop Only */}
+          <div className="hidden md:block border-t border-border p-4">
             <button
               onClick={toggleSidebarCollapse}
               className="flex w-full items-center gap-2 rounded-lg p-2 hover:bg-muted transition-colors"
@@ -164,11 +174,11 @@ export function MainLayout({
           </div>
         </div>
 
-        {/* Resize Handle */}
+        {/* Resize Handle - Desktop Only */}
         {!isSidebarCollapsed && (
           <div
             onMouseDown={handleResizeStart}
-            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 transition-colors group z-10"
+            className="hidden md:block absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 transition-colors group z-10"
             style={{
               backgroundColor: isDragging ? "rgb(59, 130, 246)" : "transparent"
             }}
