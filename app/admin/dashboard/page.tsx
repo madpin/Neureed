@@ -6,9 +6,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { formatLocalizedDate } from "@/lib/date-utils";
 import { Tooltip } from "@/app/components/admin/Tooltip";
+import { useIsAdmin } from "@/hooks/use-auth";
 import { 
   useAdminMetrics, 
-  useCronStatus, 
   useCronHistoryFull,
   useEmbeddingConfig, 
   useEmbeddingStats,
@@ -31,23 +31,15 @@ import {
   useUpdateUserRole,
   useSummarizationConfig,
   useUpdateSummarizationConfig,
-  type AdminMetrics,
-  type CronJobStatus,
-  type JobWithHistory,
-  type JobRunEntry,
   type EmbeddingConfig,
   type EmbeddingStats,
-  type UserStats,
-  type AdminUser,
-  type CacheStats as CacheStatsType,
-  type CronJobHistoryEntry,
   type PostgresStats,
   type RedisStats,
   type AdminSettings,
   type JobLogEntry,
-  type SummarizationConfig,
+  type JobWithHistory,
+  type JobRunEntry,
 } from "@/hooks/queries/use-admin";
-import { useQueryClient } from "@tanstack/react-query";
 
 type TabId = "overview" | "search" | "users" | "jobs" | "storage" | "config" | "llm-config";
 
@@ -55,12 +47,6 @@ interface Tab {
   id: TabId;
   label: string;
   icon: React.ReactNode;
-}
-
-// Cache status is not in the hook types yet, defining locally or inferring from hook result
-interface CacheStatus {
-  connected: boolean;
-  enabled: boolean;
 }
 
 // Helper to format duration
@@ -73,7 +59,15 @@ const formatDuration = (ms: number | null) => {
 export default function AdminDashboardPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const queryClient = useQueryClient();
+  const { isAdmin, isLoading: isLoadingAuth } = useIsAdmin();
+
+  // Redirect non-admin users
+  useEffect(() => {
+    if (!isLoadingAuth && !isAdmin) {
+      router.push("/");
+      toast.error("Access denied. Admin privileges required.");
+    }
+  }, [isAdmin, isLoadingAuth, router]);
 
   // Get initial tab from URL or use "overview" as default
   const initialTab = (searchParams.get("tab") as TabId) || "overview";
@@ -84,7 +78,6 @@ export default function AdminDashboardPage() {
   // Queries with 30s polling
   const pollingInterval = 30000;
   const { data: metrics, isLoading: isLoadingMetrics } = useAdminMetrics(pollingInterval);
-  const { data: cronStatus } = useCronStatus(pollingInterval);
   const { data: cronHistory } = useCronHistoryFull(pollingInterval);
   const { data: cacheStats } = useCacheStats(pollingInterval);
   const { data: embeddingStats } = useEmbeddingStats(pollingInterval);
@@ -97,7 +90,6 @@ export default function AdminDashboardPage() {
   const clearCache = useClearCache();
   const runCleanup = useRunCleanup();
   const resetDatabase = useResetDatabase();
-  const triggerCronJob = useTriggerCronJob();
   const triggerFeedRefresh = useTriggerFeedRefresh();
   const triggerEmbeddingGeneration = useTriggerEmbeddingGeneration();
 
@@ -180,6 +172,7 @@ export default function AdminDashboardPage() {
       try {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setFavoriteTabs(parsed);
         }
       } catch (e) {
@@ -192,9 +185,10 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     const tabFromUrl = searchParams.get("tab") as TabId;
     if (tabFromUrl && tabFromUrl !== activeTab) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTab(tabFromUrl);
     }
-  }, [searchParams]);
+  }, [searchParams, activeTab]);
 
   // Update URL when activeTab changes
   const handleTabChange = (tabId: TabId) => {
@@ -313,6 +307,23 @@ export default function AdminDashboardPage() {
       toast.error("Failed to reset database");
     }
   };
+
+  // Show loading state while checking authentication
+  if (isLoadingAuth) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]" />
+          <p className="mt-4 text-sm text-secondary">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render anything if not admin (redirect will happen via useEffect)
+  if (!isAdmin) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-muted bg-background">
@@ -776,7 +787,7 @@ function UsersTab() {
 
   const updateUserRole = useUpdateUserRole();
 
-  const handleRoleChange = async (userId: string, newRole: string, userEmail: string) => {
+  const handleRoleChange = async (userId: string, newRole: string) => {
     try {
       await updateUserRole.mutateAsync({ userId, role: newRole });
       toast.success(`User role updated to ${newRole}`);
@@ -898,7 +909,7 @@ function UsersTab() {
                     <td className="px-6 py-4">
                       <select
                         value={user.role}
-                        onChange={(e) => handleRoleChange(user.id, e.target.value, user.email)}
+                        onChange={(e) => handleRoleChange(user.id, e.target.value)}
                         disabled={updateUserRole.isPending}
                         className={`rounded px-2 py-1 text-xs font-medium ${getRoleBadgeColor(user.role)} disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
@@ -1235,7 +1246,7 @@ function JobsTab({ jobs }: { jobs: JobWithHistory[] }) {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {visibleRuns.map((run, idx) => {
+                      {visibleRuns.map((run: JobRunEntry, idx: number) => {
                         const runKey = `${job.name}-${run.id}`;
                         const isRunExpanded = expandedRuns.has(runKey);
                         const hasLogs = run.logs && Array.isArray(run.logs) && run.logs.length > 0;
@@ -1744,9 +1755,34 @@ function ConfigTab({ settings }: { settings: AdminSettings | undefined }) {
 }
 
 // LLM Configuration Tab
+interface LLMTestResult {
+  success?: boolean;
+  error?: string;
+  model?: string;
+  testTime?: string;
+  summary?: {
+    success?: boolean;
+    error?: string;
+    model?: string;
+    testTime?: string;
+  };
+  embedding?: {
+    success?: boolean;
+    error?: string;
+    model?: string;
+    testTime?: string;
+  };
+  digest?: {
+    success?: boolean;
+    error?: string;
+    model?: string;
+    testTime?: string;
+  };
+}
+
 function LLMConfigTab() {
   const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [testResults, setTestResults] = useState<any | null>(null);
+  const [testResults, setTestResults] = useState<LLMTestResult | null>(null);
   const [pendingDeleteEmbeddings, setPendingDeleteEmbeddings] = useState(false);
 
   // Use React Query hooks
