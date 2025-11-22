@@ -49,15 +49,15 @@ export function RelatedArticles({
 
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-border bg-background p-6 border-border bg-background">
+      <div className="rounded-lg border border-border bg-background p-6">
         <h3 className="mb-4 text-lg font-semibold text-foreground">
           Related Articles
         </h3>
         <div className="space-y-4">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="animate-pulse">
-              <div className="h-4 w-3/4 rounded bg-muted bg-background"></div>
-              <div className="mt-2 h-3 w-full rounded bg-muted bg-background"></div>
+              <div className="h-4 w-3/4 rounded bg-muted"></div>
+              <div className="mt-2 h-3 w-full rounded bg-muted"></div>
             </div>
           ))}
         </div>
@@ -99,7 +99,7 @@ export function RelatedArticles({
 
   if (articles.length === 0) {
     return (
-      <div className="rounded-lg border border-border bg-background p-6 border-border bg-background">
+      <div className="rounded-lg border border-border bg-background p-6">
         <h3 className="mb-4 text-lg font-semibold text-foreground">
           Related Articles
         </h3>
@@ -111,7 +111,7 @@ export function RelatedArticles({
   }
 
   return (
-    <div className="rounded-lg border border-border bg-background p-6 border-border bg-background">
+    <div className="rounded-lg border border-border bg-background p-6">
       <h3 className="mb-4 text-lg font-semibold text-foreground">
         Related Articles
       </h3>
@@ -121,7 +121,7 @@ export function RelatedArticles({
           <Link
             key={article.id}
             href={`/?article=${article.id}`}
-            className="group block rounded-lg border border-border p-4 transition-all hover:border-blue-500 hover:shadow-md border-border dark:hover:border-blue-500"
+            className="group block rounded-lg border border-border p-4 transition-all hover:border-blue-500 hover:shadow-md dark:hover:border-blue-500"
           >
             <div className="flex gap-4">
               <div className="flex-1 min-w-0">
@@ -151,18 +151,25 @@ export function RelatedArticles({
                     </div>
                   </>
                 ) : (
-                  // Compact mode: Everything on one line
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <h4 className="line-clamp-1 text-sm font-medium text-foreground group-hover:text-blue-600 dark:text-gray-100 dark:group-hover:text-blue-400 flex-shrink truncate">
-                        {article.title}
-                      </h4>
-                      <span className="flex-shrink-0 text-xs text-foreground/60 dark:text-foreground/60">
-                        •
-                      </span>
-                      <span className="flex-shrink-0 text-xs text-foreground/60 dark:text-foreground/60">
+                  // Compact mode: Stack on mobile, single line on desktop
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-1 md:gap-2">
+                    <h4 className="line-clamp-2 md:line-clamp-1 text-sm font-medium text-foreground group-hover:text-blue-600 dark:text-gray-100 dark:group-hover:text-blue-400 md:flex-shrink md:truncate md:min-w-0">
+                      {article.title}
+                    </h4>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-xs text-foreground/60 dark:text-foreground/60">
                         {article.feeds?.name || "Unknown"}
                       </span>
+                      {article.publishedAt && (
+                        <>
+                          <span className="text-xs text-foreground/60 dark:text-foreground/60">
+                            •
+                          </span>
+                          <span className="text-xs text-foreground/60 dark:text-foreground/60">
+                            {formatLocalizedDate(article.publishedAt)}
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}

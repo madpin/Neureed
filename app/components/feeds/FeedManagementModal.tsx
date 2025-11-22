@@ -98,12 +98,15 @@ export function FeedManagementModal({
   const [currentView, setCurrentView] = useState<ViewType>(initialView);
   const [feedId, setFeedId] = useState<string | undefined>(initialFeedId);
   const [categoryId, setCategoryId] = useState<string | undefined>(initialCategoryId);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Navigate to a different view
   const navigateToView = (view: ViewType, newFeedId?: string, newCategoryId?: string) => {
     // Update state
     setCurrentView(view);
+    setIsMobileMenuOpen(false); // Close mobile menu on selection
     if (newFeedId !== undefined) setFeedId(newFeedId);
     if (newCategoryId !== undefined) setCategoryId(newCategoryId);
 
@@ -161,86 +164,134 @@ export function FeedManagementModal({
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
         handleClose();
       }
+      // Close mobile dropdown when clicking outside
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsMobileMenuOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Get label for current view
+  const getViewLabel = (view: ViewType) => {
+    if (view === 'overview') return 'Overview';
+    if (view === 'feed') return 'Feed Details';
+    if (view === 'category') return 'Category';
+    return 'Overview';
+  };
+
+  // Navigation items
+  const navigationItems = [
+    {
+      view: 'overview' as ViewType,
+      label: 'Overview',
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+        </svg>
+      ),
+      disabled: false
+    },
+    {
+      view: 'feed' as ViewType,
+      label: 'Feed Details',
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 5c7.18 0 13 5.82 13 13M6 11a7 7 0 017 7m-6 0a1 1 0 11-2 0 1 1 0 012 0z" />
+        </svg>
+      ),
+      disabled: !feedId
+    },
+    {
+      view: 'category' as ViewType,
+      label: 'Category',
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+        </svg>
+      ),
+      disabled: !categoryId
+    }
+  ];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div ref={modalRef} className="flex h-[90vh] w-full max-w-6xl overflow-hidden rounded-lg bg-background shadow-xl bg-background">
-        {/* Sidebar Navigation */}
-        <aside className="w-52 flex-shrink-0 border-r border-border bg-muted border-border dark:bg-background">
+      <div ref={modalRef} className="flex h-[90vh] w-full max-w-6xl overflow-hidden rounded-lg bg-background shadow-xl">
+        {/* Sidebar Navigation - Desktop Only */}
+        <aside className="hidden md:flex w-52 flex-shrink-0 border-r border-border bg-muted dark:bg-background">
           <div className="flex h-full flex-col">
-            <div className="border-b border-border p-4 border-border">
+            <div className="border-b border-border p-4">
               <h2 className="text-lg font-semibold">Feed Management</h2>
-          </div>
+            </div>
             <nav className="flex-1 space-y-1 overflow-y-auto p-2 custom-scrollbar">
-              <button
-                onClick={() => navigateToView('overview')}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                  currentView === 'overview'
-                    ? "bg-primary/10 text-primary dark:bg-primary/20"
-                    : "hover:bg-muted hover:bg-muted"
-                }`}
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                </svg>
-                <span>Overview</span>
-              </button>
-
-              <button
-                onClick={() => feedId && navigateToView('feed')}
-                disabled={!feedId}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                  currentView === 'feed'
-                    ? "bg-primary/10 text-primary dark:bg-primary/20"
-                    : feedId
-                    ? "hover:bg-muted hover:bg-muted"
-                    : "cursor-not-allowed opacity-50"
-                }`}
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 5c7.18 0 13 5.82 13 13M6 11a7 7 0 017 7m-6 0a1 1 0 11-2 0 1 1 0 012 0z" />
-                </svg>
-                <span>Feed Settings</span>
-              </button>
-
-            <button
-                onClick={() => categoryId && navigateToView('category')}
-                disabled={!categoryId}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                  currentView === 'category'
-                    ? "bg-primary/10 text-primary dark:bg-primary/20"
-                    : categoryId
-                    ? "hover:bg-muted hover:bg-muted"
-                    : "cursor-not-allowed opacity-50"
-                }`}
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-              </svg>
-                <span>Category Settings</span>
-            </button>
-          </nav>
-            <div className="border-t border-border p-2 border-border">
-            <button
-              onClick={handleClose}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-muted hover:bg-muted"
-            >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-                <span>Close</span>
-            </button>
-          </div>
+              {navigationItems.map((item) => (
+                <button
+                  key={item.view}
+                  onClick={() => !item.disabled && navigateToView(item.view)}
+                  disabled={item.disabled}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                    currentView === item.view
+                      ? "bg-primary/10 text-primary dark:bg-primary/20"
+                      : item.disabled
+                      ? "cursor-not-allowed opacity-50"
+                      : "hover:bg-muted"
+                  }`}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </nav>
           </div>
         </aside>
 
         {/* Content Area */}
         <main className="flex-1 overflow-y-auto custom-scrollbar">
+          {/* Mobile Navigation Dropdown */}
+          <div className="md:hidden border-b border-border p-4 sticky top-0 bg-background z-10">
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="flex w-full items-center justify-between rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+              >
+                <span>{getViewLabel(currentView)}</span>
+                <svg
+                  className={`h-5 w-5 transition-transform ${isMobileMenuOpen ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {/* Dropdown Menu */}
+              {isMobileMenuOpen && (
+                <div className="absolute top-full left-0 right-0 mt-2 rounded-lg border border-border bg-background shadow-lg z-20 max-h-60 overflow-y-auto">
+                  {navigationItems.map((item) => (
+                    <button
+                      key={item.view}
+                      onClick={() => !item.disabled && navigateToView(item.view)}
+                      disabled={item.disabled}
+                      className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition-colors border-b border-border last:border-b-0 ${
+                        currentView === item.view
+                          ? "bg-primary/10 text-primary dark:bg-primary/20"
+                          : item.disabled
+                          ? "cursor-not-allowed opacity-50"
+                          : "hover:bg-muted"
+                      }`}
+                    >
+                      {item.icon}
+                      <span>{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
           {currentView === 'overview' && (
               <ManagementOverview
               onNavigateToCategory={(catId) => navigateToView('category', undefined, catId)}
@@ -441,20 +492,20 @@ function ManagementOverview({
       </div>
 
       {/* Statistics Panel */}
-      <div className="mb-6 grid grid-cols-4 gap-4">
-        <div className="rounded-lg border border-border bg-muted p-4 border-border dark:bg-background">
+        <div className="mb-6 grid grid-cols-4 gap-4">
+        <div className="rounded-lg border border-border bg-muted p-4 dark:bg-background">
           <div className="text-sm text-gray-600 dark:text-gray-400">Total Categories</div>
           <div className="text-2xl font-bold">{statistics.totalCategories}</div>
         </div>
-        <div className="rounded-lg border border-border bg-muted p-4 border-border dark:bg-background">
+        <div className="rounded-lg border border-border bg-muted p-4 dark:bg-background">
           <div className="text-sm text-gray-600 dark:text-gray-400">Total Feeds</div>
           <div className="text-2xl font-bold">{statistics.totalFeeds}</div>
         </div>
-        <div className="rounded-lg border border-border bg-muted p-4 border-border dark:bg-background">
+        <div className="rounded-lg border border-border bg-muted p-4 dark:bg-background">
           <div className="text-sm text-gray-600 dark:text-gray-400">Uncategorized</div>
           <div className="text-2xl font-bold">{statistics.uncategorizedFeeds}</div>
         </div>
-        <div className="rounded-lg border border-border bg-muted p-4 border-border dark:bg-background">
+        <div className="rounded-lg border border-border bg-muted p-4 dark:bg-background">
           <div className="text-sm text-gray-600 dark:text-gray-400">Total Articles</div>
           <div className="text-2xl font-bold">-</div>
         </div>
@@ -1095,7 +1146,7 @@ function FeedSettingsView({
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
+            className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:bg-muted"
           >
             <option value="">Uncategorized</option>
             {categories.map((cat) => (
@@ -1113,7 +1164,7 @@ function FeedSettingsView({
             value={customName}
             onChange={(e) => setCustomName(e.target.value)}
             placeholder={displayFeed?.name}
-            className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
+            className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:bg-muted"
           />
         </div>
 
@@ -1125,7 +1176,7 @@ function FeedSettingsView({
             max="1440"
             value={fetchInterval}
             onChange={(e) => setFetchInterval(parseInt(e.target.value, 10))}
-            className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border dark:bg-muted"
+            className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:bg-muted"
           />
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             How often to check for new articles (5-1440 minutes)
@@ -1189,10 +1240,10 @@ function FeedSettingsView({
       <div className="mb-6 space-y-3">
         <div className="flex gap-2">
           <button
-            onClick={handleTest}
-            disabled={isTesting}
-            className="flex-1 rounded-lg border border-border px-4 py-2 font-medium hover:bg-muted disabled:opacity-50 border-border dark:hover:bg-muted"
-          >
+              onClick={handleTest}
+              disabled={isTesting}
+              className="flex-1 rounded-lg border border-border px-4 py-2 font-medium hover:bg-muted disabled:opacity-50 dark:hover:bg-muted"
+            >
             {isTesting ? "Testing..." : "Test Extraction"}
           </button>
           <button
@@ -1230,11 +1281,11 @@ function FeedSettingsView({
         </button>
         
         {showDangerZone && (
-          <div className="space-y-2 rounded-lg border border-red-200 bg-background p-4 dark:border-red-900 bg-background">
+          <div className="space-y-2 rounded-lg border border-red-200 bg-background p-4 dark:border-red-900">
             <button
               onClick={handleUnsubscribe}
               disabled={isUnsubscribing}
-              className="w-full rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted border-border dark:hover:bg-muted"
+              className="w-full rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted dark:hover:bg-muted"
             >
               {isUnsubscribing ? "Unsubscribing..." : "Unsubscribe from Feed"}
             </button>

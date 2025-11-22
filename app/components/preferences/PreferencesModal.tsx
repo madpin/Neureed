@@ -29,7 +29,9 @@ export function PreferencesModal({
   const [originalPreferences, setOriginalPreferences] = useState<UserPreferences | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const isShowingUnsavedDialog = useRef(false);
 
   // Initialize local state from cached data
@@ -274,9 +276,82 @@ export function PreferencesModal({
     setLocalPreferences((prev) => (prev ? { ...prev, [key]: value } : null));
   };
 
+  // Get label for current view
+  const getViewLabel = (view: ViewType) => {
+    const labels: Record<ViewType, string> = {
+      profile: 'Profile',
+      appearance: 'Appearance',
+      articleDisplay: 'Article Display',
+      reading: 'Reading',
+      learning: 'Learning',
+      llm: 'LLM Settings',
+      feeds: 'Feeds'
+    };
+    return labels[view];
+  };
+
+  // Navigation menu items
+  const navigationItems: Array<{ view: ViewType; label: string; icon: React.ReactNode }> = [
+    {
+      view: 'profile',
+      label: 'Profile',
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      )
+    },
+    {
+      view: 'appearance',
+      label: 'Appearance',
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+        </svg>
+      )
+    },
+    {
+      view: 'articleDisplay',
+      label: 'Article Display',
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 14a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2zM14 11a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z" />
+        </svg>
+      )
+    },
+    {
+      view: 'reading',
+      label: 'Reading',
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+      )
+    },
+    {
+      view: 'learning',
+      label: 'Learning',
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+        </svg>
+      )
+    },
+    {
+      view: 'llm',
+      label: 'LLM Settings',
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+        </svg>
+      )
+    }
+  ];
+
   // Navigate to a different view
   const navigateToView = (view: ViewType) => {
     setCurrentView(view);
+    setIsMobileMenuOpen(false); // Close mobile menu on selection
     const state = { modal: 'preferences', view };
     window.history.pushState(state, '', window.location.href);
   };
@@ -306,6 +381,10 @@ export function PreferencesModal({
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
         handleCloseWithHistory();
       }
+      // Close mobile dropdown when clicking outside
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsMobileMenuOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -329,96 +408,27 @@ export function PreferencesModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div ref={modalRef} className="flex h-[90vh] w-full max-w-6xl overflow-hidden rounded-lg bg-background shadow-xl">
-        {/* Sidebar Navigation */}
-        <aside className="w-52 flex-shrink-0 border-r border-border bg-muted">
+        {/* Sidebar Navigation - Desktop Only */}
+        <aside className="hidden md:flex w-52 flex-shrink-0 border-r border-border bg-muted">
           <div className="flex h-full flex-col">
             <div className="border-b border-border p-4">
               <h2 className="text-lg font-semibold">Preferences</h2>
             </div>
             <nav className="flex-1 space-y-1 overflow-y-auto p-2">
-              <button
-                onClick={() => navigateToView('profile')}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                  currentView === 'profile'
-                    ? "bg-primary/10 text-primary dark:bg-primary/20"
-                    : "hover:bg-muted"
-                }`}
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                <span>Profile</span>
-              </button>
-
-              <button
-                onClick={() => navigateToView('appearance')}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                  currentView === 'appearance'
-                    ? "bg-primary/10 text-primary dark:bg-primary/20"
-                    : "hover:bg-muted"
-                }`}
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                </svg>
-                <span>Appearance</span>
-              </button>
-
-              <button
-                onClick={() => navigateToView('articleDisplay')}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                  currentView === 'articleDisplay'
-                    ? "bg-primary/10 text-primary dark:bg-primary/20"
-                    : "hover:bg-muted"
-                }`}
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 14a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2zM14 11a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z" />
-                </svg>
-                <span>Article Display</span>
-              </button>
-
-              <button
-                onClick={() => navigateToView('reading')}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                  currentView === 'reading'
-                    ? "bg-primary/10 text-primary dark:bg-primary/20"
-                    : "hover:bg-muted"
-                }`}
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-                <span>Reading</span>
-              </button>
-
-              <button
-                onClick={() => navigateToView('learning')}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                  currentView === 'learning'
-                    ? "bg-primary/10 text-primary dark:bg-primary/20"
-                    : "hover:bg-muted"
-                }`}
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
-                <span>Learning</span>
-              </button>
-
-              <button
-                onClick={() => navigateToView('llm')}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                  currentView === 'llm'
-                    ? "bg-primary/10 text-primary dark:bg-primary/20"
-                    : "hover:bg-muted"
-                }`}
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-                </svg>
-                <span>LLM Settings</span>
-              </button>
+              {navigationItems.map((item) => (
+                <button
+                  key={item.view}
+                  onClick={() => navigateToView(item.view)}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                    currentView === item.view
+                      ? "bg-primary/10 text-primary dark:bg-primary/20"
+                      : "hover:bg-muted"
+                  }`}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </button>
+              ))}
             </nav>
             <div className="border-t border-border p-2">
               <button
@@ -436,6 +446,46 @@ export function PreferencesModal({
 
         {/* Content Area */}
         <main className="flex flex-1 flex-col overflow-y-auto">
+          {/* Mobile Navigation Dropdown */}
+          <div className="md:hidden border-b border-border p-4">
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="flex w-full items-center justify-between rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+              >
+                <span>{getViewLabel(currentView)}</span>
+                <svg
+                  className={`h-5 w-5 transition-transform ${isMobileMenuOpen ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {/* Dropdown Menu */}
+              {isMobileMenuOpen && (
+                <div className="absolute top-full left-0 right-0 mt-2 rounded-lg border border-border bg-background shadow-lg z-10 max-h-80 overflow-y-auto">
+                  {navigationItems.map((item) => (
+                    <button
+                      key={item.view}
+                      onClick={() => navigateToView(item.view)}
+                      className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition-colors border-b border-border last:border-b-0 ${
+                        currentView === item.view
+                          ? "bg-primary/10 text-primary dark:bg-primary/20"
+                          : "hover:bg-muted"
+                      }`}
+                    >
+                      {item.icon}
+                      <span>{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="flex-1 p-6">
             {saveMessage && (
               <div

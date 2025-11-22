@@ -33,6 +33,7 @@ export function MainLayout({
   // Local state for resizing
   const [currentSidebarWidth, setCurrentSidebarWidth] = useState(storedSidebarWidth);
   const [isDragging, setIsDragging] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const widthRef = useRef(storedSidebarWidth); // Track current width for saving
 
@@ -94,13 +95,27 @@ export function MainLayout({
 
   return (
     <div ref={containerRef} className="flex h-screen overflow-hidden bg-muted">
+      {/* Mobile Menu Backdrop */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <aside
         style={{ 
           width: `${actualSidebarWidth}%`,
           transition: isDragging ? "none" : "width 0.3s ease-in-out"
         }}
-        className="flex-shrink-0 overflow-hidden border-r border-border bg-background relative"
+        className={`
+          flex-shrink-0 overflow-hidden border-r border-border bg-background relative
+          md:relative md:translate-x-0
+          fixed inset-y-0 left-0 z-50 w-64
+          transform transition-transform duration-300 ease-in-out
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
       >
         <div className="flex h-full flex-col">
           {/* Header */}
@@ -171,6 +186,27 @@ export function MainLayout({
         {/* Top Bar */}
         <header className="flex items-center justify-between border-b border-border bg-background px-6 py-4">
           <div className="flex items-center gap-4">
+            {/* Hamburger Menu Button - Mobile Only */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2 hover:bg-muted rounded-lg transition-colors"
+              aria-label="Toggle menu"
+            >
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
+
             <h2 className="text-lg font-semibold text-foreground">
               Articles
             </h2>

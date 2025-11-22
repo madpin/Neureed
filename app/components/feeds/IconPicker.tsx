@@ -145,7 +145,7 @@ export function IconPicker({ currentIcon, onSelect, onClose }: IconPickerProps) 
         {/* Content */}
         <div className="max-h-96 overflow-y-auto">
           {activeTab === "predefined" && (
-            <div className="grid grid-cols-6 gap-2">
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
               {PREDEFINED_ICONS.map(({ icon, label }) => (
                 <button
                   key={icon}
@@ -181,7 +181,7 @@ export function IconPicker({ currentIcon, onSelect, onClose }: IconPickerProps) 
               </div>
 
               {/* Emoji Grid */}
-              <div className="grid grid-cols-10 gap-1">
+              <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-1">
                 {EMOJI_CATEGORIES[selectedEmojiCategory as keyof typeof EMOJI_CATEGORIES].map(
                   (emoji) => (
                     <button
