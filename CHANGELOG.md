@@ -4,6 +4,15 @@ All notable changes to NeuReed are documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- **Feed Parser Migration**
+  - Migrated from `rss-parser` to `@rowanmanning/feed-parser` (v2.1.1)
+  - Improved feed parsing with better maintained library
+  - Better error handling with specific error codes
+  - Maintains full compatibility with existing RSS 2.0 and Atom 1.0 feeds
+  - All existing feeds continue to work without changes
+  - Enhanced support for media enclosures and feed metadata
+
 ### Added
 - **Nested Route Navigation with Browser History Support**
   - Implemented nested URL structure for feeds and articles (`/feeds/[feedId]`, `/feeds/[feedId]/articles/[articleId]`)

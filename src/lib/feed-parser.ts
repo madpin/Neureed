@@ -1,11 +1,40 @@
-import Parser from "rss-parser";
+import { parseFeed as parseRawFeed } from "@rowanmanning/feed-parser";
 import { createHash } from "crypto";
 import { decode as decodeHtmlEntities } from "he";
 import * as iconv from "iconv-lite";
 
-// Ensure Parser is available
-if (!Parser) {
-  throw new Error("rss-parser module not loaded correctly");
+/**
+ * Type definitions for @rowanmanning/feed-parser
+ */
+interface RawFeed {
+  title?: string;
+  description?: string;
+  url?: string;
+  image?: {
+    url?: string;
+    title?: string;
+  };
+  items: RawFeedItem[];
+}
+
+interface RawFeedItem {
+  title?: string;
+  url?: string;
+  id?: string;
+  description?: string;
+  content?: string;
+  published?: Date;
+  updated?: Date;
+  authors?: Array<{
+    name?: string;
+    email?: string;
+    url?: string;
+  }>;
+  media?: Array<{
+    url?: string;
+    type?: string;
+    title?: string;
+  }>;
 }
 
 /**
@@ -74,51 +103,9 @@ export interface ParsedArticle {
 }
 
 /**
- * Feed parser configuration
- * Supports both RSS 2.0 and Atom 1.0 feeds
+ * Feed parser timeout configuration
  */
-const PARSER_CONFIG = {
-  timeout: 30000, // 30 seconds
-  maxRedirects: 5,
-  headers: {
-    "User-Agent": "NeuReed/1.0 (RSS/Atom Reader)",
-    Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml",
-    "Accept-Charset": "utf-8",
-  },
-  customFields: {
-    feed: [
-      "subtitle", // Atom feed subtitle
-      "image",    // RSS feed image
-      "logo",     // Atom feed logo
-      "icon",     // Atom feed icon
-    ],
-    item: [
-      // Media enclosures
-      ["media:content", "mediaContent"],
-      ["media:thumbnail", "mediaThumbnail"],
-      // Content fields (RSS)
-      ["content:encoded", "contentEncoded"],
-      ["description", "description"],
-      // Atom-specific fields
-      ["summary", "summary"],
-      ["content", "content"],
-      // Author fields
-      ["dc:creator", "creator"],
-      ["author", "author"],
-    ],
-  },
-  defaultRSS: 2.0,
-  xml2js: {
-    normalize: true,
-    normalizeTags: true,
-    trim: true,
-  },
-};
-
-/**
- * Initialize RSS parser with custom configuration
- */
-const parser = new Parser(PARSER_CONFIG);
+const FETCH_TIMEOUT = 30000; // 30 seconds
 
 /**
  * Parse an RSS 2.0 or Atom 1.0 feed from a URL
@@ -130,7 +117,7 @@ export async function parseFeedUrl(url: string): Promise<ParsedFeed> {
   try {
     // Fetch with proper encoding handling
     const xmlContent = await fetchFeedWithEncoding(url);
-    const feed = await parser.parseString(xmlContent);
+    const feed = parseRawFeed(xmlContent) as RawFeed;
 
     // Extract and ensure imageUrl is a string
     let imageUrl = extractFeedImage(feed);
@@ -142,13 +129,17 @@ export async function parseFeedUrl(url: string): Promise<ParsedFeed> {
 
     return {
       title: feed.title || "Untitled Feed",
-      description: (feed.description as string) || (feed.subtitle as string) || undefined,
-      link: feed.link || undefined,
+      description: feed.description || undefined,
+      link: feed.url || undefined,
       imageUrl: imageUrl,
       items: feed.items.map((item) => parseArticle(item)),
     };
   } catch (error) {
     if (error instanceof Error) {
+      // Handle specific INVALID_FEED error from @rowanmanning/feed-parser
+      if ((error as any).code === 'INVALID_FEED') {
+        throw new Error(`Failed to parse feed: Invalid feed format`);
+      }
       throw new Error(`Failed to parse feed: ${error.message}`);
     }
     throw new Error("Failed to parse feed: Unknown error");
@@ -165,18 +156,14 @@ export async function validateFeedUrl(url: string): Promise<boolean> {
     // Basic URL validation
     const urlObj = new URL(url);
     if (!["http:", "https:"].includes(urlObj.protocol)) {
-      console.error("Invalid protocol:", urlObj.protocol);
       return false;
     }
 
     // Try to parse the feed with encoding handling
-    console.log("Attempting to parse feed:", url);
     const xmlContent = await fetchFeedWithEncoding(url);
-    const result = await parser.parseString(xmlContent);
-    console.log("Feed parsed successfully:", result.title);
+    const result = parseRawFeed(xmlContent) as RawFeed;
     return true;
   } catch (error) {
-    console.error("Feed validation error:", error);
     return false;
   }
 }
@@ -185,8 +172,8 @@ export async function validateFeedUrl(url: string): Promise<boolean> {
  * Parse a single feed item into an article
  * Handles both RSS and Atom item formats
  */
-function parseArticle(item: Parser.Item): ParsedArticle {
-  // Extract content (prefer content:encoded over description)
+function parseArticle(item: RawFeedItem): ParsedArticle {
+  // Extract content (prefer content over description)
   const content = extractContent(item);
   
   // Extract excerpt
@@ -195,17 +182,14 @@ function parseArticle(item: Parser.Item): ParsedArticle {
   // Extract image
   const imageUrl = extractArticleImage(item, content);
   
-  // Parse published date (Atom uses isoDate, RSS uses pubDate)
+  // Parse published date
   // Dates are parsed with their timezone offset and converted to UTC for storage
   // If no date is provided, use current time as fallback
   let publishedAt: Date | undefined;
-  if (item.isoDate) {
-    // isoDate is already in ISO format, parse directly (handles timezone)
-    publishedAt = new Date(item.isoDate);
-  } else if (item.pubDate) {
-    // pubDate may include timezone offset (e.g., "20 Nov 2025 20:50:00 -0300")
-    // JavaScript Date constructor automatically converts to UTC
-    publishedAt = new Date(item.pubDate);
+  if (item.published) {
+    publishedAt = new Date(item.published);
+  } else if (item.updated) {
+    publishedAt = new Date(item.updated);
   } else {
     // Fallback to current time if no date is provided by the feed
     // This ensures articles always have a timestamp for sorting
@@ -214,7 +198,6 @@ function parseArticle(item: Parser.Item): ParsedArticle {
   
   // Validate the parsed date - if invalid, use current time
   if (publishedAt && isNaN(publishedAt.getTime())) {
-    console.warn(`Invalid date for article: ${item.title}. Using current time.`);
     publishedAt = new Date();
   }
 
@@ -227,13 +210,13 @@ function parseArticle(item: Parser.Item): ParsedArticle {
   const decodedExcerpt = excerpt ? decodeHtmlEntities(excerpt) : undefined;
   const decodedAuthor = author ? decodeHtmlEntities(author) : undefined;
 
-  // Generate fallback URL if link is missing (Atom uses id as fallback)
-  const link = item.link || (item.guid && item.guid.startsWith('http') ? item.guid : undefined) || (item as any).id;
+  // Generate fallback URL if link is missing (use id as fallback)
+  const link = item.url || (item.id && item.id.startsWith('http') ? item.id : undefined);
   
   return {
     title: decodedTitle,
     link: link || "",
-    guid: item.guid || (item as any).id || undefined,
+    guid: item.id || undefined,
     content: sanitizeHtml(decodedContent),
     excerpt: decodedExcerpt ? sanitizeHtml(decodedExcerpt) : undefined,
     author: decodedAuthor || undefined,
@@ -245,33 +228,16 @@ function parseArticle(item: Parser.Item): ParsedArticle {
 
 /**
  * Extract author from feed item
- * Handles both RSS (dc:creator, author) and Atom (author) formats
+ * Handles both RSS and Atom formats
  */
-function extractAuthor(item: Parser.Item): string | undefined {
-  const customItem = item as Parser.Item & {
-    creator?: string;
-    author?: string | { name?: string; email?: string };
-    "dc:creator"?: string;
-  };
-
-  // Try dc:creator first (Dublin Core, common in RSS)
-  if (customItem["dc:creator"]) {
-    return customItem["dc:creator"];
-  }
-  
-  // Try creator field
-  if (customItem.creator) {
-    return customItem.creator;
-  }
-  
-  // Handle Atom author object format
-  if (customItem.author) {
-    if (typeof customItem.author === "string") {
-      return customItem.author;
-    } else if (customItem.author.name) {
-      return customItem.author.name;
-    } else if (customItem.author.email) {
-      return customItem.author.email;
+function extractAuthor(item: RawFeedItem): string | undefined {
+  // @rowanmanning/feed-parser provides authors as an array
+  if (item.authors && item.authors.length > 0) {
+    const firstAuthor = item.authors[0];
+    if (firstAuthor.name) {
+      return firstAuthor.name;
+    } else if (firstAuthor.email) {
+      return firstAuthor.email;
     }
   }
   
@@ -279,37 +245,22 @@ function extractAuthor(item: Parser.Item): string | undefined {
 }
 
 /**
- * Extract content from feed item (prefer content:encoded over description)
- * Handles both RSS (content:encoded, description) and Atom (content, summary) formats
+ * Extract content from feed item (prefer content over description)
+ * Handles both RSS and Atom formats
  */
-function extractContent(item: Parser.Item): string {
-  const customItem = item as Parser.Item & {
-    contentEncoded?: string;
-    "content:encoded"?: string;
-    content?: string;
-    summary?: string;
-  };
-
-  // Priority: content:encoded > contentEncoded > content > description > summary
-  return (
-    customItem["content:encoded"] ||
-    customItem.contentEncoded ||
-    customItem.content ||
-    item.content ||
-    item.contentSnippet ||
-    customItem.summary ||
-    item.summary ||
-    ""
-  );
+function extractContent(item: RawFeedItem): string {
+  // @rowanmanning/feed-parser provides content and description
+  // Prefer content (which includes content:encoded from RSS) over description
+  return item.content || item.description || "";
 }
 
 /**
  * Extract excerpt from feed item
  */
-function extractExcerpt(item: Parser.Item, content: string): string | undefined {
+function extractExcerpt(item: RawFeedItem, content: string): string | undefined {
   // If description is different from content, use it as excerpt
-  if (item.contentSnippet && item.contentSnippet !== content) {
-    return item.contentSnippet.substring(0, 500);
+  if (item.description && item.description !== content) {
+    return item.description.substring(0, 500);
   }
 
   // Otherwise, generate excerpt from content
@@ -323,92 +274,36 @@ function extractExcerpt(item: Parser.Item, content: string): string | undefined 
 
 /**
  * Extract image URL from feed metadata
- * Supports both RSS (image) and Atom (logo/icon) formats
+ * Supports both RSS and Atom formats
  */
-function extractFeedImage(feed: Parser.Output<unknown>): string | undefined {
-  const customFeed = feed as Parser.Output<unknown> & {
-    image?: { url?: string; link?: string } | string | string[];
-    logo?: string | string[];  // Atom feed logo
-    icon?: string | string[];  // Atom feed icon
-    itunes?: { image?: string | string[] };
-  };
-
-  // Handle different image formats
-  let imageUrl: string | undefined;
-
-  // Try RSS image first
-  if (typeof customFeed.image === "string") {
-    imageUrl = customFeed.image;
-  } else if (Array.isArray(customFeed.image)) {
-    imageUrl = customFeed.image[0];
-  } else if (customFeed.image?.url) {
-    imageUrl = customFeed.image.url;
+function extractFeedImage(feed: RawFeed): string | undefined {
+  // @rowanmanning/feed-parser provides image as an object with url
+  if (feed.image?.url) {
+    return feed.image.url;
   }
   
-  // Try Atom logo
-  if (!imageUrl && customFeed.logo) {
-    if (Array.isArray(customFeed.logo)) {
-      imageUrl = customFeed.logo[0];
-    } else {
-      imageUrl = customFeed.logo;
-    }
-  }
-  
-  // Try Atom icon
-  if (!imageUrl && customFeed.icon) {
-    if (Array.isArray(customFeed.icon)) {
-      imageUrl = customFeed.icon[0];
-    } else {
-      imageUrl = customFeed.icon;
-    }
-  }
-  
-  // Try iTunes image
-  if (!imageUrl && customFeed.itunes?.image) {
-    if (Array.isArray(customFeed.itunes.image)) {
-      imageUrl = customFeed.itunes.image[0];
-    } else {
-      imageUrl = customFeed.itunes.image;
-    }
-  }
-
-  return imageUrl;
+  return undefined;
 }
 
 /**
  * Extract image URL from article
  */
-function extractArticleImage(item: Parser.Item, content: string): string | undefined {
-  const customItem = item as Parser.Item & {
-    mediaContent?: { $?: { url?: string } };
-    mediaThumbnail?: { $?: { url?: string } };
-    enclosure?: { url?: string; type?: string };
-  };
-
-  // Check media:content
-  if (customItem.mediaContent?.$?.url) {
-    return customItem.mediaContent.$.url;
+function extractArticleImage(item: RawFeedItem, content: string): string | undefined {
+  // Check media array (includes enclosures and media:content)
+  if (item.media && item.media.length > 0) {
+    // Find first image media item
+    for (const media of item.media) {
+      if (media.url && media.type?.startsWith("image/")) {
+        return media.url;
+      }
+    }
+    // If no explicit image type, use first media with URL
+    if (item.media[0].url) {
+      return item.media[0].url;
+    }
   }
 
-  // Check media:thumbnail
-  if (customItem.mediaThumbnail?.$?.url) {
-    return customItem.mediaThumbnail.$.url;
-  }
-
-  // Check enclosure (if it's an image)
-  if (
-    customItem.enclosure?.url &&
-    customItem.enclosure.type?.startsWith("image/")
-  ) {
-    return customItem.enclosure.url;
-  }
-
-  // Check item.enclosure (standard format)
-  if (item.enclosure?.url && item.enclosure.type?.startsWith("image/")) {
-    return item.enclosure.url;
-  }
-
-  // Extract from content
+  // Extract from content as fallback
   return extractImageFromContent(content) || undefined;
 }
 
