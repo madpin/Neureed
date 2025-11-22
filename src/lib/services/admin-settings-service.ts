@@ -110,6 +110,19 @@ export async function shouldAutoGenerateEmbeddings(): Promise<boolean> {
 }
 
 /**
+ * Helper function to check if summaries should be auto-generated
+ * Checks database first, defaults to false
+ */
+export async function shouldAutoGenerateSummaries(): Promise<boolean> {
+  const dbSetting = await getAdminSetting<boolean>(
+    "summarization_auto_generate",
+    false
+  );
+
+  return dbSetting ?? false;
+}
+
+/**
  * Get embedding configuration with both DB and env values
  */
 export async function getEmbeddingConfiguration(): Promise<{
@@ -146,6 +159,42 @@ export async function getEmbeddingConfiguration(): Promise<{
     model: env.EMBEDDING_MODEL,
     batchSize: env.EMBEDDING_BATCH_SIZE,
   };
+}
+
+/**
+ * Get summarization configuration
+ */
+export async function getSummarizationConfiguration(): Promise<{
+  autoGenerate: boolean;
+  autoGenerateSource: "database" | "default";
+}> {
+  const autoGenerateSetting = await prisma.admin_settings.findUnique({
+    where: { key: "summarization_auto_generate" },
+  });
+
+  const autoGenerate = autoGenerateSetting
+    ? (autoGenerateSetting.value as boolean)
+    : false;
+  const autoGenerateSource = autoGenerateSetting ? "database" : "default";
+
+  return {
+    autoGenerate,
+    autoGenerateSource,
+  };
+}
+
+/**
+ * Update summarization auto-generate setting
+ */
+export async function setSummarizationAutoGenerate(
+  enabled: boolean
+): Promise<void> {
+  await updateAdminSetting(
+    "summarization_auto_generate",
+    enabled,
+    "Enable/disable automatic article summarization system-wide"
+  );
+  logger.info("Summarization auto-generate updated", { enabled });
 }
 
 /**

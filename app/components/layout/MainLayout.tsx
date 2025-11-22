@@ -9,7 +9,7 @@ import type { ArticleSortOrder, ArticleSortDirection } from "@/lib/validations/a
 import { useUserPreferences, useUpdatePreference } from "@/hooks/queries/use-user-preferences";
 
 interface MainLayoutProps {
-  sidebar: ReactNode | ((props: { isCollapsed: boolean }) => ReactNode);
+  sidebar: ReactNode | ((props: { isCollapsed: boolean; closeMobileMenu: () => void }) => ReactNode);
   children: ReactNode;
   sortOrder?: ArticleSortOrder;
   sortDirection?: ArticleSortDirection;
@@ -177,7 +177,10 @@ export function MainLayout({
           {/* Sidebar Content */}
           <div className="flex-1 overflow-y-auto p-4">
             {typeof sidebar === "function"
-              ? sidebar({ isCollapsed: isMobile ? false : isSidebarCollapsed })
+              ? sidebar({
+                  isCollapsed: isMobile ? false : isSidebarCollapsed,
+                  closeMobileMenu: () => setIsMobileMenuOpen(false)
+                })
               : sidebar}
           </div>
 

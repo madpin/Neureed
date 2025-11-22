@@ -31,6 +31,9 @@ export interface FeedRefreshMetadata {
   articlesCleanedUp?: number;
   embeddingsGenerated?: number;
   totalTokens?: number;
+  summariesGenerated?: number;
+  summariesFailed?: number;
+  summariesSkipped?: number;
   duration?: string;
 }
 

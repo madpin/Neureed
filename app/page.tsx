@@ -37,7 +37,12 @@ export default function Home() {
   // Local State
   const [isAddFeedOpen, setIsAddFeedOpen] = useState(false);
   const [isFeedBrowserOpen, setIsFeedBrowserOpen] = useState(false);
-  const [isManagementModalOpen, setIsManagementModalOpen] = useState(false);
+  const [managementModalState, setManagementModalState] = useState<{
+    isOpen: boolean;
+    view?: 'feed' | 'category' | 'overview';
+    feedId?: string;
+    categoryId?: string;
+  }>({ isOpen: false });
 
   // Search State
   const [searchMode, setSearchMode] = useState<"semantic" | "hybrid">("semantic");
@@ -228,12 +233,15 @@ export default function Home() {
       sortDirection={sortDirection}
       onSortChange={handleSortChange}
       isLoadingArticles={isLoadingArticles}
-      sidebar={({ isCollapsed }) => (
+      sidebar={({ isCollapsed, closeMobileMenu }) => (
         <div className="flex flex-col gap-4">
           {!isCollapsed && (
             <div className="space-y-2">
               <button
-                onClick={() => setIsManagementModalOpen(true)}
+                onClick={() => {
+                  closeMobileMenu();
+                  setManagementModalState({ isOpen: true, view: 'overview' });
+                }}
                 className="btn btn-primary w-full"
               >
                 <svg
@@ -258,7 +266,10 @@ export default function Home() {
             <div className="flex flex-col gap-2">
               <Tooltip content="Manage Feeds">
                 <button
-                  onClick={() => setIsManagementModalOpen(true)}
+                  onClick={() => {
+                    closeMobileMenu();
+                    setManagementModalState({ isOpen: true, view: 'overview' });
+                  }}
                   className="flex items-center justify-center rounded-lg bg-primary p-3 text-primary-foreground hover:bg-primary/90"
                   title="Manage Feeds"
                 >
@@ -286,6 +297,9 @@ export default function Home() {
             onSelectFeed={handleSelectFeed}
             onSelectCategory={handleSelectCategory}
             isCollapsed={isCollapsed}
+            onOpenFeedSettings={(feedId) => setManagementModalState({ isOpen: true, view: 'feed', feedId })}
+            onOpenCategorySettings={(categoryId) => setManagementModalState({ isOpen: true, view: 'category', categoryId })}
+            onCloseMobileMenu={closeMobileMenu}
           />
         </div>
       )}
@@ -508,20 +522,22 @@ export default function Home() {
         }} />
       )}
 
-      {isManagementModalOpen && (
+      {managementModalState.isOpen && (
         <FeedManagementModal
-          onClose={() => setIsManagementModalOpen(false)}
-          initialView="overview"
+          onClose={() => setManagementModalState({ isOpen: false })}
+          initialView={managementModalState.view}
+          feedId={managementModalState.feedId}
+          categoryId={managementModalState.categoryId}
           onRefreshData={() => {
             queryClient.invalidateQueries({ queryKey: queryKeys.feeds.all });
             queryClient.invalidateQueries({ queryKey: queryKeys.categories.all });
           }}
           onAddFeed={() => {
-            setIsManagementModalOpen(false);
+            setManagementModalState({ isOpen: false });
             setIsAddFeedOpen(true);
           }}
           onBrowseFeeds={() => {
-            setIsManagementModalOpen(false);
+            setManagementModalState({ isOpen: false });
             setIsFeedBrowserOpen(true);
           }}
         />

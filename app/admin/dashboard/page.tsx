@@ -29,6 +29,8 @@ import {
   useUpdateLLMConfig,
   useTestLLMConfig,
   useUpdateUserRole,
+  useSummarizationConfig,
+  useUpdateSummarizationConfig,
   type AdminMetrics,
   type CronJobStatus,
   type JobWithHistory,
@@ -42,7 +44,8 @@ import {
   type PostgresStats,
   type RedisStats,
   type AdminSettings,
-  type JobLogEntry
+  type JobLogEntry,
+  type SummarizationConfig,
 } from "@/hooks/queries/use-admin";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -89,7 +92,7 @@ export default function AdminDashboardPage() {
   const { data: postgresStats } = usePostgresStats(pollingInterval);
   const { data: redisStats } = useRedisStats(pollingInterval);
   const { data: adminSettings } = useAdminSettings();
-  
+
   // Mutations
   const clearCache = useClearCache();
   const runCleanup = useRunCleanup();
@@ -628,7 +631,10 @@ export default function AdminDashboardPage() {
               )}
 
               {activeTab === "search" && (
-                <SearchTab embeddingStats={embeddingStats} embeddingConfig={embeddingConfig} />
+                <SearchTab
+                  embeddingStats={embeddingStats}
+                  embeddingConfig={embeddingConfig}
+                />
               )}
 
               {activeTab === "users" && (
@@ -676,7 +682,13 @@ function LoadingSpinner({ message = "Loading..." }: { message?: string }) {
   );
 }
 
-function SearchTab({ embeddingStats, embeddingConfig }: { embeddingStats: EmbeddingStats | null | undefined, embeddingConfig: EmbeddingConfig | null | undefined }) {
+function SearchTab({
+  embeddingStats,
+  embeddingConfig,
+}: {
+  embeddingStats: EmbeddingStats | null | undefined;
+  embeddingConfig: EmbeddingConfig | null | undefined;
+}) {
   return (
     <div className="space-y-6">
       {/* Search Stats */}
@@ -1736,13 +1748,18 @@ function LLMConfigTab() {
   const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [testResults, setTestResults] = useState<any | null>(null);
   const [pendingDeleteEmbeddings, setPendingDeleteEmbeddings] = useState(false);
-  
+
   // Use React Query hooks
   const { data: configData, isLoading } = useLLMConfig();
   const { data: embeddingConfig } = useEmbeddingConfig();
+  const { data: summarizationConfig } = useSummarizationConfig();
   const updateConfig = useUpdateLLMConfig();
   const testConfig = useTestLLMConfig();
   const deleteEmbeddings = useDeleteAllEmbeddings();
+  const updateSummarizationConfig = useUpdateSummarizationConfig();
+
+  // Summarization toggle state
+  const [isSummarizationToggling, setIsSummarizationToggling] = useState(false);
   
   // Form state
   const [provider, setProvider] = useState<"openai" | "ollama">("openai");
@@ -1887,6 +1904,25 @@ function LLMConfigTab() {
     }
   };
 
+  const handleSummarizationToggle = async () => {
+    if (!summarizationConfig) return;
+
+    setIsSummarizationToggling(true);
+    try {
+      await updateSummarizationConfig.mutateAsync({
+        autoGenerate: !summarizationConfig.autoGenerate,
+      });
+      toast.success(
+        `Summarization ${!summarizationConfig.autoGenerate ? "enabled" : "disabled"}`
+      );
+    } catch (error) {
+      console.error("Failed to toggle summarization:", error);
+      toast.error("Failed to update summarization setting");
+    } finally {
+      setIsSummarizationToggling(false);
+    }
+  };
+
   if (isLoading) {
     return <LoadingSpinner message="Loading LLM configuration..." />;
   }
@@ -1919,6 +1955,82 @@ function LLMConfigTab() {
         <p className="mt-1 text-sm text-foreground/60">
           Environment variables provide the base system defaults. Database settings here override those defaults. Users can further override with their own credentials in preferences.
         </p>
+      </div>
+
+      {/* Article Summarization Configuration */}
+      <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-medium text-foreground">Article Summarization</h3>
+            <p className="text-sm text-foreground/60 mt-1">
+              Automatically generate summaries for RSS articles using LLM
+            </p>
+          </div>
+          <button
+            onClick={handleSummarizationToggle}
+            disabled={isSummarizationToggling || !summarizationConfig}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+              summarizationConfig?.autoGenerate
+                ? "bg-blue-600"
+                : "bg-gray-200 dark:bg-gray-700"
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                summarizationConfig?.autoGenerate ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex items-center justify-between p-3 rounded bg-muted/20 border border-border">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-foreground">Status</span>
+              {summarizationConfig?.autoGenerateSource === "database" && (
+                <span className="text-xs px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                  Custom
+                </span>
+              )}
+            </div>
+            <span
+              className={`text-sm font-medium ${
+                summarizationConfig?.autoGenerate
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-yellow-600 dark:text-yellow-400"
+              }`}
+            >
+              {summarizationConfig?.autoGenerate ? "Enabled" : "Disabled"}
+            </span>
+          </div>
+
+          <div className="text-xs text-foreground/60 space-y-1">
+            <p>
+              • When enabled, articles are automatically summarized after feed refresh
+            </p>
+            <p>• Users can configure per-feed settings once this is enabled</p>
+            <p>• Summaries include key points and topics extraction</p>
+            <p>• Uses user&apos;s configured LLM provider (OpenAI or Ollama)</p>
+          </div>
+
+          {summarizationConfig?.autoGenerate && (
+            <div className="mt-4 p-3 rounded bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800">
+              <p className="text-sm text-green-800 dark:text-green-300">
+                ✓ Summarization is active. Users can now enable it for their feeds in feed
+                settings.
+              </p>
+            </div>
+          )}
+
+          {!summarizationConfig?.autoGenerate && (
+            <div className="mt-4 p-3 rounded bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800">
+              <p className="text-sm text-yellow-800 dark:text-yellow-300">
+                ⚠ Summarization is disabled. Users cannot configure it until you enable it
+                here.
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="rounded-lg border border-border bg-background p-6 shadow-sm">

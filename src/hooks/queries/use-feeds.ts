@@ -458,3 +458,85 @@ export function useBulkUpdateFeedSettings() {
     },
   });
 }
+
+/**
+ * Summarization Settings
+ */
+export interface SummarizationSettings {
+  enabled: boolean;
+  minContentLength: number;
+  includeKeyPoints: boolean;
+  includeTopics: boolean;
+}
+
+export interface FeedSummarizationConfig {
+  feedId: string;
+  feedTitle: string;
+  systemEnabled: boolean;
+  effectiveSettings: SummarizationSettings;
+  source: "feed" | "category" | "user" | "system";
+}
+
+/**
+ * Fetch feed summarization settings
+ */
+async function fetchFeedSummarizationSettings(feedId: string): Promise<FeedSummarizationConfig> {
+  return await apiGet<FeedSummarizationConfig>(`/api/feeds/${feedId}/summarization`);
+}
+
+/**
+ * Update feed summarization settings
+ */
+async function updateFeedSummarizationSettings(
+  feedId: string,
+  settings: Partial<SummarizationSettings>
+): Promise<FeedSummarizationConfig> {
+  return await apiPut<FeedSummarizationConfig>(`/api/feeds/${feedId}/summarization`, settings);
+}
+
+/**
+ * Clear feed summarization settings (revert to defaults)
+ */
+async function clearFeedSummarizationSettings(feedId: string): Promise<void> {
+  await apiDelete(`/api/feeds/${feedId}/summarization`);
+}
+
+/**
+ * Hook to fetch feed summarization settings
+ */
+export function useFeedSummarizationSettings(feedId: string | undefined) {
+  return useQuery({
+    queryKey: ["feeds", feedId, "summarization"],
+    queryFn: () => fetchFeedSummarizationSettings(feedId!),
+    enabled: !!feedId,
+  });
+}
+
+/**
+ * Hook to update feed summarization settings
+ */
+export function useUpdateFeedSummarizationSettings() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ feedId, settings }: { feedId: string; settings: Partial<SummarizationSettings> }) =>
+      updateFeedSummarizationSettings(feedId, settings),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["feeds", variables.feedId, "summarization"] });
+    },
+  });
+}
+
+/**
+ * Hook to clear feed summarization settings
+ */
+export function useClearFeedSummarizationSettings() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (feedId: string) => clearFeedSummarizationSettings(feedId),
+    onSuccess: (_, feedId) => {
+      queryClient.invalidateQueries({ queryKey: ["feeds", feedId, "summarization"] });
+    },
+  });
+}

@@ -17,6 +17,7 @@ import {
 } from "../llm/types";
 import { getUserPreferencesWithDecryptedKey } from "./user-preferences-service";
 import type { user_preferences } from "@prisma/client";
+import { trackSummarizationCost } from "./summarization-cost-tracker";
 
 /**
  * Get LLM provider instance
@@ -392,5 +393,197 @@ export async function batchSummarizeArticles(
   }
 
   return results;
+}
+
+/**
+ * Summarize article with cost tracking
+ * This version tracks token usage and costs for monitoring
+ */
+export async function summarizeArticleWithTracking(
+  articleId: string,
+  options?: {
+    userId?: string;
+    includeKeyPoints?: boolean;
+    includeTopics?: boolean;
+  }
+): Promise<{
+  summary: ArticleSummary;
+  tokens: { prompt: number; completion: number; total: number };
+  model: string;
+  provider: string;
+}> {
+  // Get article from database
+  const article = await prisma.articles.findUnique({
+    where: { id: articleId },
+    select: {
+      id: true,
+      title: true,
+      content: true,
+      summary: true,
+      keyPoints: true,
+      topics: true,
+    },
+  });
+
+  if (!article) {
+    throw new Error("Article not found");
+  }
+
+  // If already has summary in DB and we're not forcing regeneration, return it
+  if (article.summary && article.keyPoints && article.topics) {
+    return {
+      summary: {
+        summary: article.summary,
+        keyPoints: article.keyPoints as string[],
+        topics: article.topics,
+      },
+      tokens: { prompt: 0, completion: 0, total: 0 },
+      model: "cached",
+      provider: "cached",
+    };
+  }
+
+  // Get config to determine provider
+  const config = await resolveLLMConfig(options?.userId);
+  const provider = config.provider;
+
+  // Generate summary using LLM and get token info
+  const llm = await getLLMProvider(options?.userId);
+
+  // Call complete directly to get token usage
+  const systemPrompt = `You are a helpful assistant that summarizes articles.
+Provide a concise summary, extract 3-5 key points, identify 3-5 main topics/tags, and determine the sentiment.
+Respond in JSON format with keys: summary, keyPoints (array), topics (array), sentiment (positive/neutral/negative).`;
+
+  const truncatedContent =
+    article.content.length > 40000
+      ? article.content.substring(0, 40000) + "..."
+      : article.content;
+
+  const prompt = `Title: ${article.title}\n\nContent: ${truncatedContent}\n\nPlease analyze this article and provide a summary, key points, topics, and sentiment.`;
+
+  const response = await llm.complete({
+    prompt,
+    systemPrompt,
+    temperature: 0.3,
+    maxTokens: 1000,
+  });
+
+  // Parse the response
+  let summary: ArticleSummary;
+  try {
+    const parsed = JSON.parse(response.content);
+    summary = {
+      summary: parsed.summary || "",
+      keyPoints:
+        options?.includeKeyPoints && Array.isArray(parsed.keyPoints)
+          ? parsed.keyPoints
+          : [],
+      topics:
+        options?.includeTopics && Array.isArray(parsed.topics)
+          ? parsed.topics
+          : [],
+      sentiment: ["positive", "neutral", "negative"].includes(parsed.sentiment)
+        ? parsed.sentiment
+        : "neutral",
+    };
+  } catch (parseError) {
+    logger.warn("Failed to parse LLM JSON response, using fallback", {
+      parseError,
+    });
+    summary = {
+      summary: response.content.substring(0, 500),
+      keyPoints: [],
+      topics: [],
+      sentiment: "neutral",
+    };
+  }
+
+  // Store in database
+  await prisma.articles.update({
+    where: { id: articleId },
+    data: {
+      summary: summary.summary,
+      keyPoints: summary.keyPoints,
+      topics: summary.topics,
+    },
+  });
+
+  // Track cost
+  trackSummarizationCost({
+    provider,
+    model: response.model,
+    tokensPrompt: response.tokens.prompt,
+    tokensCompletion: response.tokens.completion,
+    operation: "article_summarization",
+    userId: options?.userId,
+    articleId,
+  });
+
+  logger.info("Article summarized with tracking", {
+    articleId,
+    model: response.model,
+    tokens: response.tokens.total,
+  });
+
+  return {
+    summary,
+    tokens: response.tokens,
+    model: response.model,
+    provider,
+  };
+}
+
+/**
+ * Batch summarize articles with cost tracking
+ */
+export async function batchSummarizeArticlesWithTracking(
+  articleIds: string[],
+  options?: {
+    userId?: string;
+    includeKeyPoints?: boolean;
+    includeTopics?: boolean;
+  }
+): Promise<{
+  success: number;
+  failed: number;
+  errors: string[];
+  totalTokens: number;
+  totalCost: number;
+}> {
+  const result = {
+    success: 0,
+    failed: 0,
+    errors: [] as string[],
+    totalTokens: 0,
+    totalCost: 0,
+  };
+
+  // Process in batches to avoid overwhelming the LLM API
+  const batchSize = 5;
+  for (let i = 0; i < articleIds.length; i += batchSize) {
+    const batch = articleIds.slice(i, i + batchSize);
+
+    await Promise.all(
+      batch.map(async (articleId) => {
+        try {
+          const response = await summarizeArticleWithTracking(articleId, options);
+          result.success++;
+          result.totalTokens += response.tokens.total;
+        } catch (error) {
+          result.failed++;
+          const errorMsg =
+            error instanceof Error ? error.message : "Unknown error";
+          result.errors.push(`${articleId}: ${errorMsg}`);
+          logger.error("Failed to summarize article in batch with tracking", {
+            articleId,
+            error,
+          });
+        }
+      })
+    );
+  }
+
+  return result;
 }
 

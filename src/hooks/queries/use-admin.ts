@@ -881,3 +881,56 @@ export function useTestLLMConfig() {
     mutationFn: testLLMConfig,
   });
 }
+
+// ============================================================================
+// Summarization
+// ============================================================================
+
+/**
+ * Summarization config
+ */
+export interface SummarizationConfig {
+  autoGenerate: boolean;
+  autoGenerateSource: "database" | "default";
+}
+
+/**
+ * Fetch summarization config
+ */
+async function fetchSummarizationConfig(): Promise<SummarizationConfig> {
+  const response = await apiGet<{ data: SummarizationConfig }>("/api/admin/summarization/config");
+  return response.data;
+}
+
+/**
+ * Update summarization config
+ */
+async function updateSummarizationConfig(data: { autoGenerate: boolean }): Promise<SummarizationConfig> {
+  const response = await apiPost<{ data: SummarizationConfig }>("/api/admin/summarization/config", data);
+  return response.data;
+}
+
+/**
+ * Hook to fetch summarization config
+ */
+export function useSummarizationConfig() {
+  return useQuery({
+    queryKey: ["admin", "summarization", "config"],
+    queryFn: fetchSummarizationConfig,
+  });
+}
+
+/**
+ * Hook to update summarization config
+ */
+export function useUpdateSummarizationConfig() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateSummarizationConfig,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "summarization", "config"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.settings("all") });
+    },
+  });
+}

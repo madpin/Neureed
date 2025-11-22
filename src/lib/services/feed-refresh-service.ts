@@ -34,6 +34,11 @@ export interface RefreshResult {
     byAge: number;
     byCount: number;
   };
+  summarizationResult?: {
+    summarized: number;
+    failed: number;
+    skipped: number;
+  };
 }
 
 /**
@@ -165,6 +170,96 @@ export async function refreshFeed(
       }
     }
 
+    // Generate summaries for new articles if enabled (async, non-blocking)
+    // Note: Starts in background but we don't wait for completion to avoid blocking refresh
+    if (result.articleIds.length > 0 && userId) {
+      // Import dynamically to avoid circular dependencies
+      import("./article-summarization-service")
+        .then(({ processFeedArticleSummaries }) => {
+          // Run asynchronously without blocking the feed refresh
+          processFeedArticleSummaries(feedId, userId, {
+            articleIds: result.articleIds,
+          })
+            .then((summResult) => {
+              logger.info("Completed async summarization for feed", {
+                feedId,
+                userId,
+                summarized: summResult.summarized,
+                failed: summResult.failed,
+                skipped: summResult.skipped,
+              });
+
+              // Create a follow-up notification if summaries were generated
+              if (summResult.summarized > 0 || summResult.failed > 0) {
+                import("./notification-service")
+                  .then(({ createNotification }) => {
+                    const parts = [];
+                    if (summResult.summarized > 0) {
+                      parts.push(
+                        `${summResult.summarized} article${summResult.summarized > 1 ? "s" : ""} summarized`
+                      );
+                    }
+                    if (summResult.failed > 0) {
+                      parts.push(`${summResult.failed} failed`);
+                    }
+                    if (summResult.skipped > 0) {
+                      parts.push(`${summResult.skipped} skipped`);
+                    }
+
+                    return createNotification({
+                      userId,
+                      type: "info",
+                      title: "Article Summarization Complete",
+                      message: parts.join(", "),
+                      metadata: {
+                        ...summResult,
+                      },
+                    });
+                  })
+                  .catch((error) => {
+                    logger.error("Failed to create summarization notification", {
+                      error,
+                      feedId,
+                      userId,
+                    });
+                  });
+              }
+            })
+            .catch((error) => {
+              logger.error("Failed async summarization for feed", {
+                feedId,
+                userId,
+                error,
+              });
+
+              // Notify user of failure
+              import("./notification-service")
+                .then(({ createNotification }) => {
+                  return createNotification({
+                    userId,
+                    type: "warning",
+                    title: "Article Summarization Failed",
+                    message: "Some articles could not be summarized",
+                    metadata: {
+                      feedId,
+                      error: error instanceof Error ? error.message : String(error),
+                    },
+                  });
+                })
+                .catch((notifError) => {
+                  logger.error("Failed to create error notification", {
+                    error: notifError,
+                  });
+                });
+            });
+        })
+        .catch((error) => {
+          logger.error("Failed to import article-summarization-service", {
+            error,
+          });
+        });
+    }
+
     // Update feed metadata
     await updateFeedLastFetched(feedId);
 
@@ -210,6 +305,8 @@ export async function refreshFeed(
       extractionMethod,
       extractionUsed,
       cleanupResult,
+      // Note: summarizationResult is handled via separate notification
+      // since summarization runs asynchronously in the background
     };
   } catch (error) {
     const errorMessage =

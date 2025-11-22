@@ -13,16 +13,20 @@ import {
   useDeleteCategory, 
   useUpdateCategory 
 } from "@/hooks/queries/use-categories";
-import { 
-  useFeeds, 
-  useUserFeeds, 
-  useUpdateFeedSettings, 
-  useRefreshFeed, 
-  useUnsubscribeFeed, 
+import {
+  useFeeds,
+  useUserFeeds,
+  useUpdateFeedSettings,
+  useRefreshFeed,
+  useUnsubscribeFeed,
   useDeleteFeed,
   useBulkUpdateFeedSettings,
+  useFeedSummarizationSettings,
+  useUpdateFeedSummarizationSettings,
+  useClearFeedSummarizationSettings,
   type Feed,
-  type UserFeed
+  type UserFeed,
+  type SummarizationSettings
 } from "@/hooks/queries/use-feeds";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/query-keys";
@@ -217,7 +221,7 @@ export function FeedManagementModal({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4">
       <div ref={modalRef} className="flex h-[90vh] w-full max-w-6xl overflow-hidden rounded-lg bg-background shadow-xl">
         {/* Sidebar Navigation - Desktop Only */}
         <aside className="hidden md:flex w-52 flex-shrink-0 border-r border-border bg-muted dark:bg-background">
@@ -887,11 +891,19 @@ function FeedSettingsView({
   const refreshFeedMutation = useRefreshFeed();
   const deleteFeedMutation = useDeleteFeed();
   const unsubscribeFeedMutation = useUnsubscribeFeed();
-  
+
+  // Summarization hooks
+  const { data: summarizationConfigRaw } = useFeedSummarizationSettings(feedId);
+  const updateSummarizationMutation = useUpdateFeedSummarizationSettings();
+  const clearSummarizationMutation = useClearFeedSummarizationSettings();
+
+  // Unwrap the double-wrapped data (API returns {data: {...}}, then it's wrapped again by our response format)
+  const summarizationConfig = (summarizationConfigRaw as any)?.data || summarizationConfigRaw;
+
   // Find the subscription - it contains all the feed data we need
   const subscription = subscriptions.find(s => (s as any).id === feedId || (s as any).feedId === feedId);
   const feed = subscription; // Use subscription data which includes the feed details
-  
+
   // Local State
   const [customName, setCustomName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -901,6 +913,12 @@ function FeedSettingsView({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUnsubscribing, setIsUnsubscribing] = useState(false);
   const [showDangerZone, setShowDangerZone] = useState(false);
+
+  // Summarization state
+  const [summarizationEnabled, setSummarizationEnabled] = useState(false);
+  const [minContentLength, setMinContentLength] = useState(5000);
+  const [includeKeyPoints, setIncludeKeyPoints] = useState(true);
+  const [includeTopics, setIncludeTopics] = useState(true);
   
   // Advanced Extraction Settings
   const [extractionMethod, setExtractionMethod] = useState<"rss" | "readability" | "playwright" | "custom">("rss");
@@ -946,21 +964,46 @@ function FeedSettingsView({
     }
   }, [subscription, feed]);
 
+  // Initialize summarization settings
+  useEffect(() => {
+    if (summarizationConfig?.effectiveSettings) {
+      console.log('[FeedSettings] Summarization config:', summarizationConfig);
+      setSummarizationEnabled(summarizationConfig.effectiveSettings.enabled);
+      setMinContentLength(summarizationConfig.effectiveSettings.minContentLength);
+      setIncludeKeyPoints(summarizationConfig.effectiveSettings.includeKeyPoints);
+      setIncludeTopics(summarizationConfig.effectiveSettings.includeTopics);
+    }
+  }, [summarizationConfig]);
+
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      
+
       // Prepare settings object
       const settings = {
         refreshInterval: fetchInterval,
         // Other settings would go here
       };
-      
+
+      // Save feed settings
       await updateFeedSettingsMutation.mutateAsync({
         feedId: feedId,
         settings
       });
-      
+
+      // Save summarization settings if system is enabled
+      if (summarizationConfig?.systemEnabled) {
+        await updateSummarizationMutation.mutateAsync({
+          feedId,
+          settings: {
+            enabled: summarizationEnabled,
+            minContentLength,
+            includeKeyPoints,
+            includeTopics,
+          },
+        });
+      }
+
       toast.success("Settings saved successfully");
       onRefreshData?.();
     } catch (error) {
@@ -1092,6 +1135,23 @@ function FeedSettingsView({
       setTestResult({ success: true, message: "Extraction test passed (Mock)" });
       setIsTesting(false);
     }, 1000);
+  };
+
+  const handleResetSummarization = async () => {
+    if (!confirm("Reset summarization settings to defaults?")) {
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      await clearSummarizationMutation.mutateAsync(feedId);
+      toast.success("Summarization settings reset to defaults");
+    } catch (error) {
+      console.error("Failed to reset summarization settings:", error);
+      toast.error("Failed to reset settings");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Show loading state while fetching data
@@ -1234,6 +1294,117 @@ function FeedSettingsView({
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Article Summarization */}
+      <div className="mb-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-semibold">Article Summarization</h3>
+          {summarizationConfig?.source && summarizationConfig.source !== "system" && (
+            <button
+              onClick={handleResetSummarization}
+              disabled={isSaving}
+              className="text-xs text-primary hover:text-primary/80 disabled:opacity-50"
+            >
+              Reset to defaults
+            </button>
+          )}
+        </div>
+
+        {!summarizationConfig?.systemEnabled ? (
+          <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-900 dark:bg-yellow-950">
+            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+              Article summarization is disabled system-wide by the administrator.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4 rounded-lg border border-border bg-background p-4">
+            {/* Enable Toggle */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="summarizationEnabled"
+                  checked={summarizationEnabled}
+                  onChange={(e) => setSummarizationEnabled(e.target.checked)}
+                  className="h-4 w-4 rounded border-border cursor-pointer"
+                />
+                <label htmlFor="summarizationEnabled" className="text-sm font-medium cursor-pointer">
+                  Enable automatic summarization
+                </label>
+              </div>
+              {summarizationConfig?.source && (
+                <span className="text-xs text-foreground/50">
+                  Source: {summarizationConfig.source}
+                </span>
+              )}
+            </div>
+
+            {/* Settings (only show if enabled) */}
+            {summarizationEnabled && (
+              <>
+                {/* Minimum Content Length */}
+                <div>
+                  <label className="mb-1 block text-sm font-medium">
+                    Minimum Content Length (characters)
+                  </label>
+                  <input
+                    type="number"
+                    min="100"
+                    max="100000"
+                    step="100"
+                    value={minContentLength}
+                    onChange={(e) => setMinContentLength(parseInt(e.target.value, 10))}
+                    className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                  <p className="mt-1.5 text-xs text-foreground/50">
+                    Only articles longer than this will be summarized (100-100,000 characters)
+                  </p>
+                </div>
+
+                {/* What to Generate */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium">What to generate</label>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="includeKeyPoints"
+                      checked={includeKeyPoints}
+                      onChange={(e) => setIncludeKeyPoints(e.target.checked)}
+                      className="h-4 w-4 rounded border-border cursor-pointer"
+                    />
+                    <label htmlFor="includeKeyPoints" className="text-sm cursor-pointer">
+                      Generate key points (3-5 bullet points)
+                    </label>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="includeTopics"
+                      checked={includeTopics}
+                      onChange={(e) => setIncludeTopics(e.target.checked)}
+                      className="h-4 w-4 rounded border-border cursor-pointer"
+                    />
+                    <label htmlFor="includeTopics" className="text-sm cursor-pointer">
+                      Detect topics and tags (3-5 topics)
+                    </label>
+                  </div>
+                </div>
+
+                {/* Info Box */}
+                <div className="rounded-lg bg-primary/10 p-3 dark:bg-primary/20">
+                  <p className="text-xs text-primary/80 dark:text-primary/90">
+                    <strong>Note:</strong> Summaries are generated in the background after feed refresh.
+                    You'll receive a notification when complete. This feature may incur costs if using OpenAI.
+                    Settings will be saved when you click the main &quot;Save Settings&quot; button below.
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Actions */}

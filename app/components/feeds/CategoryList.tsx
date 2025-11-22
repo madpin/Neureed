@@ -3,28 +3,25 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { FeedManagementModal } from "./FeedManagementModal";
 import { Tooltip } from "../layout/Tooltip";
 import { IconPicker } from "./IconPicker";
 import { EmptyState } from "../layout/EmptyState";
-import { 
-  useGroupedFeeds, 
-  useRefreshFeed, 
-  useUnsubscribeFeed, 
+import {
+  useGroupedFeeds,
+  useRefreshFeed,
+  useUnsubscribeFeed,
   useRemoveFeedFromCategories,
-  type UserFeed 
+  type UserFeed
 } from "@/hooks/queries/use-feeds";
-import { 
-  useCategoryStates, 
-  useUpdateCategoryState, 
-  useUpdateCategory, 
-  useDeleteCategory, 
-  useReorderCategories, 
+import {
+  useCategoryStates,
+  useUpdateCategoryState,
+  useUpdateCategory,
+  useDeleteCategory,
+  useReorderCategories,
   useAssignFeedsToCategory,
   type CategoryWithFeeds
 } from "@/hooks/queries/use-categories";
-import { useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query/query-keys";
 
 interface CategoryListProps {
   selectedFeedId?: string;
@@ -32,6 +29,9 @@ interface CategoryListProps {
   onSelectFeed?: (feedId: string | null) => void;
   onSelectCategory?: (categoryId: string) => void;
   isCollapsed?: boolean;
+  onOpenFeedSettings?: (feedId: string) => void;
+  onOpenCategorySettings?: (categoryId: string) => void;
+  onCloseMobileMenu?: () => void;
 }
 
 export function CategoryList({
@@ -40,10 +40,12 @@ export function CategoryList({
   onSelectFeed,
   onSelectCategory,
   isCollapsed = false,
+  onOpenFeedSettings,
+  onOpenCategorySettings,
+  onCloseMobileMenu,
 }: CategoryListProps) {
   const router = useRouter();
-  const queryClient = useQueryClient();
-  
+
   // Queries
   const { data: groupedFeeds, isLoading: loading } = useGroupedFeeds();
   const { data: categoryStates } = useCategoryStates();
@@ -60,12 +62,6 @@ export function CategoryList({
 
   // Local State
   const [expandedFeedId, setExpandedFeedId] = useState<string | null>(null);
-  const [managementModalState, setManagementModalState] = useState<{
-    isOpen: boolean;
-    view?: 'feed' | 'category' | 'overview';
-    feedId?: string;
-    categoryId?: string;
-  }>({ isOpen: false });
   const [categoryActionsId, setCategoryActionsId] = useState<string | null>(null);
   const [draggedCategoryId, setDraggedCategoryId] = useState<string | null>(null);
   const [dragOverCategoryId, setDragOverCategoryId] = useState<string | null>(null);
@@ -408,7 +404,8 @@ export function CategoryList({
             <button
               onClick={() => {
                 setExpandedFeedId(null);
-                setManagementModalState({ isOpen: true, view: 'feed', feedId: feed.id });
+                onCloseMobileMenu?.();
+                onOpenFeedSettings?.(feed.id);
               }}
               className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-muted"
             >
@@ -602,7 +599,8 @@ export function CategoryList({
             <button
               onClick={() => {
                 setCategoryActionsId(null);
-                setManagementModalState({ isOpen: true, view: 'category', categoryId: category.id });
+                onCloseMobileMenu?.();
+                onOpenCategorySettings?.(category.id);
               }}
               className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-muted"
             >
@@ -762,20 +760,6 @@ export function CategoryList({
           title="No feeds yet"
           description="Add your first feed to get started!"
           className="py-8"
-        />
-      )}
-
-      {/* Feed Management Modal */}
-      {managementModalState.isOpen && (
-        <FeedManagementModal
-          onClose={() => setManagementModalState({ isOpen: false })}
-          initialView={managementModalState.view}
-          feedId={managementModalState.feedId}
-          categoryId={managementModalState.categoryId}
-          onRefreshData={() => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.feeds.all });
-            queryClient.invalidateQueries({ queryKey: queryKeys.categories.all });
-          }}
         />
       )}
 

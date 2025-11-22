@@ -11,6 +11,7 @@ import {
   getUserConstraints,
   getDefaultUserPreferences,
   getEmbeddingConfiguration,
+  getSummarizationConfiguration,
 } from "@/lib/services/admin-settings-service";
 
 export const dynamic = "force-dynamic";
@@ -27,12 +28,14 @@ export const GET = createHandler(
       constraints,
       defaults,
       embeddingConfig,
+      summarizationConfig,
     ] = await Promise.all([
       getSystemLLMCredentials(true),
       getProviderStatus(),
       getUserConstraints(),
       getDefaultUserPreferences(),
       getEmbeddingConfiguration(),
+      getSummarizationConfiguration(),
     ]);
 
     return {
@@ -41,6 +44,7 @@ export const GET = createHandler(
       constraints,
       defaults,
       embeddingConfig,
+      summarizationConfig,
       message: "Admin settings retrieved successfully",
     };
   },

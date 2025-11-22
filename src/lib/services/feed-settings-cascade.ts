@@ -7,16 +7,28 @@ import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
 
 /**
+ * Summarization settings
+ */
+export interface SummarizationSettings {
+  enabled: boolean;
+  minContentLength: number; // Only summarize if content exceeds this length
+  includeKeyPoints: boolean;
+  includeTopics: boolean;
+}
+
+/**
  * Effective feed settings after applying cascade logic
  */
 export interface EffectiveFeedSettings {
   refreshInterval: number; // in minutes
   maxArticlesPerFeed: number;
   maxArticleAge: number; // in days
+  summarization: SummarizationSettings;
   source: {
     refreshInterval: "feed" | "category" | "user" | "system";
     maxArticlesPerFeed: "feed" | "category" | "user" | "system";
     maxArticleAge: "feed" | "category" | "user" | "system";
+    summarization: "feed" | "category" | "user" | "system";
   };
 }
 
@@ -27,6 +39,7 @@ interface FeedSettingsJson {
   refreshInterval?: number;
   maxArticlesPerFeed?: number;
   maxArticleAge?: number;
+  summarization?: Partial<SummarizationSettings>;
 }
 
 /**
@@ -36,6 +49,12 @@ const SYSTEM_DEFAULTS = {
   refreshInterval: 60, // 60 minutes
   maxArticlesPerFeed: 500,
   maxArticleAge: 90, // 90 days
+  summarization: {
+    enabled: false, // Disabled by default
+    minContentLength: 5000, // 5000 characters
+    includeKeyPoints: true,
+    includeTopics: true,
+  },
 };
 
 /**
@@ -75,10 +94,12 @@ export async function getEffectiveFeedSettings(
         refreshInterval: SYSTEM_DEFAULTS.refreshInterval,
         maxArticlesPerFeed: SYSTEM_DEFAULTS.maxArticlesPerFeed,
         maxArticleAge: SYSTEM_DEFAULTS.maxArticleAge,
+        summarization: { ...SYSTEM_DEFAULTS.summarization },
         source: {
           refreshInterval: "system",
           maxArticlesPerFeed: "system",
           maxArticleAge: "system",
+          summarization: "system",
         },
       };
     }
@@ -92,15 +113,20 @@ export async function getEffectiveFeedSettings(
     let refreshInterval = SYSTEM_DEFAULTS.refreshInterval;
     let maxArticlesPerFeed = SYSTEM_DEFAULTS.maxArticlesPerFeed;
     let maxArticleAge = SYSTEM_DEFAULTS.maxArticleAge;
+    const summarization: SummarizationSettings = {
+      ...SYSTEM_DEFAULTS.summarization,
+    };
 
     const source: {
       refreshInterval: "feed" | "category" | "user" | "system";
       maxArticlesPerFeed: "feed" | "category" | "user" | "system";
       maxArticleAge: "feed" | "category" | "user" | "system";
+      summarization: "feed" | "category" | "user" | "system";
     } = {
       refreshInterval: "system",
       maxArticlesPerFeed: "system",
       maxArticleAge: "system",
+      summarization: "system",
     };
 
     // Apply user preferences defaults
@@ -147,6 +173,10 @@ export async function getEffectiveFeedSettings(
           maxArticleAge = categorySettings.maxArticleAge;
           source.maxArticleAge = "category";
         }
+        if (categorySettings.summarization) {
+          Object.assign(summarization, categorySettings.summarization);
+          source.summarization = "category";
+        }
       }
     }
 
@@ -174,12 +204,17 @@ export async function getEffectiveFeedSettings(
         maxArticleAge = feedSettings.maxArticleAge;
         source.maxArticleAge = "feed";
       }
+      if (feedSettings.summarization) {
+        Object.assign(summarization, feedSettings.summarization);
+        source.summarization = "feed";
+      }
     }
 
     return {
       refreshInterval,
       maxArticlesPerFeed,
       maxArticleAge,
+      summarization,
       source,
     };
   } catch (error) {
@@ -193,10 +228,12 @@ export async function getEffectiveFeedSettings(
       refreshInterval: SYSTEM_DEFAULTS.refreshInterval,
       maxArticlesPerFeed: SYSTEM_DEFAULTS.maxArticlesPerFeed,
       maxArticleAge: SYSTEM_DEFAULTS.maxArticleAge,
+      summarization: { ...SYSTEM_DEFAULTS.summarization },
       source: {
         refreshInterval: "system",
         maxArticlesPerFeed: "system",
         maxArticleAge: "system",
+        summarization: "system",
       },
     };
   }
@@ -253,6 +290,18 @@ export function validateFeedSettings(settings: Partial<FeedSettingsJson>): {
     }
   }
 
+  if (settings.summarization) {
+    if (
+      settings.summarization.minContentLength !== undefined &&
+      (settings.summarization.minContentLength < 100 ||
+        settings.summarization.minContentLength > 100000)
+    ) {
+      errors.push(
+        "summarization.minContentLength must be between 100 and 100000 characters"
+      );
+    }
+  }
+
   return {
     valid: errors.length === 0,
     errors,
@@ -267,10 +316,12 @@ export function getSystemDefaults(): EffectiveFeedSettings {
     refreshInterval: SYSTEM_DEFAULTS.refreshInterval,
     maxArticlesPerFeed: SYSTEM_DEFAULTS.maxArticlesPerFeed,
     maxArticleAge: SYSTEM_DEFAULTS.maxArticleAge,
+    summarization: { ...SYSTEM_DEFAULTS.summarization },
     source: {
       refreshInterval: "system",
       maxArticlesPerFeed: "system",
       maxArticleAge: "system",
+      summarization: "system",
     },
   };
 }
