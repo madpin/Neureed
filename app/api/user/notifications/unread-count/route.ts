@@ -1,6 +1,8 @@
 import { createHandler } from "@/lib/api-handler";
 import { getUnreadNotificationCount } from "@/lib/services/notification-service";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/user/notifications/unread-count
  * Get count of unread notifications

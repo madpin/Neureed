@@ -3,6 +3,8 @@ import fs from "fs";
 import path from "path";
 import { createHandler } from "@/lib/api-handler";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Admin Configuration API
  * Returns system configuration with masked sensitive values

@@ -1204,6 +1204,23 @@ All environment variables are defined in `src/env.ts` using `@t3-oss/env-nextjs`
 
 ---
 
+### Notifications
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/user/notifications` | Get user notifications (paginated) |
+| `GET` | `/api/user/notifications/unread-count` | Get count of unread notifications |
+| `POST` | `/api/user/notifications` | Mark all notifications as read |
+| `PATCH` | `/api/user/notifications/{id}` | Mark notification as read |
+| `DELETE` | `/api/user/notifications/{id}` | Delete notification |
+
+**Query Parameters for `GET /api/user/notifications`:**
+- `?unreadOnly=true` - Only unread notifications
+- `?limit={n}` - Number of results (default: 20)
+- `?offset={n}` - Pagination offset (default: 0)
+
+---
+
 ### OPML
 
 | Method | Endpoint | Description |

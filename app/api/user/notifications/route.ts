@@ -1,10 +1,11 @@
 import { createHandler } from "@/lib/api-handler";
 import {
   getUserNotifications,
-  getUnreadNotificationCount,
   markAllNotificationsAsRead,
 } from "@/lib/services/notification-service";
 import { z } from "zod";
+
+export const dynamic = "force-dynamic";
 
 const querySchema = z.object({
   unreadOnly: z.string().optional(),
