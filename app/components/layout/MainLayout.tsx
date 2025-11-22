@@ -105,8 +105,8 @@ export function MainLayout({
     updatePreference.mutate({ sidebarCollapsed: !isSidebarCollapsed });
   };
 
-  // Calculate actual width based on collapsed state (round to avoid sub-pixel issues)
-  const actualSidebarWidth = isSidebarCollapsed ? 5 : Math.round(currentSidebarWidth);
+  // Calculate actual width (round to avoid sub-pixel issues)
+  const actualSidebarWidth = Math.round(currentSidebarWidth);
 
   return (
     <div ref={containerRef} className="flex h-screen overflow-hidden bg-muted">
@@ -122,11 +122,11 @@ export function MainLayout({
       <aside
         style={{ 
           // Only apply percentage width on desktop
-          ...(!isMobile ? { width: `${actualSidebarWidth}%` } : {}),
+          ...(!isMobile ? { width: isSidebarCollapsed ? "80px" : `${actualSidebarWidth}%` } : {}),
         }}
         className={`
           flex-shrink-0 overflow-hidden border-r border-border bg-background
-          fixed inset-y-0 left-0 z-[70] w-80
+          fixed inset-y-0 left-0 z-[70] ${isMobile ? "w-80" : "w-80 md:w-auto"}
           md:relative md:translate-x-0 md:z-auto
           transform transition-transform duration-300 ease-in-out
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
@@ -178,7 +178,7 @@ export function MainLayout({
         {!isSidebarCollapsed && (
           <div
             onMouseDown={handleResizeStart}
-            className="hidden md:block absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 transition-colors group z-10"
+            className="hidden md:block absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 transition-colors group z-50"
             style={{
               backgroundColor: isDragging ? "rgb(59, 130, 246)" : "transparent"
             }}
