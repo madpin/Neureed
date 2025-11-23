@@ -18,6 +18,7 @@ import {
 import { getUserPreferencesWithDecryptedKey } from "./user-preferences-service";
 import type { user_preferences } from "@/generated/prisma/client";
 import { trackSummarizationCost } from "./summarization-cost-tracker";
+import { getSystemLLMCredentials } from "./admin-settings-service";
 
 /**
  * Get LLM provider instance
@@ -48,18 +49,44 @@ async function resolveLLMConfig(userId?: string): Promise<LLMProviderConfig> {
     };
   }
 
-  const apiKey = preferences?.llmApiKey || env.OPENAI_API_KEY;
+  // Try user preferences first, then system credentials, then environment
+  let apiKey = preferences?.llmApiKey;
+  let baseUrl = preferences?.llmBaseUrl;
+  let model = preferences?.llmSummaryModel;
+
+  // If no user credentials, try to use system credentials
+  if (!apiKey) {
+    try {
+      const systemCreds = await getSystemLLMCredentials(false);
+      if (systemCreds.provider === "openai" || !systemCreds.provider) {
+        apiKey = systemCreds.apiKey || undefined;
+        baseUrl = baseUrl || systemCreds.baseUrl || undefined;
+        model = model || systemCreds.model || undefined;
+        
+        logger.info("Using system LLM credentials for summarization", {
+          hasSystemKey: !!systemCreds.apiKey,
+          userId,
+        });
+      }
+    } catch (error) {
+      logger.warn("Failed to get system LLM credentials", { error, userId });
+    }
+  }
+
+  // Fall back to environment variables
+  apiKey = apiKey || env.OPENAI_API_KEY;
+  
   if (!apiKey) {
     throw new Error(
-      "LLM service not configured. Please set up your OpenAI API key in preferences or environment variables."
+      "LLM service not configured. Please set up your OpenAI API key in preferences, admin settings, or environment variables."
     );
   }
 
   return {
     provider: "openai",
-    model: preferences?.llmSummaryModel ?? env.LLM_SUMMARY_MODEL,
+    model: model ?? env.LLM_SUMMARY_MODEL,
     apiKey,
-    baseUrl: preferences?.llmBaseUrl ?? env.OPENAI_BASE_URL ?? "https://api.openai.com/v1",
+    baseUrl: baseUrl ?? env.OPENAI_BASE_URL ?? "https://api.openai.com/v1",
   };
 }
 
