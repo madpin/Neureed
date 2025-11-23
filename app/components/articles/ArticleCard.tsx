@@ -33,6 +33,7 @@ interface ArticleCardProps {
   variant?: "compact" | "expanded";
   onReadStatusChange?: (articleId?: string, isRead?: boolean) => void;
   onArticleClick?: (articleId: string) => void;
+  isSelected?: boolean;
   showRelevanceScore?: boolean;
   relevanceScore?: ArticleScore;
   similarity?: number;
@@ -168,6 +169,7 @@ export const ArticleCard = React.memo(({
   variant,
   onReadStatusChange,
   onArticleClick,
+  isSelected = false,
   showRelevanceScore = false,
   relevanceScore,
   similarity,
@@ -394,9 +396,11 @@ export const ArticleCard = React.memo(({
   const imageInOrder = preferences.sectionOrder.includes("image");
 
   // Get border styling classes
-  const borderWidthClass = getBorderWidthClasses(preferences.borderWidth);
+  const borderWidthClass = isSelected ? "border-4" : getBorderWidthClasses(preferences.borderWidth);
   const borderRadiusClass = getBorderRadiusClasses(preferences.borderRadius);
-  const borderContrastClass = getBorderContrastClasses(preferences.borderContrast, isRead);
+  const borderContrastClass = isSelected
+    ? "border-primary ring-4 ring-primary/30 shadow-lg"
+    : getBorderContrastClasses(preferences.borderContrast, isRead);
 
   return (
     <article className={`group ${borderRadiusClass} ${borderWidthClass} ${borderContrastClass} ${densityClasses.padding} transition-all relative ${
@@ -449,6 +453,7 @@ export const ArticleCard = React.memo(({
   return (
     prevProps.article.id === nextProps.article.id &&
     prevProps.article.isRead === nextProps.article.isRead &&
+    prevProps.isSelected === nextProps.isSelected &&
     JSON.stringify(prevProps.displayPreferences) === JSON.stringify(nextProps.displayPreferences) &&
     prevProps.relevanceScore?.score === nextProps.relevanceScore?.score &&
     prevProps.similarity === nextProps.similarity &&

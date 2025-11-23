@@ -43,7 +43,7 @@ export default function TopicDetailPage({
 
   return (
     <ReadingPanelLayout>
-      {({ onArticleSelect }: { onArticleSelect?: (articleId: string) => void }) => (
+      {({ onArticleSelect, selectedArticleId }: { onArticleSelect?: (articleId: string) => void; selectedArticleId?: string | null }) => (
         <div className="min-h-screen bg-background text-foreground">
           <div className="mx-auto max-w-7xl px-4 py-8">
             {/* Header */}
@@ -91,6 +91,7 @@ export default function TopicDetailPage({
               articles={articles}
               isLoading={isLoading}
               onArticleSelect={onArticleSelect}
+              selectedArticleId={selectedArticleId}
             />
           </div>
         </div>

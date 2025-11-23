@@ -304,7 +304,7 @@ export default function Home() {
       )}
     >
       <ReadingPanelLayout onArticleReadStatusChange={handleArticleReadStatusChange}>
-        {({ onArticleSelect }: { onArticleSelect?: (articleId: string) => void }) => (
+        {({ onArticleSelect, selectedArticleId }: { onArticleSelect?: (articleId: string) => void; selectedArticleId?: string | null }) => (
           <div className="space-y-6">
             {/* Search Form - Show when search param is present */}
             {searchQuery && (
@@ -491,6 +491,7 @@ export default function Home() {
                 articles={articles}
                 isLoading={isLoadingArticles}
                 onArticleSelect={onArticleSelect}
+                selectedArticleId={selectedArticleId}
                 onReadStatusChange={handleArticleReadStatusChange}
                 hasMore={hasNextPage}
                 isLoadingMore={isFetchingNextPage}

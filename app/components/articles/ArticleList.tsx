@@ -13,6 +13,7 @@ interface ArticleListProps {
   isLoading?: boolean;
   variant?: "compact" | "expanded";
   onArticleSelect?: (articleId: string) => void;
+  selectedArticleId?: string | null;
   onReadStatusChange?: () => void;
   // Infinite scroll props
   hasMore?: boolean;
@@ -27,6 +28,7 @@ export function ArticleList({
   isLoading = false,
   variant = "compact",
   onArticleSelect,
+  selectedArticleId,
   onReadStatusChange,
   hasMore = false,
   isLoadingMore = false,
@@ -129,12 +131,13 @@ export function ArticleList({
         const similarity = hasSimilarity ? (article as any).similarity : undefined;
 
         return (
-          <ArticleCard 
+          <ArticleCard
             key={article.id}
             article={article}
             displayPreferences={displayPreferences}
             variant={variant}
             onArticleClick={onArticleSelect}
+            isSelected={selectedArticleId === article.id}
             onReadStatusChange={onReadStatusChange}
             showRelevanceScore={!!score}
             relevanceScore={score}

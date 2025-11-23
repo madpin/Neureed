@@ -10,7 +10,7 @@ import { useUserPreferences, useUpdatePreference } from "@/hooks/queries/use-use
 type Position = "right" | "left" | "top" | "bottom";
 
 interface ReadingPanelLayoutProps {
-  children: ReactNode | ((props: { onArticleSelect?: (articleId: string) => void }) => ReactNode);
+  children: ReactNode | ((props: { onArticleSelect?: (articleId: string) => void; selectedArticleId?: string | null }) => ReactNode);
   onArticleReadStatusChange?: () => void;
 }
 
@@ -94,8 +94,9 @@ export function ReadingPanelLayout({ children, onArticleReadStatusChange }: Read
   const renderChildren = () => {
     if (typeof children === "function") {
       // Only pass the callback if panel is active
-      return children({ 
-        onArticleSelect: isPanelActive ? handleArticleSelect : undefined 
+      return children({
+        onArticleSelect: isPanelActive ? handleArticleSelect : undefined,
+        selectedArticleId: isPanelActive ? selectedArticleId : null
       });
     }
     return children;
