@@ -963,9 +963,9 @@ function UsersTab() {
                       <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => setResetConfirmUserId(user.id)}
-                          disabled={user.email === "madpin@gmail.com" || resetUserFeeds.isPending}
+                          disabled={resetUserFeeds.isPending}
                           className="rounded px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title={user.email === "madpin@gmail.com" ? "Protected account" : "Reset user feeds to defaults"}
+                          title="Reset user feeds to defaults"
                         >
                           Reset
                         </button>

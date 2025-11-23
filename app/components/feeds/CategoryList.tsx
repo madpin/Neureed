@@ -223,16 +223,16 @@ export function CategoryList({
         <img
           src={feed.imageUrl}
           alt={feed.name}
-          className="h-8 w-8 rounded-full object-cover"
+          className="h-6 w-6 rounded-full object-cover"
         />
       );
     }
 
     // Fallback RSS icon
     return (
-      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted">
         <svg
-          className="h-4 w-4"
+          className="h-3 w-3"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -258,7 +258,7 @@ export function CategoryList({
           <Tooltip content={feed.name}>
             <button
               onClick={() => handleSelectFeed(feed.id)}
-              className={`flex h-12 w-12 items-center justify-center rounded-lg transition-colors ${
+              className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
                 isSelected ? "bg-accent/10 text-primary" : "hover:bg-muted"
               }`}
               title={feed.name}
@@ -276,20 +276,20 @@ export function CategoryList({
     return (
       <div key={feed.id} className="relative group">
         <div
-          className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 transition-colors ${
+          className={`flex w-full items-center gap-2 rounded-lg px-3 py-1.5 transition-colors ${
             isSelected ? "bg-accent/10 text-primary" : "hover:bg-muted"
           } ${isDraggingFeed ? "opacity-50" : ""}`}
           draggable={true}
-          onDragStart={(e) => handleFeedDragStart(e, feed.id, (feed as any)._subscriptionId)} 
+          onDragStart={(e) => handleFeedDragStart(e, feed.id, (feed as any)._subscriptionId)}
           onDragEnd={handleFeedDragEnd}
         >
           <button
             onClick={() => handleSelectFeed(feed.id)}
-            className="flex flex-1 items-center gap-3 text-left min-w-0"
+            className="flex flex-1 items-center gap-2 text-left min-w-0"
           >
             {renderFeedIcon(feed)}
             <div className="flex-1 min-w-0">
-              <div className="font-medium truncate">{feed.name}</div>
+              <div className="text-sm font-normal truncate">{feed.name}</div>
               {(feed.unreadCount !== undefined && feed.unreadCount > 0) && (
                 <div className="text-xs text-secondary">
                   {feed.unreadCount} unread
@@ -446,15 +446,15 @@ export function CategoryList({
           <Tooltip content={`${category.name} (${category.feeds?.length || 0})`}>
             <button
               onClick={() => handleCategoryClick(category.id)}
-              className={`flex h-12 w-12 items-center justify-center rounded-lg hover:bg-muted transition-colors ${
+              className={`flex h-10 w-10 items-center justify-center rounded-lg hover:bg-muted transition-colors ${
                 isSelected ? "bg-accent/10 text-primary" : ""
               }`}
               title={category.name}
             >
               {(category as any).icon ? (
-                <span className="text-2xl">{(category as any).icon}</span>
+                <span className="text-lg">{(category as any).icon}</span>
               ) : (
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                 </svg>
               )}
@@ -476,8 +476,8 @@ export function CategoryList({
 
     return (
       <div key={category.id} className="mb-2">
-        <div 
-          className={`flex items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
+        <div
+          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg transition-colors ${
             isSelected ? "bg-accent/10 text-primary" : "hover:bg-muted"
           } ${isDragging ? "opacity-50" : ""} ${isDragOver || (draggedFeedId && !isDragging) ? "border-2 border-blue-500" : ""}`}
           draggable={true}
@@ -502,11 +502,11 @@ export function CategoryList({
             }}
             onDragStart={(e) => e.stopPropagation()}
             draggable={false}
-            className="p-1 hover:bg-muted rounded flex-shrink-0"
+            className="p-0.5 hover:bg-muted rounded flex-shrink-0"
             title={isExpanded ? "Collapse" : "Expand"}
           >
             <svg
-              className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-90" : ""}`}
+              className={`h-3 w-3 transition-transform ${isExpanded ? "rotate-90" : ""}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -520,12 +520,12 @@ export function CategoryList({
             onClick={() => handleCategoryClick(category.id)}
             onDragStart={(e) => e.stopPropagation()}
             draggable={false}
-            className="flex flex-1 items-center gap-2 text-left text-sm font-semibold"
+            className="flex flex-1 items-center gap-2 text-left text-sm font-normal"
           >
             {(category as any).icon ? (
-              <span className="text-lg">{(category as any).icon}</span>
+              <span className="text-base">{(category as any).icon}</span>
             ) : (
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
               </svg>
             )}
@@ -651,17 +651,17 @@ export function CategoryList({
       {!isCollapsed ? (
         <button
           onClick={() => handleSelectFeed(null)}
-          className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors ${
+          className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-left transition-colors ${
             !selectedFeedId && !selectedCategoryId ? "bg-accent/10 text-primary" : "hover:bg-muted"
           }`}
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted">
+            <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
             </svg>
           </div>
           <div className="flex-1">
-            <div className="font-medium">All Articles</div>
+            <div className="text-sm font-normal">All Articles</div>
           </div>
         </button>
       ) : (
@@ -669,13 +669,13 @@ export function CategoryList({
           <Tooltip content="All Articles">
             <button
               onClick={() => handleSelectFeed(null)}
-              className={`flex h-12 w-12 items-center justify-center rounded-lg transition-colors ${
+              className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
                 !selectedFeedId && !selectedCategoryId ? "bg-accent/10 text-primary" : "hover:bg-muted"
               }`}
               title="All Articles"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted">
+                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                 </svg>
               </div>

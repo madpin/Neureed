@@ -60,15 +60,15 @@ export function FeedList({
       {/* All Articles */}
       <button
         onClick={() => handleSelectFeed(null)}
-        className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors ${
+        className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-left transition-colors ${
           !selectedFeedId
             ? "bg-accent/10 text-primary"
             : "hover:bg-muted"
         }`}
       >
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted">
           <svg
-            className="h-4 w-4"
+            className="h-3 w-3"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -82,7 +82,7 @@ export function FeedList({
           </svg>
         </div>
         <div className="flex-1">
-          <div className="font-medium">All Articles</div>
+          <div className="text-sm font-normal">All Articles</div>
         </div>
       </button>
 
@@ -99,7 +99,7 @@ export function FeedList({
           feeds.map((feed) => (
             <div key={feed.id} className="relative">
               <div
-                className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 transition-colors ${
+                className={`flex w-full items-center gap-2 rounded-lg px-3 py-1.5 transition-colors ${
                   selectedFeedId === feed.id
                     ? "bg-accent/10 text-primary"
                     : "hover:bg-muted"
@@ -107,18 +107,18 @@ export function FeedList({
               >
                 <button
                   onClick={() => handleSelectFeed(feed.id)}
-                  className="flex flex-1 items-center gap-3 text-left min-w-0"
+                  className="flex flex-1 items-center gap-2 text-left min-w-0"
                 >
                   {feed.imageUrl ? (
                     <img
                       src={feed.imageUrl}
                       alt={feed.name}
-                      className="h-8 w-8 rounded-full object-cover"
+                      className="h-6 w-6 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted">
                       <svg
-                        className="h-4 w-4"
+                        className="h-3 w-3"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -133,7 +133,7 @@ export function FeedList({
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{feed.name}</div>
+                    <div className="text-sm font-normal truncate">{feed.name}</div>
                     {feed.articleCount !== undefined && (
                       <div className="text-xs text-secondary">
                         {feed.articleCount} articles
