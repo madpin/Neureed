@@ -1,0 +1,10 @@
+# Disable Nixpacks auto-detection (alternative build system)
+# This prevents auto-detection of build systems
+{
+  "phases": {
+    "setup": {
+      "skip": true
+    }
+  }
+}
+

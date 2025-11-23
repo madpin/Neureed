@@ -1,0 +1,4 @@
+# Disable Railpack auto-detection
+# This file prevents Railpack from automatically detecting this as a Node.js project
+disabled: true
+

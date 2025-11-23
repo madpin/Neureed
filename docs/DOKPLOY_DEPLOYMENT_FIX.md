@@ -77,28 +77,66 @@ The main differences from your original `Dockerfile`:
 ### 1. Commit and Push Changes
 
 ```bash
-git add dokploy.json Dockerfile.dokploy .dockerignore
-git commit -m "fix: optimize Dockerfile for Dokploy deployment with memory constraints"
+git add dokploy.json Dockerfile.dokploy .dockerignore .dokploy .railpackignore .nixpacks.json
+git commit -m "fix: force Dockerfile build and disable Railpack auto-detection"
 git push origin dev
 ```
 
-### 2. Redeploy in Dokploy
+### 2. **CRITICAL**: Configure Build Type in Dokploy UI
 
-After pushing:
-1. Go to your Dokploy dashboard
-2. Trigger a new deployment
-3. The build should now use `Dockerfile.dokploy` instead of Railpack
+Dokploy is **ignoring** the `dokploy.json` file and auto-detecting Railpack. You MUST manually configure it in the UI:
 
-### 3. If It Still Fails
+1. Go to your Dokploy dashboard: https://dokploy.madpin.dev
+2. Click on your NeuReed application
+3. Go to **Settings** or **Build Configuration**
+4. Look for **Build Type** or **Source Type** dropdown
+5. Select **"Dockerfile"** (NOT "Railpack" or "Auto")
+6. In the Dockerfile path field, enter: `Dockerfile.dokploy`
+7. **Save** the configuration
+8. Trigger a new deployment
 
-If you still see Railpack being used:
+### 3. Verify Dockerfile Build
 
-**Option A: Configure in Dokploy UI**
-1. Go to your service settings in Dokploy
-2. Look for "Build Type" or "Build Configuration"
-3. Manually select "Dockerfile" and specify `Dockerfile.dokploy`
+After configuring, watch the build logs. You should see:
+- ✅ "Building with Dockerfile" (NOT "Building with Railpack")
+- ✅ Multi-stage build starting
+- ✅ No Railpack detection messages
 
-**Option B: Use Original Dockerfile**
+If you still see "Preparing Railpack build plan...", the configuration didn't save - repeat step 2.
+
+### 4. Alternative: Use Pre-built Images (RECOMMENDED)
+
+If Dockerfile builds still fail or take too long, use the GitHub Actions workflow instead:
+
+**This is the BEST solution for Dokploy** - it's what the DOKPLOY_SETUP_GUIDE.md recommends:
+
+1. Update `dokploy.json`:
+   ```json
+   {
+     "buildType": "docker",
+     "dockerImage": "ghcr.io/madpin/neureed:latest"
+   }
+   ```
+
+2. In Dokploy UI, change Source Type to **"Docker"**:
+   - Source Type: `Docker`
+   - Docker Image: `ghcr.io/madpin/neureed:latest`
+   - Pull Policy: `Always`
+
+3. GitHub Actions will build the image and push to GHCR
+4. Dokploy only pulls and runs the pre-built image (fast and reliable!)
+
+**Benefits:**
+- ✅ Builds happen on GitHub's infrastructure (no memory issues)
+- ✅ Much faster deployments (just pull, don't build)
+- ✅ Multi-architecture support (AMD64 + ARM64)
+- ✅ Zero downtime with health checks
+
+See [DOKPLOY_SETUP_GUIDE.md](./DOKPLOY_SETUP_GUIDE.md) for complete setup.
+
+### 5. If You Must Build on Dokploy
+
+**Option A: Retry with Forced Configuration**
 If Dokploy respects the Dockerfile setting but still has issues, you can update `dokploy.json` to use the original:
 ```json
 {
@@ -144,7 +182,19 @@ If Dokploy insists on using Railpack, you can try:
 
 - ✅ `dokploy.json` - Updated to use Dockerfile.dokploy
 - ✅ `Dockerfile.dokploy` - New optimized Dockerfile for Dokploy
-- ✅ `.dockerignore` - New file to reduce build context size
+- ✅ `.dockerignore` - Reduces build context size
+- ✅ `.dokploy` - Forces Dockerfile build type
+- ✅ `.railpackignore` - Disables Railpack auto-detection
+- ✅ `.nixpacks.json` - Disables Nixpacks auto-detection
 
 All changes are backward compatible - your original `Dockerfile` remains unchanged for other deployment scenarios.
+
+## Why Railpack Keeps Running
+
+Dokploy uses **auto-detection** by default:
+1. Sees `package.json` + `.nvmrc` → assumes Node.js project
+2. Uses Railpack (their Node.js builder) automatically
+3. **Ignores** `dokploy.json` unless you configure it in the UI
+
+The files we created (`.railpackignore`, `.dokploy`, `.nixpacks.json`) attempt to disable this, but **the UI configuration is the most reliable way** to force Dockerfile builds.
 
