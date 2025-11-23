@@ -1,8 +1,9 @@
 [phases.setup]
-# nodejs_20 provides Node.js runtime
+# nodejs_22 provides Node.js 22.x runtime (LTS)
+# Required: Prisma needs Node.js 20.19+, 22.12+, or 24.0+
 # openssl for SSL/TLS support
 # Note: onnxruntime removed - using WASM backend only for portability
-nixPkgs = ["nodejs_20", "openssl"]
+nixPkgs = ["nodejs_22", "openssl"]
 cmds = [
   "echo '🔧 Setting up for WASM-only transformers backend...'",
   "mkdir -p /app/.cache/transformers",
