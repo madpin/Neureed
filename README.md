@@ -105,21 +105,21 @@ npm run dev
 <table>
   <tr>
     <td width="50%">
-      <img src="screenshots/07-main-article-reading-panel.jpeg" alt="Article Reading Panel"/>
+      <img src="docs/screenshots/20251123/07-main-article-reading-panel.jpeg" alt="Article Reading Panel"/>
       <p align="center"><em>Split-pane reading interface</em></p>
     </td>
     <td width="50%">
-      <img src="screenshots/19-main-article-list-view.jpeg" alt="Article List View"/>
+      <img src="docs/screenshots/20251123/19-main-article-list-view.jpeg" alt="Article List View"/>
       <p align="center"><em>Main article list with feed filtering</em></p>
     </td>
   </tr>
   <tr>
     <td width="50%">
-      <img src="screenshots/18-article-fullpage-view.jpeg" alt="Full Page Article"/>
+      <img src="docs/screenshots/20251123/18-article-fullpage-view.jpeg" alt="Full Page Article"/>
       <p align="center"><em>Full-page article reading experience</em></p>
     </td>
     <td width="50%">
-      <img src="screenshots/20-main-collapsed-sidebar.jpeg" alt="Collapsed Sidebar"/>
+      <img src="docs/screenshots/20251123/20-main-collapsed-sidebar.jpeg" alt="Collapsed Sidebar"/>
       <p align="center"><em>Compact sidebar for more reading space</em></p>
     </td>
   </tr>
@@ -130,31 +130,31 @@ npm run dev
 <table>
   <tr>
     <td width="50%">
-      <img src="screenshots/01-admin-dashboard-overview.jpeg" alt="Admin Dashboard Overview"/>
+      <img src="docs/screenshots/20251123/01-admin-dashboard-overview.jpeg" alt="Admin Dashboard Overview"/>
       <p align="center"><em>System statistics and health monitoring</em></p>
     </td>
     <td width="50%">
-      <img src="screenshots/02-admin-embeddings-search.jpeg" alt="Embeddings Management"/>
+      <img src="docs/screenshots/20251123/02-admin-embeddings-search.jpeg" alt="Embeddings Management"/>
       <p align="center"><em>Vector embeddings coverage and status</em></p>
     </td>
   </tr>
   <tr>
     <td width="50%">
-      <img src="screenshots/03-admin-users-management.jpeg" alt="User Management"/>
+      <img src="docs/screenshots/20251123/03-admin-users-management.jpeg" alt="User Management"/>
       <p align="center"><em>User roles and permissions</em></p>
     </td>
     <td width="50%">
-      <img src="screenshots/04-admin-cron-jobs-logs.jpeg" alt="Cron Jobs"/>
+      <img src="docs/screenshots/20251123/04-admin-cron-jobs-logs.jpeg" alt="Cron Jobs"/>
       <p align="center"><em>Background job execution and logs</em></p>
     </td>
   </tr>
   <tr>
     <td width="50%">
-      <img src="screenshots/05-admin-storage-database.jpeg" alt="Storage Management"/>
+      <img src="docs/screenshots/20251123/05-admin-storage-database.jpeg" alt="Storage Management"/>
       <p align="center"><em>Database and Redis storage metrics</em></p>
     </td>
     <td width="50%">
-      <img src="screenshots/06-admin-configuration-defaults.jpeg" alt="System Configuration"/>
+      <img src="docs/screenshots/20251123/06-admin-configuration-defaults.jpeg" alt="System Configuration"/>
       <p align="center"><em>Default preferences for new users</em></p>
     </td>
   </tr>
@@ -165,41 +165,41 @@ npm run dev
 <table>
   <tr>
     <td width="50%">
-      <img src="screenshots/10-user-menu-preferences.jpeg" alt="User Menu"/>
+      <img src="docs/screenshots/20251123/10-user-menu-preferences.jpeg" alt="User Menu"/>
       <p align="center"><em>Quick access to preferences and settings</em></p>
     </td>
     <td width="50%">
-      <img src="screenshots/11-preferences-profile.jpeg" alt="Profile Settings"/>
+      <img src="docs/screenshots/20251123/11-preferences-profile.jpeg" alt="Profile Settings"/>
       <p align="center"><em>User profile and authentication info</em></p>
     </td>
   </tr>
   <tr>
     <td width="50%">
-      <img src="screenshots/12-preferences-appearance-themes.jpeg" alt="Theme Selection"/>
+      <img src="docs/screenshots/20251123/12-preferences-appearance-themes.jpeg" alt="Theme Selection"/>
       <p align="center"><em>Multiple theme options (light, dark, and more)</em></p>
     </td>
     <td width="50%">
-      <img src="screenshots/13-preferences-article-display.jpeg" alt="Article Display Settings"/>
+      <img src="docs/screenshots/20251123/13-preferences-article-display.jpeg" alt="Article Display Settings"/>
       <p align="center"><em>Customize article density and visibility</em></p>
     </td>
   </tr>
   <tr>
     <td width="50%">
-      <img src="screenshots/09-preferences-article-display-borders.jpeg" alt="Display Customization"/>
+      <img src="docs/screenshots/20251123/09-preferences-article-display-borders.jpeg" alt="Display Customization"/>
       <p align="center"><em>Fine-tune borders and spacing</em></p>
     </td>
     <td width="50%">
-      <img src="screenshots/14-preferences-reading-panel.jpeg" alt="Reading Panel Config"/>
+      <img src="docs/screenshots/20251123/14-preferences-reading-panel.jpeg" alt="Reading Panel Config"/>
       <p align="center"><em>Configure split-pane reading experience</em></p>
     </td>
   </tr>
   <tr>
     <td width="50%">
-      <img src="screenshots/15-preferences-learning-system.jpeg" alt="Learning System"/>
+      <img src="docs/screenshots/20251123/15-preferences-learning-system.jpeg" alt="Learning System"/>
       <p align="center"><em>AI learning preferences and pattern detection</em></p>
     </td>
     <td width="50%">
-      <img src="screenshots/16-preferences-llm-settings.jpeg" alt="User LLM Settings"/>
+      <img src="docs/screenshots/20251123/16-preferences-llm-settings.jpeg" alt="User LLM Settings"/>
       <p align="center"><em>Personal LLM configuration and API keys</em></p>
     </td>
   </tr>
@@ -210,11 +210,11 @@ npm run dev
 <table>
   <tr>
     <td width="50%">
-      <img src="screenshots/08-feed-management-settings.jpeg" alt="Feed Management"/>
+      <img src="docs/screenshots/20251123/08-feed-management-settings.jpeg" alt="Feed Management"/>
       <p align="center"><em>Advanced feed settings and organization</em></p>
     </td>
     <td width="50%">
-      <img src="screenshots/17-admin-llm-configuration.jpeg" alt="Admin LLM Config"/>
+      <img src="docs/screenshots/20251123/17-admin-llm-configuration.jpeg" alt="Admin LLM Config"/>
       <p align="center"><em>System-wide LLM provider configuration</em></p>
     </td>
   </tr>
