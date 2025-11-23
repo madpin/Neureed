@@ -31,7 +31,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # Try npm ci first (faster), fallback to npm install if it fails
           
           if npm install --no-audit --no-fund; then
             echo "✅ Dependencies installed with npm install"
