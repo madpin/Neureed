@@ -45,7 +45,7 @@ interface DatabaseStats {
   }>;
 }
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     // Get database size
     const dbSizeResult = await prisma.$queryRaw<Array<{ size: string }>>`

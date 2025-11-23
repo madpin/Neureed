@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, createContext, useContext } from "react";
+import { useEffect, useState, useCallback, createContext, useContext, startTransition } from "react";
 import { useSession } from "next-auth/react";
 import { Toaster } from "sonner";
 import { useUserPreferences } from "@/hooks/queries/use-user-preferences";
@@ -88,31 +88,35 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const savedTheme = localStorage.getItem('neureed-theme');
     const savedFontSize = localStorage.getItem('neureed-fontSize');
     
-    if (savedTheme && ["light", "dark", "nord-light", "nord-dark", "solarized-light", "solarized-dark", "barbie-light", "barbie-dark", "purple-light", "purple-dark", "orange-light", "orange-dark", "rainbow-light", "rainbow-dark", "system"].includes(savedTheme)) {
-      setThemeState(savedTheme as ThemeMode);
-      applyTheme(savedTheme as ThemeMode);
-    }
-    
-    if (savedFontSize) {
-      setFontSizeState(savedFontSize);
-      applyFontSize(savedFontSize);
-    }
-    
-    setMounted(true);
+    startTransition(() => {
+      if (savedTheme && ["light", "dark", "nord-light", "nord-dark", "solarized-light", "solarized-dark", "barbie-light", "barbie-dark", "purple-light", "purple-dark", "orange-light", "orange-dark", "rainbow-light", "rainbow-dark", "system"].includes(savedTheme)) {
+        setThemeState(savedTheme as ThemeMode);
+        applyTheme(savedTheme as ThemeMode);
+      }
+      
+      if (savedFontSize) {
+        setFontSizeState(savedFontSize);
+        applyFontSize(savedFontSize);
+      }
+      
+      setMounted(true);
+    });
   }, [applyTheme, applyFontSize]);
 
   // Update with data from API when available
   useEffect(() => {
     if (preferences && session?.user) {
-      if (preferences.theme && ["light", "dark", "nord-light", "nord-dark", "solarized-light", "solarized-dark", "barbie-light", "barbie-dark", "purple-light", "purple-dark", "orange-light", "orange-dark", "rainbow-light", "rainbow-dark", "system"].includes(preferences.theme)) {
-        setTheme(preferences.theme as ThemeMode);
-      }
-      
-      if (preferences.fontSize) {
-        setFontSize(preferences.fontSize);
-      }
+      startTransition(() => {
+        if (preferences.theme && ["light", "dark", "nord-light", "nord-dark", "solarized-light", "solarized-dark", "barbie-light", "barbie-dark", "purple-light", "purple-dark", "orange-light", "orange-dark", "rainbow-light", "rainbow-dark", "system"].includes(preferences.theme)) {
+          setTheme(preferences.theme as ThemeMode);
+        }
+        
+        if (preferences.fontSize) {
+          setFontSize(preferences.fontSize);
+        }
+      });
     }
-  }, [preferences, session]); // Removed applyTheme/applyFontSize from deps to avoid re-running if they're stable, setTheme/setFontSize call them.
+  }, [preferences, session, setTheme, setFontSize]);
 
   // System theme listener
   useEffect(() => {

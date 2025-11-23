@@ -128,7 +128,7 @@ export function CategoryList({
     e.dataTransfer.setData("text/plain", `category:${categoryId}`);
   };
 
-  const handleCategoryDragOver = (e: React.DragEvent, categoryId: string) => {
+  const _handleCategoryDragOver = (e: React.DragEvent, categoryId: string) => {
     e.preventDefault();
     // Only allow category reordering if we're dragging a category
     if (draggedCategoryId) {

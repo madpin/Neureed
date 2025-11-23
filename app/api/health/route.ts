@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
  * Health check endpoint
  * GET /api/health
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     logger.info("Health check requested");
 

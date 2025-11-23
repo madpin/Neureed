@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { use } from "react";
 import { ArticleList } from "@/app/components/articles/ArticleList";

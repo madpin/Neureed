@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, startTransition } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import {
@@ -108,18 +108,12 @@ export function NotificationBell() {
         );
       }
     }
-    setPrevCount(count);
+    // Use startTransition to avoid synchronous setState warning
+    startTransition(() => {
+      setPrevCount(count);
+    });
   }, [count, prevCount, notifications]);
   
-  // Don't render if user is not authenticated
-  if (status === "loading") {
-    return null;
-  }
-  
-  if (status === "unauthenticated") {
-    return null;
-  }
-
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -133,6 +127,15 @@ export function NotificationBell() {
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [isOpen]);
+
+  // Don't render if user is not authenticated
+  if (status === "loading") {
+    return null;
+  }
+  
+  if (status === "unauthenticated") {
+    return null;
+  }
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {

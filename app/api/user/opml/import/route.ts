@@ -24,7 +24,7 @@ export const dynamic = "force-dynamic";
  * POST /api/user/opml/import
  * Import OPML file and create feeds/subscriptions
  */
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     // Check authentication
     const user = await getCurrentUser();

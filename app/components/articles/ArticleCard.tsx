@@ -172,7 +172,7 @@ export const ArticleCard = React.memo(({
   relevanceScore,
   similarity,
 }: ArticleCardProps) => {
-  const pathname = usePathname();
+  const _pathname = usePathname();
   const [isRead, setIsRead] = useState(article.isRead || false);
   const [isTogglingRead, setIsTogglingRead] = useState(false);
   

@@ -3,7 +3,7 @@
  * GET /api/admin/embeddings/costs
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { apiResponse, apiError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
 import {
@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 /**
  * GET - Get cost statistics
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get("action");

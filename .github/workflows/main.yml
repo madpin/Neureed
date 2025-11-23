@@ -110,12 +110,15 @@ jobs:
 
       - name: Deploy to Dokploy
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+          DOKPLOY_APP_ID: ${{ secrets.DOKPLOY_APP_ID }}
         run: |
-          if [ -n "${{ secrets.DOKPLOY_API_KEY }}" ]; then
+          if [ -n "$DOKPLOY_API_KEY" ]; then
             curl -X POST 'https://dokploy.madpin.dev/api/trpc/application.deploy' \
-              -H 'x-api-key: ${{ secrets.DOKPLOY_API_KEY }}' \
+              -H "x-api-key: $DOKPLOY_API_KEY" \
               -H 'Content-Type: application/json' \
-              -d '{"json":{"applicationId":"${{ secrets.DOKPLOY_APP_ID }}"}}'
+              -d "{\"json\":{\"applicationId\":\"$DOKPLOY_APP_ID\"}}"
           fi
 
       - name: Summary

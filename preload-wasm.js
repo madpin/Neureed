@@ -6,6 +6,8 @@
  * Usage: node --require ./preload-wasm.js server.js
  */
 
+/* eslint-disable @typescript-eslint/no-require-imports */
+
 const Module = require('module');
 const path = require('path');
 

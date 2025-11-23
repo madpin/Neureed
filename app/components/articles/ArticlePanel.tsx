@@ -9,7 +9,7 @@ import { RelatedArticles } from "./RelatedArticles";
 import { LoadingSpinner } from "@/app/components/layout/LoadingSpinner";
 import { processArticleContent, estimateReadingTime } from "@/lib/content-processor";
 import { formatLocalizedDateTime, toISOString as formatISOString } from "@/lib/date-utils";
-import { useArticle, useGenerateArticleSummary } from "@/hooks/queries/use-articles";
+import { useArticle } from "@/hooks/queries/use-articles";
 import { useUserPreferences, type UserPreferences } from "@/hooks/queries/use-user-preferences";
 
 interface ReadingPreferences {

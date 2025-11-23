@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState, useEffect, useCallback } from "react";
+import { ReactNode, useState, useEffect, useCallback, startTransition } from "react";
 import { useSession } from "next-auth/react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ResizableSplitPane } from "./ResizableSplitPane";
@@ -39,11 +39,13 @@ export function ReadingPanelLayout({ children, onArticleReadStatusChange }: Read
   // Sync with URL state
   useEffect(() => {
     const articleId = searchParams.get("article");
-    if (articleId && articleId !== selectedArticleId) {
-      setSelectedArticleId(articleId);
-    } else if (!articleId && selectedArticleId) {
-      setSelectedArticleId(null);
-    }
+    startTransition(() => {
+      if (articleId && articleId !== selectedArticleId) {
+        setSelectedArticleId(articleId);
+      } else if (!articleId && selectedArticleId) {
+        setSelectedArticleId(null);
+      }
+    });
   }, [searchParams, selectedArticleId]);
 
   // Update URL when article selection changes

@@ -35,7 +35,7 @@ export const GET = createHandler(
           nextRun: job.nextRun?.toISOString(),
           status: job.running ? "running" : (latestRun?.status === "FAILED" ? "error" : "idle"),
           lastError: latestRun?.errorMessage || undefined,
-          logs: latestRun?.logs ? (latestRun.logs as any[]).map((log: any) => ({
+          logs: latestRun?.logs ? (latestRun.logs as Array<{ level?: string; message?: string; timestamp?: string }>).map((log) => ({
             level: log.level || "info",
             message: log.message || "",
             timestamp: log.timestamp,

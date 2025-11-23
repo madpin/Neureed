@@ -15,14 +15,14 @@ export const dynamic = "force-dynamic";
  */
 export const GET = createHandler(
   async ({ query }) => {
-    const { page = 1, limit = 20, feedId, categoryId, sortBy, sortDirection } = query as any;
+    const { page = 1, limit = 20, feedId, categoryId, sortBy, sortDirection } = query as Record<string, string | number | undefined>;
 
     // Check if user is authenticated
     const user = await getCurrentUser();
     
     // Get sort preferences from user preferences if not provided in query
-    let finalSortBy: "publishedAt" | "relevance" | "title" | "feed" | "updatedAt" = (sortBy as any) || "publishedAt";
-    let finalSortDirection: "asc" | "desc" = (sortDirection as any) || "desc";
+    let finalSortBy: "publishedAt" | "relevance" | "title" | "feed" | "updatedAt" = (sortBy as "publishedAt" | "relevance" | "title" | "feed" | "updatedAt") || "publishedAt";
+    let finalSortDirection: "asc" | "desc" = (sortDirection as "asc" | "desc") || "desc";
     
     if (user?.id && !sortBy) {
       const userPrefs = await prisma.user_preferences.findUnique({
@@ -81,7 +81,14 @@ export const GET = createHandler(
         : { feedId: { in: subscribedFeedIds } };
 
       // Build orderBy clause based on sort option
-      let orderBy: any;
+      type OrderByClause = 
+        | { publishedAt: { sort: "desc" | "asc"; nulls: "last" } }
+        | { createdAt: "desc" | "asc" }
+        | { title: "desc" | "asc" }
+        | { updatedAt: "desc" | "asc" }
+        | { feeds: { title: "desc" | "asc" } };
+      
+      let orderBy: OrderByClause | OrderByClause[];
 
       if (finalSortBy === "relevance") {
         // For relevance sorting, we'll fetch scores and sort in memory

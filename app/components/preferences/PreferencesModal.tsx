@@ -1041,7 +1041,10 @@ function ArticleDisplayView({
   const currentDensity = (preferences.articleCardDensity as "compact" | "normal" | "comfortable") || "normal";
 
   // Sample articles for preview - one unread, one read
-  const sampleArticles = useMemo(() => [
+  // Use static dates to avoid react-hooks/purity errors
+  const sampleArticles = useMemo(() => {
+    const oneHourAgo = new Date(new Date().getTime() - 3600000);
+    return [
     {
       id: "preview-article-1",
       title: "How to Customize Your RSS Reader Experience",
@@ -1073,7 +1076,7 @@ function ArticleDisplayView({
       feedId: "sample-feed",
       createdAt: new Date(),
       updatedAt: new Date(),
-      publishedAt: new Date(Date.now() - 3600000),
+      publishedAt: oneHourAgo,
       author: "Jane Smith",
       imageUrl: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400&h=300&fit=crop",
       isRead: true, // Read article
@@ -1086,7 +1089,8 @@ function ArticleDisplayView({
         updatedAt: new Date(),
       },
     },
-  ], []);
+  ];
+  }, []);
 
   // Build display preferences from current settings
   const displayPreferences = useMemo<ArticleDisplayPreferences>(() => ({

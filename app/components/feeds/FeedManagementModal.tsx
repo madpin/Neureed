@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { CookieGuide } from "./CookieGuide";
 import { OpmlExportModal } from "./OpmlExportModal";
 import { OpmlImportModal } from "./OpmlImportModal";
 import { BulkFeedSettingsModal, type BulkSettings } from "./BulkFeedSettingsModal";
@@ -11,10 +10,8 @@ import {
   useCategories, 
   useCreateCategory, 
   useDeleteCategory, 
-  useUpdateCategory 
 } from "@/hooks/queries/use-categories";
 import {
-  useFeeds,
   useUserFeeds,
   useUpdateFeedSettings,
   useRefreshFeed,
@@ -24,8 +21,8 @@ import {
   useFeedSummarizationSettings,
   useUpdateFeedSummarizationSettings,
   useClearFeedSummarizationSettings,
-  type Feed,
-  type UserFeed,
+  type Feed as _Feed,
+  type UserFeed as _UserFeed,
   type SummarizationSettings
 } from "@/hooks/queries/use-feeds";
 import { useQueryClient } from "@tanstack/react-query";
@@ -1397,7 +1394,7 @@ function FeedSettingsView({
                 <div className="rounded-lg bg-primary/10 p-3 dark:bg-primary/20">
                   <p className="text-xs text-primary/80 dark:text-primary/90">
                     <strong>Note:</strong> Summaries are generated in the background after feed refresh.
-                    You'll receive a notification when complete. This feature may incur costs if using OpenAI.
+                    You&apos;ll receive a notification when complete. This feature may incur costs if using OpenAI.
                     Settings will be saved when you click the main &quot;Save Settings&quot; button below.
                   </p>
                 </div>

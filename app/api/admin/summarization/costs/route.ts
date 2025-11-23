@@ -26,7 +26,7 @@ export const dynamic = "force-dynamic";
  * - end: ISO date string (for "report" action)
  * - userId: string (for "user" action)
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get("action");

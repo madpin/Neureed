@@ -6,6 +6,7 @@ import {
   forwardRef,
   useEffect,
   ForwardedRef,
+  startTransition,
 } from "react";
 import {
   useArticleSummary,
@@ -98,14 +99,17 @@ function ArticleSummaryComponent(
     scrollToSummary,
   }));
 
-  // Auto-expand if requested
+  // Auto-expand if requested - moved to direct state initialization
   useEffect(() => {
-    if (autoExpand && displaySummary) {
-      setIsExpanded(true);
-      // Small delay to ensure rendering before scroll
-      setTimeout(scrollToSummary, 100);
+    if (autoExpand && displaySummary && !isExpanded) {
+      // Use transition to avoid synchronous setState in effect
+      startTransition(() => {
+        setIsExpanded(true);
+        // Small delay to ensure rendering before scroll
+        setTimeout(scrollToSummary, 100);
+      });
     }
-  }, [autoExpand, displaySummary]);
+  }, [autoExpand, displaySummary, scrollToSummary, isExpanded]);
 
   if (!hasRequestedSummary && !displaySummary && !isLoading) {
     return null;

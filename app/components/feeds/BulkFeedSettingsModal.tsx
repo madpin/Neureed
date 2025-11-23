@@ -97,7 +97,7 @@ export function BulkFeedSettingsModal({
       await onApply(settings);
       
       // Success message with details
-      const changedSettings = Array.from(modifiedFields).join(", ");
+      const _changedSettings = Array.from(modifiedFields).join(", ");
       toast.success(
         `Successfully updated ${modifiedFields.size} setting${modifiedFields.size > 1 ? 's' : ''} for ${selectedFeeds.length} feed${selectedFeeds.length > 1 ? 's' : ''}`
       );

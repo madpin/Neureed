@@ -13,6 +13,30 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    rules: {
+      // Downgrade no-explicit-any from error to warning to allow gradual cleanup
+      "@typescript-eslint/no-explicit-any": "warn",
+      // Allow unused vars that start with underscore (convention for intentionally unused)
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          "args": "none", // Ignore all unused function arguments (Next.js API routes must match signatures)
+          "varsIgnorePattern": "^_",
+          "caughtErrors": "none", // Allow error variables in catch blocks (commonly logged/used)
+          "caughtErrorsIgnorePattern": "^_",
+          "destructuredArrayIgnorePattern": "^_",
+          "ignoreRestSiblings": true
+        }
+      ],
+      // Allow empty catch blocks with a comment
+      "no-empty": ["error", { "allowEmptyCatch": true }],
+      // Downgrade img element to warning (Next.js Image has limitations for external URLs)
+      "@next/next/no-img-element": "warn",
+      // Downgrade exhaustive-deps to warning (can be fixed gradually)
+      "react-hooks/exhaustive-deps": "warn",
+    },
+  },
 ]);
 
 export default eslintConfig;

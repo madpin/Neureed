@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { toast } from "sonner";
 import { MainLayout } from "./components/layout/MainLayout";
 import { ReadingPanelLayout } from "./components/layout/ReadingPanelLayout";
 import { CategoryList } from "./components/feeds/CategoryList";
@@ -131,7 +130,7 @@ export default function Home() {
     router.push(`/?categoryId=${categoryId}`);
   };
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
+  const _handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Search query is controlled via local state in the input, but we need to push to URL
     // Wait, we need a local state for the input field separate from the URL param
@@ -320,7 +319,7 @@ export default function Home() {
                       <p className="font-medium text-primary mb-1">Semantic Search</p>
                       <p className="text-foreground/80">
                         This search uses AI to understand the meaning of your query, not just keywords. 
-                        Try searching for concepts, questions, or topics to find relevant articles even if they don't contain your exact words.
+                        Try searching for concepts, questions, or topics to find relevant articles even if they don&apos;t contain your exact words.
                       </p>
                     </div>
                   </div>
@@ -475,7 +474,7 @@ export default function Home() {
                           Limited Search Coverage
                         </p>
                         <p className="text-sm text-foreground/80 mt-1">
-                          {missingEmbeddingsCount} article{missingEmbeddingsCount !== 1 ? 's' : ''} {missingEmbeddingsCount !== 1 ? 'don\'t' : 'doesn\'t'} have embeddings yet and won't appear in semantic search results.
+                          {missingEmbeddingsCount} article{missingEmbeddingsCount !== 1 ? 's' : ''} {missingEmbeddingsCount !== 1 ? 'don&apos;t' : 'doesn&apos;t'} have embeddings yet and won&apos;t appear in semantic search results.
                           Generating embeddings manually can improve your search experience.
                         </p>
                         <p className="text-xs text-foreground/60 mt-2">

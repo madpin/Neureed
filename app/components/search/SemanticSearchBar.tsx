@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useArticles } from "@/hooks/queries/use-articles";
@@ -77,13 +77,15 @@ export function SemanticSearchBar() {
     })) 
     : [];
 
-  // Effect to show results when data arrives
+  // Effect to show results when data arrives  
   useEffect(() => {
-    if (isQueryEnabled && searchResultData?.articles?.length) {
-      setShowResults(true);
-    } else if (!isQueryEnabled) {
-      setShowResults(false);
-    }
+    startTransition(() => {
+      if (isQueryEnabled && searchResultData?.articles?.length) {
+        setShowResults(true);
+      } else if (!isQueryEnabled) {
+        setShowResults(false);
+      }
+    });
   }, [searchResultData, isQueryEnabled]);
 
   // Close dropdown when clicking outside
