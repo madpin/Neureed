@@ -7,10 +7,10 @@ import { toast } from "sonner";
 import { formatLocalizedDate } from "@/lib/date-utils";
 import { Tooltip } from "@/app/components/admin/Tooltip";
 import { useIsAdmin } from "@/hooks/use-auth";
-import { 
-  useAdminMetrics, 
+import {
+  useAdminMetrics,
   useCronHistoryFull,
-  useEmbeddingConfig, 
+  useEmbeddingConfig,
   useEmbeddingStats,
   useAdminUsers,
   useCacheStats,
@@ -29,6 +29,8 @@ import {
   useUpdateLLMConfig,
   useTestLLMConfig,
   useUpdateUserRole,
+  useDeleteUser,
+  useResetUserFeeds,
   useSummarizationConfig,
   useUpdateSummarizationConfig,
   type EmbeddingConfig,
@@ -771,6 +773,8 @@ function UsersTab() {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<"name" | "email" | "createdAt">("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [deleteConfirmUserId, setDeleteConfirmUserId] = useState<string | null>(null);
+  const [resetConfirmUserId, setResetConfirmUserId] = useState<string | null>(null);
   const limit = 20;
 
   // Fetch users with search and pagination
@@ -786,6 +790,8 @@ function UsersTab() {
   );
 
   const updateUserRole = useUpdateUserRole();
+  const deleteUser = useDeleteUser();
+  const resetUserFeeds = useResetUserFeeds();
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     try {
@@ -794,6 +800,30 @@ function UsersTab() {
     } catch (error) {
       console.error("Failed to update user role:", error);
       const errorMessage = error instanceof Error ? error.message : "Failed to update user role";
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      const result = await deleteUser.mutateAsync(userId);
+      toast.success(result.message);
+      setDeleteConfirmUserId(null);
+    } catch (error) {
+      console.error("Failed to delete user:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete user";
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleResetUser = async (userId: string) => {
+    try {
+      const result = await resetUserFeeds.mutateAsync(userId);
+      toast.success(result.message);
+      setResetConfirmUserId(null);
+    } catch (error) {
+      console.error("Failed to reset user:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to reset user";
       toast.error(errorMessage);
     }
   };
@@ -886,6 +916,7 @@ function UsersTab() {
                   <th className="px-6 py-3 font-medium text-center">Articles Read</th>
                   <th className="px-6 py-3 font-medium text-center">Feedback</th>
                   <th className="px-6 py-3 font-medium text-center">Patterns</th>
+                  <th className="px-6 py-3 font-medium text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -928,11 +959,31 @@ function UsersTab() {
                     <td className="px-6 py-4 text-center">{user._count.readArticles}</td>
                     <td className="px-6 py-4 text-center">{user._count.articleFeedback}</td>
                     <td className="px-6 py-4 text-center">{user._count.userPatterns}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => setResetConfirmUserId(user.id)}
+                          disabled={user.email === "madpin@gmail.com" || resetUserFeeds.isPending}
+                          className="rounded px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title={user.email === "madpin@gmail.com" ? "Protected account" : "Reset user feeds to defaults"}
+                        >
+                          Reset
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirmUserId(user.id)}
+                          disabled={user.email === "madpin@gmail.com" || deleteUser.isPending}
+                          className="rounded px-3 py-1 text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title={user.email === "madpin@gmail.com" ? "Protected account" : "Delete user and all data"}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
                 {users.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-foreground/50">
+                    <td colSpan={8} className="px-6 py-8 text-center text-foreground/50">
                       {searchQuery ? "No users found matching your search" : "No users found"}
                     </td>
                   </tr>
@@ -1006,6 +1057,81 @@ function UsersTab() {
           <li><strong>Guest:</strong> Read-only access, can view feeds but cannot create/edit/delete them</li>
         </ul>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirmUserId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background border border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-bold text-foreground mb-3">Confirm User Deletion</h3>
+            <p className="text-foreground/70 mb-4">
+              Are you sure you want to delete this user? This will permanently delete:
+            </p>
+            <ul className="list-disc list-inside text-sm text-foreground/60 mb-4 space-y-1">
+              <li>User account and profile</li>
+              <li>All feed subscriptions</li>
+              <li>Reading history and feedback</li>
+              <li>User patterns and preferences</li>
+              <li>Notifications and categories</li>
+            </ul>
+            <p className="text-red-600 dark:text-red-400 text-sm font-medium mb-6">
+              This action cannot be undone!
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setDeleteConfirmUserId(null)}
+                disabled={deleteUser.isPending}
+                className="px-4 py-2 rounded-lg border border-border bg-background hover:bg-muted text-foreground disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteUser(deleteConfirmUserId)}
+                disabled={deleteUser.isPending}
+                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
+              >
+                {deleteUser.isPending ? "Deleting..." : "Delete User"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Confirmation Dialog */}
+      {resetConfirmUserId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background border border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-bold text-foreground mb-3">Confirm User Reset</h3>
+            <p className="text-foreground/70 mb-4">
+              Are you sure you want to reset this user? This will:
+            </p>
+            <ul className="list-disc list-inside text-sm text-foreground/60 mb-4 space-y-1">
+              <li>Delete all current feed subscriptions</li>
+              <li>Delete all custom categories</li>
+              <li>Re-subscribe user to default feeds</li>
+              <li>Create default categories</li>
+            </ul>
+            <p className="text-blue-600 dark:text-blue-400 text-sm font-medium mb-6">
+              Reading history, feedback, and preferences will be preserved.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setResetConfirmUserId(null)}
+                disabled={resetUserFeeds.isPending}
+                className="px-4 py-2 rounded-lg border border-border bg-background hover:bg-muted text-foreground disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleResetUser(resetConfirmUserId)}
+                disabled={resetUserFeeds.isPending}
+                className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+              >
+                {resetUserFeeds.isPending ? "Resetting..." : "Reset User"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

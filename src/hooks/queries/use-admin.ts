@@ -162,7 +162,7 @@ export interface AdminUser {
   id: string;
   name: string | null;
   email: string;
-  image: string | null;
+  image: string;
   role: "ADMIN" | "USER" | "GUEST";
   createdAt: string;
   _count: {
@@ -170,7 +170,6 @@ export interface AdminUser {
     readArticles: number;
     articleFeedback: number;
     userPatterns: number;
-    userThemes: number;
   };
 }
 
@@ -791,6 +790,27 @@ async function updateUserRole(userId: string, role: string): Promise<void> {
 }
 
 /**
+ * Delete user
+ */
+async function deleteUser(userId: string): Promise<{ message: string; deletedUserId: string }> {
+  return await apiDelete(`/api/admin/users/${userId}`);
+}
+
+/**
+ * Reset user feeds to defaults
+ */
+async function resetUserFeeds(userId: string): Promise<{
+  message: string;
+  stats: {
+    deletedSubscriptions: number;
+    deletedCategories: number;
+    newSubscriptions: number;
+  };
+}> {
+  return await apiPost(`/api/admin/users/${userId}/reset`);
+}
+
+/**
  * Hook to update user role
  */
 export function useUpdateUserRole() {
@@ -800,6 +820,36 @@ export function useUpdateUserRole() {
     mutationFn: ({ userId, role }: { userId: string; role: string }) => updateUserRole(userId, role),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.users() });
+    },
+  });
+}
+
+/**
+ * Hook to delete user
+ */
+export function useDeleteUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: string) => deleteUser(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.users() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.metrics() });
+    },
+  });
+}
+
+/**
+ * Hook to reset user feeds
+ */
+export function useResetUserFeeds() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: string) => resetUserFeeds(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.users() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.feeds.all });
     },
   });
 }

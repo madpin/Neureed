@@ -87,8 +87,19 @@ export const GET = createHandler(
       usersWithFeedback: allUsers.filter((u) => u._count.article_feedback > 0).length,
     };
 
+    // Transform snake_case to camelCase for consistency with TypeScript interface
+    const transformedUsers = users.map(user => ({
+      ...user,
+      _count: {
+        userFeeds: user._count.user_feeds,
+        readArticles: user._count.read_articles,
+        articleFeedback: user._count.article_feedback,
+        userPatterns: user._count.user_patterns,
+      },
+    }));
+
     return {
-      users,
+      users: transformedUsers,
       stats,
       pagination: {
         page,

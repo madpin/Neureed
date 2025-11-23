@@ -94,3 +94,27 @@ export async function getUserStats(userId: string) {
   };
 }
 
+/**
+ * Reset user feeds and categories
+ * Deletes all user subscriptions and categories, then re-subscribes to default feeds
+ */
+export async function resetUserFeeds(userId: string): Promise<{
+  deletedSubscriptions: number;
+  deletedCategories: number;
+}> {
+  // Delete all user feed subscriptions and categories
+  const [deletedSubscriptions, deletedCategories] = await Promise.all([
+    prisma.user_feeds.deleteMany({
+      where: { userId },
+    }),
+    prisma.user_categories.deleteMany({
+      where: { userId },
+    }),
+  ]);
+
+  return {
+    deletedSubscriptions: deletedSubscriptions.count,
+    deletedCategories: deletedCategories.count,
+  };
+}
+
