@@ -16,6 +16,10 @@ FROM base AS deps
 # Copy package files
 COPY package.json package-lock.json .npmrc ./
 
+# Copy Prisma schema before installing deps (needed for postinstall script)
+COPY prisma ./prisma
+COPY prisma.config.ts ./
+
 # Set npm configurations for better timeout handling
 ENV NPM_CONFIG_FETCH_TIMEOUT=900000 \
     NPM_CONFIG_FETCH_RETRIES=10 \

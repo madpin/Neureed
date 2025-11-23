@@ -11,7 +11,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "prisma generate",
+    "postinstall": "test -f prisma/schema.prisma && prisma generate || echo 'Skipping prisma generate (schema not found)'",
     "db:generate": "npm exec prisma generate",
     "db:push": "npm exec prisma db push",
     "db:migrate": "npm exec prisma migrate dev",

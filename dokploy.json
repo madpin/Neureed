@@ -1,9 +1,0 @@
-{
-  "buildType": "dockerfile",
-  "dockerfile": "Dockerfile.dokploy",
-  "buildPath": ".",
-  "dockerBuildArgs": {
-    "BUILDKIT_INLINE_CACHE": "1"
-  }
-}
-
