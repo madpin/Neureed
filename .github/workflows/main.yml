@@ -32,14 +32,6 @@ jobs:
       - name: Install dependencies
         run: |
           # Try npm ci first (faster), fallback to npm install if it fails
-          echo "📦 Attempting npm ci..."
-          if npm ci --no-audit --no-fund 2>&1 | tee npm-ci.log; then
-            echo "✅ Dependencies installed with npm ci"
-            exit 0
-          fi
-          
-          echo "⚠️ npm ci failed, trying npm install as fallback..."
-          npm cache clean --force
           
           if npm install --no-audit --no-fund; then
             echo "✅ Dependencies installed with npm install"
