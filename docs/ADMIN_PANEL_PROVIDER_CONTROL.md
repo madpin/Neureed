@@ -190,8 +190,8 @@ OpenAI is having issues:
 ## Compatibility
 
 ### Works With
-- ✅ Nixpacks (Railway, Render, etc.)
-- ✅ Docker
+- ✅ Docker (recommended)
+- ✅ Railway
 - ✅ Vercel (but use OpenAI, local is too slow for serverless)
 - ✅ Any Node.js hosting platform
 
@@ -278,7 +278,6 @@ All through an intuitive UI that anyone can use! 🎉
 
 ## Related Documentation
 
-- [NIXPACKS_EMBEDDING_FIX.md](./NIXPACKS_EMBEDDING_FIX.md) - Nixpacks-specific guide
 - [EMBEDDING_FIX_SUMMARY.md](./EMBEDDING_FIX_SUMMARY.md) - General embedding fixes
 - [docs/EMBEDDING_FIXES.md](./docs/EMBEDDING_FIXES.md) - Technical details
 

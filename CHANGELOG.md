@@ -5,6 +5,13 @@ All notable changes to NeuReed are documented in this file.
 ## [Unreleased]
 
 ### Changed
+- **Node.js 24 Migration**
+  - Updated to Node.js 24 (LTS) from Node 22/23
+  - Removed Nixpacks configuration in favor of Docker-based deployment
+  - Updated all deployment configurations to use Dockerfile
+  - Improved compatibility with Railway, Dokploy, and other Docker-based platforms
+  - See [docs/NODE24_MIGRATION.md](docs/NODE24_MIGRATION.md) for details
+
 - **Feed Parser Migration**
   - Migrated from `rss-parser` to `@rowanmanning/feed-parser` (v2.1.1)
   - Improved feed parsing with better maintained library

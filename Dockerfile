@@ -1,5 +1,5 @@
 # Multi-stage build for optimal image size
-FROM node:20-slim AS base
+FROM node:24-slim AS base
 
 # Install dependencies for native modules (openssl for Prisma)
 RUN apt-get update && apt-get install -y \

@@ -1,7 +1,7 @@
 # Deployment Guide for NeuReed
 
 ## Overview
-This guide covers deploying NeuReed to production environments, with specific focus on Dokploy/Nixpacks deployments.
+This guide covers deploying NeuReed to production environments using Docker, with specific focus on Dokploy and Railway deployments.
 
 ## Build Optimizations
 
@@ -19,7 +19,13 @@ The build requires at least **4GB of memory** due to:
 - Next.js build process
 - Prisma client generation
 
-The `NODE_OPTIONS="--max-old-space-size=4096"` is set in `nixpacks.toml`.
+The `NODE_OPTIONS="--max-old-space-size=4096"` can be set as an environment variable in your deployment platform.
+
+## Technology Stack
+
+- **Node.js**: 24.x (LTS)
+- **Deployment**: Docker-based (Dockerfile included)
+- **Runtime**: Next.js standalone server
 
 ## Dokploy/Railway Configuration
 
@@ -108,11 +114,11 @@ Or use the Dokploy "Run Command" feature to execute migrations after build.
 ### 3. Initial Deployment
 Push to your connected GitHub repository. Dokploy will automatically:
 1. Clone the repository
-2. Detect Node.js and use Nixpacks
+2. Detect Dockerfile and use Docker build
 3. Install dependencies with `npm ci`
 4. Generate Prisma client
 5. Build Next.js application
-6. Start the application
+6. Start the application with Docker entrypoint
 
 ### 4. Post-Deployment Verification
 
@@ -132,14 +138,14 @@ This usually indicates:
 - **Timeout**: Extend build timeout to 15+ minutes
 - **Network issues**: Check npm registry accessibility
 
-**Solution**: The current `.npmrc` and `nixpacks.toml` are optimized to prevent this.
+**Solution**: The current `.npmrc` and `Dockerfile` are optimized to prevent this.
 
 #### Prisma Generation Fails
 ```bash
 Error: @prisma/client did not initialize yet
 ```
 
-**Solution**: Ensure `npx prisma generate` runs before `npm run build` (already configured in `nixpacks.toml`).
+**Solution**: Ensure `npx prisma generate` runs before `npm run build` (already configured in `Dockerfile`).
 
 #### Next.js Build Timeout
 ```bash

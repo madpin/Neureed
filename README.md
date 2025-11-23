@@ -30,7 +30,7 @@ NeuReed is a highly customizable, LLM-focused RSS reader with semantic search ca
 
 Before you begin, ensure you have the following installed:
 
-- **Node.js** (v18 or higher)
+- **Node.js** (v24 or higher)
 - **npm** or **yarn** or **pnpm**
 - **Docker** and **Docker Compose** (for PostgreSQL with pgvector)
 

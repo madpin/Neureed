@@ -1,4 +1,5 @@
 {
-  "buildType": "nixpacks"
+  "buildType": "dockerfile",
+  "dockerfile": "Dockerfile"
 }
 
