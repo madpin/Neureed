@@ -1,492 +1,357 @@
-# NeuReed - Intelligent RSS Reader
+# 🧠 NeuReed - Your RSS Reader, But Way Smarter
 
 ![Build & Deploy](https://github.com/madpin/Neureed/workflows/Build%20and%20Deploy/badge.svg)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Node.js 24](https://img.shields.io/badge/node-24.x-brightgreen)
+![Next.js 16](https://img.shields.io/badge/next.js-16-black)
 
-NeuReed is a highly customizable, LLM-focused RSS reader with semantic search capabilities, built on Next.js with PostgreSQL/pgvector for intelligent content discovery and personalization.
+**NeuReed is an RSS reader that actually understands what you read.** Using AI and semantic search, it learns your interests and surfaces content you'll actually care about. No more drowning in feeds - just the good stuff.
 
-## Features
+## ✨ Why NeuReed?
 
-### Core Features (Phase 1-3 Complete)
-- 🚀 Modern Next.js 16 with App Router
-- 🐘 PostgreSQL with pgvector for semantic search
-- 🔍 **Vector embeddings for intelligent article discovery**
-- 📰 RSS/Atom feed parsing and management
-- 🎨 Tailwind CSS with dark mode support
-- 🔒 Type-safe environment variables
-- 📊 Prisma ORM for database management
+- **🤖 AI That Gets You**: The more you read, the better it understands your interests
+- **🔍 Search That Actually Works**: Find articles by meaning, not just keywords
+- **🎨 Beautiful & Customizable**: Dark mode, themes, reading preferences - make it yours
+- **🚀 Blazing Fast**: Built on Next.js 16 with pgvector for instant semantic search
+- **💰 Cost-Aware**: Track your OpenAI usage or use free local models
+- **🔐 Privacy First**: Self-hosted, your data stays yours
 
-### Semantic Search (Phase 3 ✅)
-- 🤖 **Configurable embedding providers** (OpenAI or local models)
-- 🔎 **Real-time semantic search** with instant results
-- 🎯 **Related articles** recommendations
-- 📊 **Hybrid search** (semantic + keyword)
-- 💰 **Cost tracking** for API usage
-- ⚡ **HNSW index** for fast similarity search
-- 🔄 **Automatic embedding generation** on feed refresh
-- 📈 **Embedding statistics** and management
+## 🎯 What Makes It Different?
 
-## Prerequisites
+### Semantic Search That Blows Your Mind 🧠
+Type "machine learning tutorials for beginners" and get relevant articles even if they never used those exact words. That's the power of vector embeddings.
 
-Before you begin, ensure you have the following installed:
+###  Personal Learning Engine 📚
+- Thumbs up articles you love, thumbs down ones you don't
+- NeuReed learns from your reading patterns automatically
+- Get personalized article scores based on your interests
+- Articles you'll love float to the top
 
-- **Node.js** (v24 or higher)
-- **npm** or **yarn** or **pnpm**
-- **Docker** and **Docker Compose** (for PostgreSQL with pgvector)
+### Flexible AI Models 🔧
+- **OpenAI GPT models**: Powerful summaries and embeddings
+- **Local models**: Zero cost, complete privacy
+- **Bring your own**: Use any OpenAI-compatible endpoint
+- **Per-feature models**: Different models for summaries vs embeddings
 
-## Getting Started
+### Feed Management Done Right 📰
+- Organize feeds into categories that make sense
+- Set refresh intervals per feed, category, or globally
+- OPML import/export for easy migration
+- Automatic cleanup of old articles
 
-### Quick Setup (Recommended)
+## 🚀 Quick Start
 
-Run the automated setup script:
-
-```bash
-./scripts/setup.sh
-```
-
-This will:
-- Create `.env.local` file
-- Start PostgreSQL with Docker
-- Install dependencies
-- Generate Prisma Client
-- Push database schema
-- Optionally seed sample data
-
-Then start the dev server:
+### Option 1: Automated Setup (Easiest!)
 
 ```bash
-npm run dev
-```
-
-### Manual Setup
-
-If you prefer to set up manually:
-
-#### 1. Clone the repository
-
-```bash
-git clone <repository-url>
+# Clone and setup
+git clone https://github.com/madpin/neureed.git
 cd neureed
-```
+./scripts/setup.sh
 
-#### 2. Install dependencies
-
-```bash
-npm install
-```
-
-#### 3. Set up environment variables
-
-Create a `.env.local` file (note: `.env.local` is gitignored, so you need to create it manually):
-
-```bash
-cat > .env.local << 'EOF'
-# Database (using port 5433 to avoid conflicts with local PostgreSQL)
-DATABASE_URL="postgresql://neureed:neureed_dev_password@127.0.0.1:5433/neureed"
-
-# Node Environment
-NODE_ENV="development"
-
-# Embedding Configuration (Phase 3)
-EMBEDDING_PROVIDER="local"  # "openai" or "local"
-EMBEDDING_MODEL="text-embedding-3-small"
-EMBEDDING_BATCH_SIZE="10"
-EMBEDDING_AUTO_GENERATE="false"  # Set to "true" to auto-generate on feed refresh
-# OPENAI_API_KEY="sk-..."  # Required if using openai provider
-EOF
-
-# Create symlink for Prisma (Prisma looks for .env by default)
-ln -sf .env.local .env
-```
-
-**Note:** We use port 5433 instead of the default 5432 to avoid conflicts with any existing local PostgreSQL installations.
-
-Or copy from the example:
-
-```bash
-cp .env.example .env.local
-ln -sf .env.local .env
-```
-
-#### 4. Start PostgreSQL with pgvector
-
-Start the PostgreSQL database using Docker Compose:
-
-```bash
-docker-compose up -d
-```
-
-This will:
-- Start PostgreSQL 16 with the pgvector extension
-- Expose the database on port 5432
-- Create a persistent volume for data storage
-- Set up health checks
-
-To check if the database is running:
-
-```bash
-docker-compose ps
-```
-
-To view database logs:
-
-```bash
-docker-compose logs -f postgres
-```
-
-#### 5. Run database migrations
-
-Apply the database schema and enable pgvector:
-
-```bash
-npm run db:push
-```
-
-Or if you prefer to use migrations:
-
-```bash
-npm run db:migrate
-```
-
-#### 6. Generate Prisma Client
-
-Generate the Prisma Client for type-safe database access:
-
-```bash
-npm run db:generate
-```
-
-#### 7. Seed the database (optional)
-
-Populate the database with sample data:
-
-```bash
-npm run db:seed
-```
-
-This will create:
-- Sample categories (Technology, AI & Machine Learning, Web Development)
-- Sample RSS feeds (Hacker News, Vercel Blog, OpenAI Blog)
-- Sample articles for testing
-
-#### 8. Start the development server
-
-```bash
+# Start developing
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
+The setup script handles everything: environment files, Docker containers, dependencies, database setup, and even sample data if you want it.
 
-## Available Scripts
-
-### Development
-
-- `npm run dev` - Start the Next.js development server
-- `npm run build` - Build the application for production
-- `npm run start` - Start the production server
-- `npm run lint` - Run ESLint
-
-### Database
-
-- `npm run db:generate` - Generate Prisma Client
-- `npm run db:push` - Push schema changes to database (for development)
-- `npm run db:migrate` - Create and run migrations
-- `npm run db:studio` - Open Prisma Studio (database GUI)
-- `npm run db:seed` - Seed the database with sample data
-- `npm run db:reset` - Reset the database (⚠️ deletes all data)
-
-## Project Structure
-
-```
-neureed/
-├── app/                    # Next.js App Router pages and layouts
-│   ├── api/               # API routes
-│   │   └── health/        # Health check endpoint
-│   ├── layout.tsx         # Root layout
-│   └── page.tsx           # Home page
-├── prisma/                # Prisma schema and migrations
-│   ├── migrations/        # Database migrations
-│   ├── schema.prisma      # Database schema
-│   └── seed.ts           # Database seed script
-├── src/                   # Source code
-│   ├── env.ts            # Type-safe environment variables
-│   └── lib/              # Utility libraries
-│       ├── api-response.ts  # API response helpers
-│       ├── db.ts           # Prisma client singleton
-│       └── logger.ts       # Logging utility
-├── docker-compose.yml     # Docker configuration for PostgreSQL
-├── .env.local            # Environment variables (gitignored)
-├── .env.example          # Environment variables template
-└── package.json          # Dependencies and scripts
-```
-
-## Database Access
-
-### Using Prisma Studio
-
-Prisma Studio provides a visual interface to view and edit your database:
+### Option 2: Docker Compose (Production-ish)
 
 ```bash
-npm run db:studio
+# Start everything (app + database)
+docker-compose up -d
+
+# Check it out
+open http://localhost:3000
 ```
 
-This will open Prisma Studio at [http://localhost:5555](http://localhost:5555)
+### Option 3: Manual (You Like Pain?)
 
-### Using psql (PostgreSQL CLI)
-
-Connect to the database directly:
+<details>
+<summary>Click to expand manual setup</summary>
 
 ```bash
-docker exec -it neureed-postgres psql -U neureed -d neureed
+# Install dependencies
+npm install
+
+# Create environment file
+cp .env.example .env.local
+
+# Start PostgreSQL with pgvector
+docker-compose up -d postgres
+
+# Setup database
+npx prisma migrate dev
+npx prisma db seed
+
+# Start the app
+npm run dev
 ```
 
-### Useful PostgreSQL Commands
+</details>
 
-```sql
--- List all tables
-\dt
+## 🎮 First Steps
 
--- Describe a table
-\d articles
+1. **Sign in** with GitHub or Google (or configure another OAuth provider)
+2. **Add some feeds** - click the + button in the sidebar
+3. **Read stuff** - articles auto-refresh every 30 minutes
+4. **Give feedback** - thumbs up/down to train your personal AI
+5. **Try semantic search** - type naturally, get smart results
 
--- Check if pgvector is installed
-SELECT * FROM pg_extension WHERE extname = 'vector';
+## 📸 Screenshots
 
--- View vector indexes
-SELECT * FROM pg_indexes WHERE tablename = 'articles';
-```
+### Main Interface
 
-## Health Check
+<table>
+  <tr>
+    <td width="50%">
+      <img src="screenshots/07-main-article-reading-panel.jpeg" alt="Article Reading Panel"/>
+      <p align="center"><em>Split-pane reading interface</em></p>
+    </td>
+    <td width="50%">
+      <img src="screenshots/19-main-article-list-view.jpeg" alt="Article List View"/>
+      <p align="center"><em>Main article list with feed filtering</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="screenshots/18-article-fullpage-view.jpeg" alt="Full Page Article"/>
+      <p align="center"><em>Full-page article reading experience</em></p>
+    </td>
+    <td width="50%">
+      <img src="screenshots/20-main-collapsed-sidebar.jpeg" alt="Collapsed Sidebar"/>
+      <p align="center"><em>Compact sidebar for more reading space</em></p>
+    </td>
+  </tr>
+</table>
 
-The application includes a health check endpoint that verifies:
-- Database connectivity
-- pgvector extension status
+### Admin Dashboard
 
-Access it at: [http://localhost:3000/api/health](http://localhost:3000/api/health)
+<table>
+  <tr>
+    <td width="50%">
+      <img src="screenshots/01-admin-dashboard-overview.jpeg" alt="Admin Dashboard Overview"/>
+      <p align="center"><em>System statistics and health monitoring</em></p>
+    </td>
+    <td width="50%">
+      <img src="screenshots/02-admin-embeddings-search.jpeg" alt="Embeddings Management"/>
+      <p align="center"><em>Vector embeddings coverage and status</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="screenshots/03-admin-users-management.jpeg" alt="User Management"/>
+      <p align="center"><em>User roles and permissions</em></p>
+    </td>
+    <td width="50%">
+      <img src="screenshots/04-admin-cron-jobs-logs.jpeg" alt="Cron Jobs"/>
+      <p align="center"><em>Background job execution and logs</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="screenshots/05-admin-storage-database.jpeg" alt="Storage Management"/>
+      <p align="center"><em>Database and Redis storage metrics</em></p>
+    </td>
+    <td width="50%">
+      <img src="screenshots/06-admin-configuration-defaults.jpeg" alt="System Configuration"/>
+      <p align="center"><em>Default preferences for new users</em></p>
+    </td>
+  </tr>
+</table>
 
-## Development Workflow
+### User Preferences & Customization
 
-1. **Make schema changes**: Edit `prisma/schema.prisma`
-2. **Apply changes**: Run `npm run db:push` (dev) or `npm run db:migrate` (production)
-3. **Generate client**: Run `npm run db:generate`
-4. **Test changes**: Use `npm run db:studio` to verify
+<table>
+  <tr>
+    <td width="50%">
+      <img src="screenshots/10-user-menu-preferences.jpeg" alt="User Menu"/>
+      <p align="center"><em>Quick access to preferences and settings</em></p>
+    </td>
+    <td width="50%">
+      <img src="screenshots/11-preferences-profile.jpeg" alt="Profile Settings"/>
+      <p align="center"><em>User profile and authentication info</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="screenshots/12-preferences-appearance-themes.jpeg" alt="Theme Selection"/>
+      <p align="center"><em>Multiple theme options (light, dark, and more)</em></p>
+    </td>
+    <td width="50%">
+      <img src="screenshots/13-preferences-article-display.jpeg" alt="Article Display Settings"/>
+      <p align="center"><em>Customize article density and visibility</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="screenshots/09-preferences-article-display-borders.jpeg" alt="Display Customization"/>
+      <p align="center"><em>Fine-tune borders and spacing</em></p>
+    </td>
+    <td width="50%">
+      <img src="screenshots/14-preferences-reading-panel.jpeg" alt="Reading Panel Config"/>
+      <p align="center"><em>Configure split-pane reading experience</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="screenshots/15-preferences-learning-system.jpeg" alt="Learning System"/>
+      <p align="center"><em>AI learning preferences and pattern detection</em></p>
+    </td>
+    <td width="50%">
+      <img src="screenshots/16-preferences-llm-settings.jpeg" alt="User LLM Settings"/>
+      <p align="center"><em>Personal LLM configuration and API keys</em></p>
+    </td>
+  </tr>
+</table>
 
-## Troubleshooting
+### Feed Management & Configuration
 
-### Database connection issues
+<table>
+  <tr>
+    <td width="50%">
+      <img src="screenshots/08-feed-management-settings.jpeg" alt="Feed Management"/>
+      <p align="center"><em>Advanced feed settings and organization</em></p>
+    </td>
+    <td width="50%">
+      <img src="screenshots/17-admin-llm-configuration.jpeg" alt="Admin LLM Config"/>
+      <p align="center"><em>System-wide LLM provider configuration</em></p>
+    </td>
+  </tr>
+</table>
 
-If you can't connect to the database:
+## 🎨 Features That'll Make You Happy
 
-1. Check if Docker is running: `docker ps`
-2. Check database logs: `docker-compose logs postgres`
-3. Verify the DATABASE_URL in `.env.local`
-4. Restart the database: `docker-compose restart postgres`
+### Smart Article Discovery
+- **Semantic search**: Find articles by meaning, not keywords
+- **Related articles**: Discover content similar to what you're reading
+- **Personalized scoring**: Articles ranked by how much you'll like them
+- **Smart filtering**: Hide read articles, filter by feed or category
 
-### pgvector not working
+### Reading Experience
+- **Customizable fonts**: Size, family, line height, spacing - all yours
+- **Theme variety**: Light, dark, Nord, Solarized, and more fun themes
+- **Reading panel**: Split-screen or full-page reading modes
+- **Estimated reading time**: Know before you commit
 
-If pgvector queries fail:
+### Feed Organization
+- **Drag & drop**: Organize feeds intuitively
+- **Category management**: Group feeds however makes sense to you
+- **Per-feed settings**: Different refresh rates, retention policies
+- **OPML support**: Import/export your subscriptions
 
-1. Check if the extension is enabled:
-   ```bash
-   docker exec -it neureed-postgres psql -U neureed -d neureed -c "SELECT * FROM pg_extension WHERE extname = 'vector';"
-   ```
-2. If not enabled, enable it manually:
-   ```bash
-   docker exec -it neureed-postgres psql -U neureed -d neureed -c "CREATE EXTENSION IF NOT EXISTS vector;"
-   ```
+### AI-Powered Features
+- **Article summaries**: TL;DR powered by GPT
+- **Embedding generation**: Automatic or on-demand
+- **Cost tracking**: Know exactly what you're spending on AI
+- **Provider flexibility**: OpenAI, local models, or custom endpoints
 
-### Port conflicts
+### Admin Dashboard
+- **Cron job management**: Monitor and trigger background tasks
+- **Embedding stats**: Track coverage and generation progress
+- **User management**: See who's using your instance
+- **System health**: Cache status, database stats, and more
 
-**Note:** This project uses port 5433 by default to avoid conflicts with local PostgreSQL installations.
+## 📚 Documentation
 
-If you still encounter port issues:
+- **[Getting Started](docs/README.md)** - Complete documentation index
+- **[Deployment Guide](docs/deployment/deployment.md)** - Deploy to production
+- **[Configuration Reference](docs/configuration/configuration-reference.md)** - All the settings
+- **[API Documentation](docs/api/)** - If you're building integrations
+- **[Architecture Docs](docs/architecture/)** - How it all works
 
-1. Check what's using the port: `lsof -i :5433`
-2. Change the port in `docker-compose.yml` (e.g., `"5434:5432"`)
-3. Update `DATABASE_URL` in `.env.local` to match the new port
+## 🛠️ Tech Stack
 
-## Semantic Search Usage
+We're standing on the shoulders of giants:
 
-### Configuring Embedding Providers
+- **[Next.js 16](https://nextjs.org/)** - The React framework
+- **[PostgreSQL](https://www.postgresql.org/)** + **[pgvector](https://github.com/pgvector/pgvector)** - Vector similarity search
+- **[Prisma](https://www.prisma.io/)** - Type-safe database access
+- **[NextAuth.js](https://next-auth.js.org/)** - Authentication that just works
+- **[TanStack Query](https://tanstack.com/query)** - Data fetching & caching
+- **[Tailwind CSS](https://tailwindcss.com/)** - Styling without the pain
+- **[Redis](https://redis.io/)** - Caching layer for speed
 
-NeuReed supports two embedding providers:
+## 🤝 Contributing
 
-**1. Local Provider (Default)**
-- Uses Transformers.js with bge-small-en-v1.5
-- Free, no API costs
-- Runs locally in Node.js
-- Slower than OpenAI but private
+Found a bug? Have an idea? Contributions are welcome!
 
 ```bash
-EMBEDDING_PROVIDER="local"
+# Fork the repo, then:
+git clone https://github.com/YOUR_USERNAME/neureed.git
+cd neureed
+npm install
+./scripts/setup.sh
+
+# Create a feature branch
+git checkout -b feature/amazing-feature
+
+# Make your changes, commit, and push
+git commit -m "Add some amazing feature"
+git push origin feature/amazing-feature
+
+# Open a PR!
 ```
 
-**2. OpenAI Provider (Recommended for Production)**
-- Uses text-embedding-3-small (1536 dimensions)
-- Fast and high quality
-- Costs ~$0.02 per 1M tokens
-- Requires API key
-- Supports OpenAI-compatible endpoints (Azure OpenAI, local proxies, etc.)
+## 📝 Environment Variables
+
+Here's what you'll need for a basic setup:
 
 ```bash
-EMBEDDING_PROVIDER="openai"
-OPENAI_API_KEY="sk-your-api-key-here"
-# Optional: Use OpenAI-compatible endpoint
-# OPENAI_BASE_URL="https://api.openai.com/v1"  # Default
-# OPENAI_BASE_URL="https://your-azure-resource.openai.azure.com/openai/deployments/your-deployment"  # Azure
+# Database (required)
+DATABASE_URL="postgresql://user:pass@localhost:5433/neureed"
+
+# Auth (required for login)
+NEXTAUTH_SECRET="generate-with-openssl-rand-base64-32"
+NEXTAUTH_URL="http://localhost:3000"
+
+# OAuth (pick at least one)
+GOOGLE_CLIENT_ID="your-google-client-id"
+GOOGLE_CLIENT_SECRET="your-google-secret"
+GITHUB_CLIENT_ID="your-github-client-id"  
+GITHUB_CLIENT_SECRET="your-github-secret"
+
+# AI Features (optional but recommended)
+OPENAI_API_KEY="sk-your-api-key"
+
+# Redis (optional, but makes things faster)
+REDIS_URL="redis://localhost:6379"
 ```
 
-### Generating Embeddings
+See [Configuration Reference](docs/configuration/configuration-reference.md) for the complete list.
 
-**Option 1: Automatic (Recommended)**
-```bash
-EMBEDDING_AUTO_GENERATE="true"
-```
-Embeddings are generated automatically when new articles are fetched.
+## 🐛 Troubleshooting
 
-**Option 2: Manual via UI**
-1. Go to Settings page: [http://localhost:3000/settings](http://localhost:3000/settings)
-2. Click "Generate Embeddings" button
+**Database connection fails?**
+- Make sure PostgreSQL is running: `docker-compose ps`
+- Check the port (we use 5433 to avoid conflicts)
 
-**Option 3: Manual via API**
-```bash
-curl -X POST http://localhost:3000/api/jobs/generate-embeddings \
-  -H "Content-Type: application/json" \
-  -d '{"batchSize": 50, "maxBatches": 10}'
-```
+**Build fails?**
+- Clear node_modules and try again: `rm -rf node_modules && npm install`
+- Make sure you're on Node.js 24+: `node --version`
 
-### Using Semantic Search
+**Embeddings not working?**
+- Set your OpenAI API key or enable local embeddings
+- Check admin dashboard → Search tab for provider status
 
-**Real-time Search Bar**
-- Available in the top navigation
-- Type to search articles by meaning
-- Shows top 5 results with similarity scores
+**Still stuck?** Check [GitHub Issues](https://github.com/madpin/neureed/issues) or create a new one.
 
-**Advanced Search Page**
-- Visit: [http://localhost:3000/search](http://localhost:3000/search)
-- Choose between semantic and hybrid modes
-- Adjust similarity threshold
-- Filter by feeds and date range
+## 📜 License
 
-**Related Articles**
-- Automatically shown on article detail pages
-- Based on content similarity
-- Configurable minimum similarity threshold
+MIT License - see [LICENSE](LICENSE) file for details. Build cool stuff with it!
 
-### API Endpoints
+## 🙏 Acknowledgments
 
-**Semantic Search**
-```bash
-curl -X POST http://localhost:3000/api/articles/semantic-search \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "artificial intelligence",
-    "limit": 10,
-    "minScore": 0.7,
-    "mode": "semantic"
-  }'
-```
+- Built with ❤️ by developers who got tired of crappy RSS readers
+- Inspired by the need for actually intelligent content discovery
+- Powered by the amazing open-source community
 
-**Find Related Articles**
-```bash
-curl http://localhost:3000/api/articles/ARTICLE_ID/related?limit=5
-```
+## 🌟 Star Us!
 
-**Embedding Statistics**
-```bash
-curl http://localhost:3000/api/admin/embeddings
-```
+If NeuReed makes your RSS reading life better, give us a star! It helps others discover the project.
 
-## Deployment
+---
 
-### Docker
+**Ready to take control of your content?** Get started now! 🚀
 
-Pre-built Docker images are available via GitHub Container Registry:
-
-```bash
-# Pull the latest image
-docker pull ghcr.io/madpin/neureed:latest
-
-# Run the container
-docker run -d \
-  --name neureed \
-  -p 3000:3000 \
-  -e DATABASE_URL="postgresql://user:pass@host:5432/neureed" \
-  -e NEXTAUTH_URL="https://your-domain.com" \
-  -e NEXTAUTH_SECRET="your-secret" \
-  -e AUTH_TRUST_HOST="true" \
-  -e GITHUB_CLIENT_ID="your-id" \
-  -e GITHUB_CLIENT_SECRET="your-secret" \
-  -e OPENAI_API_KEY="your-key" \
-  ghcr.io/madpin/neureed:latest
-```
-
-### Dokploy
-
-For Dokploy deployment instructions, see:
-- [Dokploy Deployment Guide](DOKPLOY_FIX.md) - Comprehensive deployment guide
-- [Deployment Fix Summary](DEPLOYMENT_FIX_SUMMARY.md) - Quick reference
-
-### CI/CD
-
-GitHub Actions workflows automatically:
-- ✅ Run tests and linting on every PR
-- ✅ Build Docker images on every push
-- ✅ Push images to GitHub Container Registry
-- ✅ Create releases with changelogs
-
-See [.github/workflows/README.md](.github/workflows/README.md) for details.
-
-## Documentation
-
-### User Guides
-- [Content Extraction Guide](docs/guides/CONTENT_EXTRACTION.md) - Configure content extraction methods
-- [Cookie Extraction Guide](docs/guides/COOKIE_EXTRACTION_GUIDE.md) - Extract cookies for authenticated feeds
-- [Storage Management Guide](docs/guides/STORAGE_MANAGEMENT_GUIDE.md) - Monitor and manage database/cache storage
-
-### Deployment Guides
-- [Dokploy Deployment](DOKPLOY_FIX.md) - Deploy to Dokploy
-- [Deployment Summary](DEPLOYMENT_FIX_SUMMARY.md) - Quick deployment reference
-- [CI/CD Workflows](.github/workflows/README.md) - GitHub Actions setup
-
-### Implementation Details
-- [Cron System Implementation](docs/implementation/CRON_IMPLEMENTATION_SUMMARY.md) - Automated feed refresh and cleanup
-- [Recency Scoring](docs/implementation/RECENCY_SCORING_IMPLEMENTATION.md) - Time-based search result ranking
-- [Admin Recency Settings](docs/implementation/ADMIN_RECENCY_SETTINGS.md) - Configure default recency behavior
-- [Timezone Fix](docs/implementation/TIMEZONE_FIX_SUMMARY.md) - Proper date/time handling across timezones
-- [Cron Diagnosis](docs/implementation/CRON_DIAGNOSIS_RESULTS.md) - Troubleshooting cron jobs
-
-### Project Planning
-- [Changelog](CHANGELOG.md) - Version history and release notes
-- [Feature Backlog](docs/BACKLOG.md) - Upcoming features and ideas
-
-## Next Steps
-
-### Current Status
-- ✅ Phase 1: Foundation & Core Setup - COMPLETE
-- ✅ Phase 2: Feed Management & Article Storage - COMPLETE
-- ✅ Phase 3: Embeddings & Semantic Search - COMPLETE
-- ✅ Phase 4: User System & Authentication - COMPLETE
-- ✅ Phase 5: Advanced Content Extraction - COMPLETE
-- ✅ Phase 6: Learning & Personalization - COMPLETE
-- ✅ Phase 7: Advanced Features & Optimization - COMPLETE
-
-See the [Changelog](CHANGELOG.md) for detailed version history and [Feature Backlog](docs/BACKLOG.md) for upcoming enhancements.
-
-## Tech Stack
-
-- **Framework**: Next.js 16 with App Router
-- **Language**: TypeScript
-- **Database**: PostgreSQL 16 with pgvector
-- **ORM**: Prisma
-- **Styling**: Tailwind CSS
-- **Validation**: Zod
-- **Environment**: @t3-oss/env-nextjs
-
-## License
-
-[Your License Here]
-
-## Contributing
-
-[Your Contributing Guidelines Here]
+[Documentation](docs/README.md) • [Report Bug](https://github.com/madpin/neureed/issues) • [Request Feature](https://github.com/madpin/neureed/issues)

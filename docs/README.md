@@ -1,80 +1,144 @@
 # NeuReed Documentation
 
-This directory contains all technical documentation for the NeuReed project.
+Welcome to the NeuReed documentation! This guide will help you understand, deploy, configure, and extend NeuReed.
 
-## 📁 Documentation Structure
+## 📖 Quick Navigation
 
-### Root Documentation
+### Getting Started
+- **[Main README](../README.md)** - Project overview, quick start, and basic setup
+- **[Deployment Guide](deployment/deployment.md)** - Deploy NeuReed to production
+- **[Configuration Reference](configuration/configuration-reference.md)** - Complete settings guide
 
-#### Deployment & Operations
-- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Complete deployment guide (Dokploy, Railway, Docker)
-- **[DOKPLOY_SETUP_GUIDE.md](./DOKPLOY_SETUP_GUIDE.md)** - Detailed Dokploy setup with GitHub Actions
-- **[PRODUCTION_CRON_AND_EMBEDDINGS.md](./PRODUCTION_CRON_AND_EMBEDDINGS.md)** - Production configuration for cron jobs and embeddings
-- **[GITHUB_ACTIONS_OPTIMIZATIONS.md](./GITHUB_ACTIONS_OPTIMIZATIONS.md)** - CI/CD pipeline optimizations
+### For Users & Administrators
+- **[Default Feeds](features/default-feeds.md)** - Understanding the default feed subscriptions
+- **[Summarization Feature](features/summarization.md)** - AI-powered article summaries
+- **[Summarization Setup](features/summarization-setup.md)** - Configure summarization for your instance
+- **[Admin Provider Control](features/admin-provider-control.md)** - Manage AI providers
 
-#### Admin & Features
-- **[ADMIN_LLM_CONFIG_API.md](./ADMIN_LLM_CONFIG_API.md)** - Admin API documentation for LLM configuration
-- **[ADMIN_PANEL_PROVIDER_CONTROL.md](./ADMIN_PANEL_PROVIDER_CONTROL.md)** - Embedding provider control features
-- **[ADMIN_VS_USER_CREDENTIALS.md](./ADMIN_VS_USER_CREDENTIALS.md)** - Architecture documentation for credential management
+### For Developers
+- **[Architecture Documentation](architecture/)** - System design and patterns
+  - [Credentials Management](architecture/credentials-management.md) - Admin vs user credentials
+  - [Caching Strategy](architecture/caching.md) - Redis cache implementation
+- **[API Documentation](api/)** - API endpoints and integration
+  - [Admin LLM Configuration API](api/admin-llm-config.md) - Manage LLM settings programmatically
 
-#### Planning
-- **[BACKLOG.md](./BACKLOG.md)** - Feature roadmap and known issues
+### Deployment & Operations
+- **[Deployment Guide](deployment/deployment.md)** - Complete deployment instructions
+- **[Dokploy Setup](deployment/dokploy-setup.md)** - Deploy with Dokploy
+- **[Production Configuration](deployment/production-config.md)** - Cron jobs and embeddings in production
 
-### Subdirectories
+## 📚 Documentation Structure
 
-#### `/guides/` - How-To Guides
-Step-by-step guides for specific tasks:
-- **[CONTENT_EXTRACTION.md](./guides/CONTENT_EXTRACTION.md)** - Content extraction strategies
-- **[COOKIE_EXTRACTION_GUIDE.md](./guides/COOKIE_EXTRACTION_GUIDE.md)** - Cookie handling for authenticated feeds
-- **[STORAGE_MANAGEMENT_GUIDE.md](./guides/STORAGE_MANAGEMENT_GUIDE.md)** - Managing storage and cleanup
+```
+docs/
+├── api/                    # API documentation
+│   └── admin-llm-config.md
+├── architecture/           # System architecture
+│   ├── caching.md
+│   └── credentials-management.md
+├── configuration/          # Configuration guides
+│   └── configuration-reference.md
+├── deployment/             # Deployment guides
+│   ├── deployment.md
+│   ├── dokploy-setup.md
+│   └── production-config.md
+├── features/               # Feature documentation
+│   ├── admin-provider-control.md
+│   ├── default-feeds.md
+│   ├── summarization-setup.md
+│   └── summarization.md
+├── BACKLOG.md             # Feature roadmap
+└── README.md              # This file
+```
 
-#### `/implementation/` - Implementation Details
-Technical implementation documentation for features:
-- **[ADMIN_RECENCY_SETTINGS.md](./implementation/ADMIN_RECENCY_SETTINGS.md)** - Recency scoring implementation
-- **[ADMIN_USER_SETTINGS_IMPLEMENTATION_SUMMARY.md](./implementation/ADMIN_USER_SETTINGS_IMPLEMENTATION_SUMMARY.md)** - Admin vs user settings
-- **[ADMIN_USER_SETTINGS_SEPARATION.md](./implementation/ADMIN_USER_SETTINGS_SEPARATION.md)** - Settings architecture
-- **[CRON_DIAGNOSIS_RESULTS.md](./implementation/CRON_DIAGNOSIS_RESULTS.md)** - Cron job debugging results
-- **[CRON_IMPLEMENTATION_SUMMARY.md](./implementation/CRON_IMPLEMENTATION_SUMMARY.md)** - Cron system implementation
-- **[FEATURE_SPECIFIC_LLM_MODELS.md](./implementation/FEATURE_SPECIFIC_LLM_MODELS.md)** - Per-feature LLM model configuration
-- **[RECENCY_SCORING_IMPLEMENTATION.md](./implementation/RECENCY_SCORING_IMPLEMENTATION.md)** - Recency scoring algorithm
-- **[TIMEZONE_FIX_SUMMARY.md](./implementation/TIMEZONE_FIX_SUMMARY.md)** - Timezone handling implementation
-- **[USER_EMBEDDING_PREFERENCES.md](./implementation/USER_EMBEDDING_PREFERENCES.md)** - User-level embedding preferences
+## 🎯 Common Tasks
 
-## 🚀 Quick Start
+### I Want To...
 
-### For New Deployments
-1. Start with **[DEPLOYMENT.md](./DEPLOYMENT.md)** for general deployment guidance
-2. Follow **[DOKPLOY_SETUP_GUIDE.md](./DOKPLOY_SETUP_GUIDE.md)** if using Dokploy
-3. Configure production features with **[PRODUCTION_CRON_AND_EMBEDDINGS.md](./PRODUCTION_CRON_AND_EMBEDDINGS.md)**
+**Deploy NeuReed**
+→ Start with [Deployment Guide](deployment/deployment.md), then check [Production Configuration](deployment/production-config.md)
 
-### For Feature Development
-1. Check **[BACKLOG.md](./BACKLOG.md)** for planned features
-2. Review relevant implementation docs in `/implementation/`
-3. Follow guides in `/guides/` for specific implementations
+**Configure AI Features**
+→ See [Configuration Reference](configuration/configuration-reference.md) and [Admin LLM Config API](api/admin-llm-config.md)
 
-### For Troubleshooting
-1. Check the relevant main documentation file
-2. Review implementation details in `/implementation/`
-3. Consult the appropriate guide in `/guides/`
+**Understand the Architecture**
+→ Read [Credentials Management](architecture/credentials-management.md) and [Caching Strategy](architecture/caching.md)
 
-## 📝 Documentation Standards
+**Set Up Summarization**
+→ Follow [Summarization Setup](features/summarization-setup.md)
 
-- All documentation uses Markdown format
-- Code examples include language tags for syntax highlighting
-- Each document includes a clear title and purpose
-- Guides are action-oriented with step-by-step instructions
-- Implementation docs explain technical decisions and architecture
+**Customize Default Feeds**
+→ Check [Default Feeds](features/default-feeds.md)
 
-## 🔄 Keeping Documentation Updated
+**Deploy with Dokploy**
+→ Follow [Dokploy Setup Guide](deployment/dokploy-setup.md)
 
-- Update docs when implementing new features
-- Move completed items from BACKLOG.md to implementation docs
-- Keep deployment guides current with infrastructure changes
-- Document troubleshooting steps when resolving issues
+## 🔍 Key Concepts
 
-## 📚 Additional Resources
+### Settings Hierarchy
+NeuReed uses a cascading settings system:
+- **Feed-level** settings override category settings
+- **Category-level** settings override user defaults
+- **User defaults** override system defaults
+- **Admin settings** provide system-wide defaults
 
-- **[Main README](../README.md)** - Project overview and setup
-- **[CHANGELOG](../CHANGELOG.md)** - Version history and changes
-- **[Prisma Schema](../prisma/schema.prisma)** - Database schema documentation
+See [Configuration Reference](configuration/configuration-reference.md) for details.
 
+### AI Provider Architecture
+- **Admin** controls which providers are available
+- **Users** configure their own credentials (optional)
+- **System** credentials serve as fallback
+- Supports OpenAI, local models, and custom endpoints
+
+See [Credentials Management](architecture/credentials-management.md) for details.
+
+### Caching Strategy
+- Redis-based caching for performance
+- Cache-aside pattern with automatic invalidation
+- Configurable TTLs for different data types
+- Semantic search caching for 95%+ speedup
+
+See [Caching Strategy](architecture/caching.md) for implementation details.
+
+## 🛠️ Development Resources
+
+### Project Overview
+See [CLAUDE.md](../CLAUDE.md) for:
+- Common commands
+- High-level architecture
+- Service layer patterns
+- Development guidelines
+
+### Contributing
+See [Main README](../README.md#-contributing) for contribution guidelines.
+
+### Changelog
+See [CHANGELOG.md](../CHANGELOG.md) for version history and recent changes.
+
+## 📋 Planning & Roadmap
+
+Check [BACKLOG.md](BACKLOG.md) for:
+- Planned features
+- Known issues
+- Enhancement ideas
+- Future improvements
+
+## 💡 Tips
+
+- **New to NeuReed?** Start with the [Main README](../README.md)
+- **Deploying?** Check [Deployment Guide](deployment/deployment.md) first
+- **Configuring features?** Use [Configuration Reference](configuration/configuration-reference.md)
+- **Building integrations?** See [API Documentation](api/)
+- **Understanding internals?** Read [Architecture docs](architecture/)
+
+## 🔗 External Resources
+
+- **GitHub Repository**: [https://github.com/madpin/neureed](https://github.com/madpin/neureed)
+- **Issue Tracker**: [GitHub Issues](https://github.com/madpin/neureed/issues)
+- **Next.js Docs**: [https://nextjs.org/docs](https://nextjs.org/docs)
+- **Prisma Docs**: [https://www.prisma.io/docs](https://www.prisma.io/docs)
+- **pgvector**: [https://github.com/pgvector/pgvector](https://github.com/pgvector/pgvector)
+
+---
+
+**Questions?** Check the relevant documentation section above, or [open an issue](https://github.com/madpin/neureed/issues)!
