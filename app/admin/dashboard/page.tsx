@@ -2023,7 +2023,7 @@ function LLMConfigTab() {
         digestModel: digestModel || undefined,
       });
 
-      const results = result.data?.results;
+      const results = result.results;
       setTestResults(results);
 
       if (!results || !results.success) {
