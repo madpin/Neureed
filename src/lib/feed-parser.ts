@@ -353,6 +353,10 @@ export function sanitizeHtml(html: string): string {
   // Remove data: protocol with text/html (can be used for XSS)
   sanitized = sanitized.replace(/(src)\s*=\s*["']data:text\/html[^"']*["']/gi, "");
 
+  // Remove data attributes with long values (typically contain JSON for widgets)
+  // This helps clean up embedded product data and tracking information
+  sanitized = sanitized.replace(/\s+data-[\w-]+\s*=\s*["'][^"']{200,}["']/gi, "");
+
   return sanitized.trim();
 }
 

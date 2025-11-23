@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/db";
 import { subscribeFeed } from "./user-feed-service";
+import {
+  createUserCategory,
+  getUserCategoryByName,
+  assignFeedToCategory,
+} from "./user-category-service";
 
 /**
  * Default feeds that new users will be subscribed to automatically
@@ -10,76 +15,73 @@ export const DEFAULT_FEEDS = [
     name: "TechCrunch",
     url: "https://techcrunch.com/feed",
     categoryName: "Technology",
+    categoryIcon: "💻",
   },
   {
     name: "The Verge",
     url: "https://www.theverge.com/rss/index.xml",
     categoryName: "Technology",
+    categoryIcon: "💻",
   },
   {
     name: "Hacker News",
     url: "https://hnrss.org/frontpage",
     categoryName: "Technology",
+    categoryIcon: "💻",
   },
   // News
   {
     name: "BBC News",
     url: "https://feeds.bbci.co.uk/news/rss.xml",
     categoryName: "News",
+    categoryIcon: "📰",
   },
   // Science
   {
     name: "Nature",
     url: "https://www.nature.com/nature.rss",
     categoryName: "Science",
+    categoryIcon: "🔬",
   },
   {
     name: "Science Daily",
     url: "https://www.sciencedaily.com/rss/all.xml",
     categoryName: "Science",
+    categoryIcon: "🔬",
   },
   // Positive News
   {
     name: "Good News Network",
     url: "https://www.goodnewsnetwork.org/feed",
     categoryName: "Positive News",
+    categoryIcon: "😊",
   },
   {
     name: "Positive News",
     url: "https://www.positive.news/feed",
     categoryName: "Positive News",
+    categoryIcon: "😊",
   },
   // Satire
   {
     name: "The Onion",
     url: "https://www.theonion.com/rss",
     categoryName: "Satire",
+    categoryIcon: "🧅",
   },
 ];
 
 /**
  * Ensure all default feeds exist in the database
- * Creates feeds if they don't exist, along with their categories
+ * Creates feeds if they don't exist (without creating categories)
  */
 export async function ensureDefaultFeedsExist(): Promise<void> {
   console.log("🔄 Ensuring default feeds exist in database...");
 
   for (const feedData of DEFAULT_FEEDS) {
     try {
-      // Ensure category exists
-      const category = await prisma.categories.upsert({
-        where: { name: feedData.categoryName },
-        update: {},
-        create: {
-          id: `cat_${feedData.categoryName.toLowerCase().replace(/\s+/g, "_")}_${Date.now()}`,
-          name: feedData.categoryName,
-          description: `${feedData.categoryName} content`,
-          // updatedAt is auto-managed by Prisma via @updatedAt directive
-        },
-      });
-
-      // Ensure feed exists
-      const feed = await prisma.feeds.upsert({
+      // Ensure feed exists (don't create global categories anymore)
+      await prisma.feeds.upsert({
         where: { url: feedData.url },
         update: {
           name: feedData.name, // Update name in case it changed
@@ -91,22 +93,6 @@ export async function ensureDefaultFeedsExist(): Promise<void> {
           settings: {
             refreshInterval: 3600, // 1 hour default
           },
-          // updatedAt is auto-managed by Prisma via @updatedAt directive
-        },
-      });
-
-      // Ensure feed-category association exists
-      await prisma.feed_categories.upsert({
-        where: {
-          feedId_categoryId: {
-            feedId: feed.id,
-            categoryId: category.id,
-          },
-        },
-        update: {},
-        create: {
-          feedId: feed.id,
-          categoryId: category.id,
         },
       });
 
@@ -122,6 +108,7 @@ export async function ensureDefaultFeedsExist(): Promise<void> {
 /**
  * Subscribe a new user to all default feeds
  * This should be called when a user is created
+ * Creates user categories and assigns feeds to them
  */
 export async function subscribeUserToDefaultFeeds(userId: string): Promise<void> {
   console.log(`🔄 Subscribing user ${userId} to default feeds...`);
@@ -131,6 +118,7 @@ export async function subscribeUserToDefaultFeeds(userId: string): Promise<void>
 
   let subscribedCount = 0;
   let skippedCount = 0;
+  const categoryMap = new Map<string, string>(); // categoryName -> categoryId
 
   for (const feedData of DEFAULT_FEEDS) {
     try {
@@ -160,10 +148,32 @@ export async function subscribeUserToDefaultFeeds(userId: string): Promise<void>
         continue;
       }
 
+      // Ensure user category exists (create once per category name)
+      let categoryId = categoryMap.get(feedData.categoryName);
+      if (!categoryId) {
+        let userCategory = await getUserCategoryByName(userId, feedData.categoryName);
+        if (!userCategory) {
+          console.log(`📁 Creating user category: ${feedData.categoryName}`);
+          userCategory = await createUserCategory(
+            userId,
+            feedData.categoryName,
+            `${feedData.categoryName} content`,
+            undefined,
+            feedData.categoryIcon
+          );
+        }
+        categoryId = userCategory.id;
+        categoryMap.set(feedData.categoryName, categoryId);
+      }
+
       // Subscribe user to feed
-      await subscribeFeed(userId, feed.id, feedData.name);
+      const userFeed = await subscribeFeed(userId, feed.id, feedData.name);
+
+      // Assign feed to user category
+      await assignFeedToCategory(userId, userFeed.id, categoryId);
+
       subscribedCount++;
-      console.log(`✅ Subscribed to: ${feedData.name}`);
+      console.log(`✅ Subscribed to: ${feedData.name} (${feedData.categoryName})`);
     } catch (error) {
       console.error(`❌ Failed to subscribe to feed: ${feedData.name}`, error);
     }

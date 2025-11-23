@@ -12,6 +12,7 @@ export const dynamic = "force-dynamic";
  * Feed settings schema
  */
 const feedSettingsSchema = z.object({
+  customName: z.string().optional().nullable(),
   refreshInterval: z.number().min(15).max(1440).optional().nullable(),
   maxArticlesPerFeed: z.number().min(50).max(5000).optional().nullable(),
   maxArticleAge: z.number().min(1).max(365).optional().nullable(),
@@ -48,6 +49,7 @@ export const GET = createHandler(
     return {
       effective: effectiveSettings,
       overrides: {
+        customName: userFeed.customName ?? null,
         refreshInterval: feedSettings?.refreshInterval ?? null,
         maxArticlesPerFeed: feedSettings?.maxArticlesPerFeed ?? null,
         maxArticleAge: feedSettings?.maxArticleAge ?? null,
@@ -116,7 +118,7 @@ export const PUT = createHandler(
       }
     });
 
-    // Update user feed settings
+    // Update user feed settings and custom name
     const updatedUserFeed = await prisma.user_feeds.update({
       where: {
         userId_feedId: {
@@ -126,6 +128,9 @@ export const PUT = createHandler(
       },
       data: {
         settings: newSettings,
+        ...(body.customName !== undefined && {
+          customName: body.customName || null,
+        }),
       },
     });
 

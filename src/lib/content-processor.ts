@@ -34,11 +34,10 @@ export function processArticleContent(
   // Process images (lazy loading, etc.)
   processed = processImages(processed);
 
-  // Link plain text URLs in HTML content
-  processed = linkifyHtmlContent(processed);
-
   // Embed YouTube videos
   processed = embedYouTubeVideos(processed);
+
+  // Note: URL linkification is now handled client-side for better performance
 
   return processed;
 }
@@ -433,28 +432,63 @@ export function validateContentLength(
 
 /**
  * Convert plain text URLs in HTML to clickable links
+ * Only processes URLs in text content, not in HTML tags/attributes
  * @param html - HTML content
  * @returns HTML with linkified URLs
  */
 export function linkifyHtmlContent(html: string): string {
-  // URL pattern that matches http:// and https:// URLs not already in href or src attributes
-  // This regex looks for URLs that are NOT preceded by href=" or src="
-  const urlPattern = /(?<!href="|src="|href='|src=')(https?:\/\/[^\s<>"']+)(?![^<]*<\/a>)/gi;
-  
-  return html.replace(urlPattern, (url) => {
+  // Split HTML into tags and text content
+  const parts: string[] = [];
+  let lastIndex = 0;
+
+  // Match HTML tags (including attributes)
+  const tagPattern = /<[^>]+>/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = tagPattern.exec(html)) !== null) {
+    // Add text content before this tag
+    if (match.index > lastIndex) {
+      const textContent = html.slice(lastIndex, match.index);
+      parts.push(linkifyTextContent(textContent));
+    }
+
+    // Add the tag as-is (don't linkify URLs in tags)
+    parts.push(match[0]);
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text content
+  if (lastIndex < html.length) {
+    const textContent = html.slice(lastIndex);
+    parts.push(linkifyTextContent(textContent));
+  }
+
+  return parts.join('');
+}
+
+/**
+ * Linkify URLs in plain text content only
+ * @param text - Plain text content (not HTML tags)
+ * @returns Text with URLs converted to links
+ */
+function linkifyTextContent(text: string): string {
+  // URL pattern for plain text
+  const urlPattern = /(https?:\/\/[^\s<>"]+)/gi;
+
+  return text.replace(urlPattern, (url) => {
     // Remove trailing punctuation that might be part of the sentence
     let cleanUrl = url;
     const trailingPunctuation = /[.,;:!?)]$/;
     let suffix = '';
-    
+
     while (trailingPunctuation.test(cleanUrl)) {
       suffix = cleanUrl[cleanUrl.length - 1] + suffix;
       cleanUrl = cleanUrl.slice(0, -1);
     }
-    
+
     const safeHref = escapeAttribute(cleanUrl);
     const safeLabel = escapeHtml(cleanUrl);
-    
+
     return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer">${safeLabel}</a>${suffix}`;
   });
 }

@@ -4,6 +4,7 @@ import { useRef, useState, useCallback } from "react";
 import { ArticleToolbar } from "./ArticleToolbar";
 import { ArticleSummary, ArticleSummaryRef } from "./ArticleSummary";
 import { useUserPreferences, type UserPreferences } from "@/hooks/queries/use-user-preferences";
+import { useLinkifyContent } from "@/hooks/use-linkify-content";
 
 interface ReadingPreferences {
   readingFontFamily: string;
@@ -41,7 +42,7 @@ interface ArticlePageClientProps {
   articleId: string;
   articleUrl: string;
   headerContent: React.ReactNode;
-  mainContent: React.ReactNode;
+  content: string; // Changed from mainContent ReactNode to content string
   footerContent: React.ReactNode;
   readingTime?: number;
   initialSummary?: {
@@ -55,18 +56,22 @@ export function ArticlePageClient({
   articleId,
   articleUrl,
   headerContent,
-  mainContent,
+  content,
   footerContent,
   readingTime,
   initialSummary = null,
 }: ArticlePageClientProps) {
   const summaryRef = useRef<ArticleSummaryRef>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [hasSummary, setHasSummary] = useState(!!initialSummary);
 
   // Use React Query to fetch preferences
   const { data: preferencesData } = useUserPreferences();
   const preferences = preferencesData ? extractReadingPreferences(preferencesData) : null;
+
+  // Linkify URLs in content on the client side
+  useLinkifyContent(contentRef);
 
   const handleGenerateSummary = useCallback(async () => {
     if (!summaryRef.current) return;
@@ -105,13 +110,13 @@ export function ArticlePageClient({
 
       {/* Main Content (Article body) */}
       <div
-        className="[&>div]:prose [&>div]:prose-lg [&>div]:max-w-none [&>div]:dark:prose-invert [&_p]:mb-[var(--paragraph-spacing)] [&_br]:block [&_br]:mb-[var(--break-line-spacing)]"
+        ref={contentRef}
+        className="prose prose-lg max-w-none dark:prose-invert [&_p]:mb-[var(--paragraph-spacing)] [&_br]:block [&_br]:mb-[var(--break-line-spacing)]"
         style={{
           ...getReadingStyles(preferences),
         }}
-      >
-        {mainContent}
-      </div>
+        dangerouslySetInnerHTML={{ __html: content }}
+      />
 
       {/* Footer Content (Feedback, Related Articles) */}
       {footerContent}

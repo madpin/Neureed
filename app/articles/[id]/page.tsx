@@ -128,7 +128,7 @@ export default function ArticlePage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation Bar */}
-      <div className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur">
+      <div className="md:sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto max-w-4xl px-4 py-3">
           <div className="flex items-center justify-between">
             <button
@@ -160,7 +160,7 @@ export default function ArticlePage() {
         articleId={article.id}
         articleUrl={article.url}
         headerContent={headerContent}
-        mainContent={<div dangerouslySetInnerHTML={{ __html: processedContent }} />}
+        content={processedContent}
         footerContent={footerContent}
         readingTime={readingTime}
         initialSummary={parsedSummary}

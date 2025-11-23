@@ -10,3 +10,4 @@
 -- This is a no-op migration as the database schema doesn't change,
 -- but it ensures the migration history is consistent with the schema.prisma changes.
 
+

@@ -18,7 +18,7 @@ export function ArticleToolbar({
   showReadingTime = true,
 }: ArticleToolbarProps) {
   return (
-    <div className="sticky top-0 z-10 -mx-4 mb-4 border-y border-border bg-background/95 px-4 py-3 backdrop-blur-sm border-border bg-background/95">
+    <div className="md:sticky top-0 z-10 -mx-4 mb-4 border-y border-border bg-background/95 px-4 py-3 backdrop-blur-sm border-border bg-background/95">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <a

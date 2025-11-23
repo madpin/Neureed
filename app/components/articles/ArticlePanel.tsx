@@ -11,6 +11,7 @@ import { processArticleContent, estimateReadingTime } from "@/lib/content-proces
 import { formatLocalizedDateTime, toISOString as formatISOString } from "@/lib/date-utils";
 import { useArticle } from "@/hooks/queries/use-articles";
 import { useUserPreferences, type UserPreferences } from "@/hooks/queries/use-user-preferences";
+import { useLinkifyContent } from "@/hooks/use-linkify-content";
 
 interface ReadingPreferences {
   readingFontFamily: string;
@@ -50,6 +51,7 @@ function normalizeKeyPoints(value: unknown): string[] {
 
 export function ArticlePanel({ articleId, onClose, onReadStatusChange }: ArticlePanelProps) {
   const summaryRef = useRef<ArticleSummaryRef>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [hasSummary, setHasSummary] = useState(false);
   const [readingTime, setReadingTime] = useState<number>(0);
@@ -57,6 +59,9 @@ export function ArticlePanel({ articleId, onClose, onReadStatusChange }: Article
   // Use React Query hooks
   const { data: article, isLoading, error } = useArticle(articleId);
   const { data: userPrefs } = useUserPreferences();
+
+  // Linkify URLs in content on the client side
+  useLinkifyContent(contentRef);
   
   // Map user preferences to reading preferences
   const preferences: ReadingPreferences | null = userPrefs ? {
@@ -297,6 +302,7 @@ export function ArticlePanel({ articleId, onClose, onReadStatusChange }: Article
 
           {/* Content */}
           <div
+            ref={contentRef}
             className="prose prose-lg max-w-none dark:prose-invert prose-headings:font-bold prose-a:text-blue-600 hover:prose-a:underline dark:prose-a:text-blue-400 [&_p]:mb-[var(--paragraph-spacing)] [&_br]:block [&_br]:mb-[var(--break-line-spacing)]"
             style={{
               ...getReadingStyles(preferences),

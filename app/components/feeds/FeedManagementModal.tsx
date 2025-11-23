@@ -978,6 +978,7 @@ function FeedSettingsView({
 
       // Prepare settings object
       const settings = {
+        customName: customName.trim() || null,
         refreshInterval: fetchInterval,
         // Other settings would go here
       };
