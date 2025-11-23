@@ -205,6 +205,80 @@ npm run dev
   </tr>
 </table>
 
+### Theme Gallery
+
+NeuReed comes with a variety of beautiful themes to match your style and mood:
+
+<table>
+  <tr>
+    <td width="33%">
+      <img src="docs/screenshots/20251123/themes/light-theme.jpeg" alt="Light Theme"/>
+      <p align="center"><em>Light</em></p>
+    </td>
+    <td width="33%">
+      <img src="docs/screenshots/20251123/themes/dark-theme.jpeg" alt="Dark Theme"/>
+      <p align="center"><em>Dark</em></p>
+    </td>
+    <td width="33%">
+      <img src="docs/screenshots/20251123/themes/nord-light-theme.jpeg" alt="Nord Light"/>
+      <p align="center"><em>Nord Light</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="33%">
+      <img src="docs/screenshots/20251123/themes/nord-dark-theme.jpeg" alt="Nord Dark"/>
+      <p align="center"><em>Nord Dark</em></p>
+    </td>
+    <td width="33%">
+      <img src="docs/screenshots/20251123/themes/solarized-light-theme.jpeg" alt="Solarized Light"/>
+      <p align="center"><em>Solarized Light</em></p>
+    </td>
+    <td width="33%">
+      <img src="docs/screenshots/20251123/themes/solarized-dark-theme.jpeg" alt="Solarized Dark"/>
+      <p align="center"><em>Solarized Dark</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="33%">
+      <img src="docs/screenshots/20251123/themes/barbie-light-theme.jpeg" alt="Barbie Light"/>
+      <p align="center"><em>Barbie Light</em></p>
+    </td>
+    <td width="33%">
+      <img src="docs/screenshots/20251123/themes/barbie-dark-theme.jpeg" alt="Barbie Dark"/>
+      <p align="center"><em>Barbie Dark</em></p>
+    </td>
+    <td width="33%">
+      <img src="docs/screenshots/20251123/themes/purple-light-theme.jpeg" alt="Purple Light"/>
+      <p align="center"><em>Purple Light</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="33%">
+      <img src="docs/screenshots/20251123/themes/purple-dark-theme.jpeg" alt="Purple Dark"/>
+      <p align="center"><em>Purple Dark</em></p>
+    </td>
+    <td width="33%">
+      <img src="docs/screenshots/20251123/themes/orange-light-theme.jpeg" alt="Orange Light"/>
+      <p align="center"><em>Orange Light</em></p>
+    </td>
+    <td width="33%">
+      <img src="docs/screenshots/20251123/themes/orange-dark-theme.jpeg" alt="Orange Dark"/>
+      <p align="center"><em>Orange Dark</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="33%">
+      <img src="docs/screenshots/20251123/themes/rainbow-light-theme.jpeg" alt="Rainbow Light"/>
+      <p align="center"><em>Rainbow Light</em></p>
+    </td>
+    <td width="33%">
+      <img src="docs/screenshots/20251123/themes/rainbow-dark-theme.jpeg" alt="Rainbow Dark"/>
+      <p align="center"><em>Rainbow Dark</em></p>
+    </td>
+    <td width="33%"></td>
+  </tr>
+</table>
+
 ### Feed Management & Configuration
 
 <table>

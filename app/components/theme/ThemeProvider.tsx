@@ -73,15 +73,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Public setters that update state and apply immediately
-  const setTheme = (newTheme: ThemeMode) => {
+  const setTheme = useCallback((newTheme: ThemeMode) => {
     setThemeState(newTheme);
     applyTheme(newTheme);
-  };
+  }, [applyTheme]);
 
-  const setFontSize = (newSize: string) => {
+  const setFontSize = useCallback((newSize: string) => {
     setFontSizeState(newSize);
     applyFontSize(newSize);
-  };
+  }, [applyFontSize]);
 
   // Load initial preferences from localStorage
   useEffect(() => {
