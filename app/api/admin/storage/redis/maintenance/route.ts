@@ -14,7 +14,7 @@ const maintenanceSchema = z.object({
   operation: z.enum(["flushdb", "flushall", "save", "bgsave", "bgrewriteaof"]),
 });
 
-export async function POST(_req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { operation } = maintenanceSchema.parse(body);

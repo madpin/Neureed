@@ -74,7 +74,7 @@ export async function cacheSet(
     return true;
   } catch (error) {
     stats.errors++;
-    logger.error("Cache set error", { key, _error });
+    logger.error("Cache set error", { key, error });
     return false;
   }
 }

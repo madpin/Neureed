@@ -15,7 +15,7 @@ const maintenanceSchema = z.object({
   table: z.string().optional(), // If not provided, runs on all tables
 });
 
-export async function POST(_req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { operation, table } = maintenanceSchema.parse(body);

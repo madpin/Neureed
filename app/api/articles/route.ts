@@ -1,5 +1,5 @@
 import { getRecentArticles } from "@/lib/services/article-service";
-import { articleQuerySchema } from "@/lib/validations/article-validation";
+import { articleQuerySchema, type ArticleQueryInput } from "@/lib/validations/article-validation";
 import { createHandler } from "@/lib/api-handler";
 import { getCurrentUser } from "@/lib/middleware/auth-middleware";
 import { getUserFeedIds } from "@/lib/services/user-feed-service";
@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
  */
 export const GET = createHandler(
   async ({ query }) => {
-    const { page = 1, limit = 20, feedId, categoryId, sortBy, sortDirection } = query as Record<string, string | number | undefined>;
+    const { page = 1, limit = 20, feedId, categoryId, sortBy, sortDirection } = query as ArticleQueryInput;
 
     // Check if user is authenticated
     const user = await getCurrentUser();
@@ -81,14 +81,7 @@ export const GET = createHandler(
         : { feedId: { in: subscribedFeedIds } };
 
       // Build orderBy clause based on sort option
-      type OrderByClause = 
-        | { publishedAt: { sort: "desc" | "asc"; nulls: "last" } }
-        | { createdAt: "desc" | "asc" }
-        | { title: "desc" | "asc" }
-        | { updatedAt: "desc" | "asc" }
-        | { feeds: { title: "desc" | "asc" } };
-      
-      let orderBy: OrderByClause | OrderByClause[];
+      let orderBy: any;
 
       if (finalSortBy === "relevance") {
         // For relevance sorting, we'll fetch scores and sort in memory
@@ -103,7 +96,7 @@ export const GET = createHandler(
         orderBy = { updatedAt: finalSortDirection };
       } else if (finalSortBy === "feed") {
         orderBy = [
-          { feeds: { name: finalSortDirection } },
+          { feeds: { title: finalSortDirection } },
           { publishedAt: { sort: "desc", nulls: "last" } },
           { createdAt: "desc" }
         ];
