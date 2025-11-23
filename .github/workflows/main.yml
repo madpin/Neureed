@@ -56,6 +56,8 @@ jobs:
 
       - name: Generate Prisma Client
         run: npm run db:generate
+        env:
+          DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
 
       - name: Lint
         run: npm run lint
@@ -69,6 +71,7 @@ jobs:
         env:
           SKIP_ENV_VALIDATION: "1"
           NODE_OPTIONS: "--max-old-space-size=4096"
+          DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
 
       - name: Set up Docker Buildx
         if: github.event_name != 'pull_request'
