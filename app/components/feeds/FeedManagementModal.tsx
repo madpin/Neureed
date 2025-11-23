@@ -637,7 +637,7 @@ function ManagementOverview({
                     const feedSettings = feed.settings || {};
                     const refreshInterval = feedSettings.refreshInterval || 60;
                     const hasExtractionSettings = (feed as any).settings?.extraction;
-                    const extractionMethod = hasExtractionSettings?.method || "rss";
+                    const extractionMethod = hasExtractionSettings?.method || "readability";
                     
                     return (
                       <tr 
@@ -918,7 +918,7 @@ function FeedSettingsView({
   const [includeTopics, setIncludeTopics] = useState(true);
   
   // Advanced Extraction Settings
-  const [extractionMethod, setExtractionMethod] = useState<"rss" | "readability" | "playwright" | "custom">("rss");
+  const [extractionMethod, setExtractionMethod] = useState<"rss" | "readability" | "playwright" | "custom">("readability");
   const [requiresAuth, setRequiresAuth] = useState(false);
   const [contentMergeStrategy, setContentMergeStrategy] = useState<"replace" | "prepend" | "append">("replace");
   const [cookies, setCookies] = useState("");

@@ -92,6 +92,9 @@ export async function ensureDefaultFeedsExist(): Promise<void> {
           url: feedData.url,
           settings: {
             refreshInterval: 3600, // 1 hour default
+            extraction: {
+              method: "readability", // Default extraction method
+            },
           },
         },
       });

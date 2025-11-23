@@ -54,7 +54,7 @@ export async function createFeed(data: CreateFeedInput): Promise<feeds> {
     throw new Error("Feed already exists");
   }
 
-  // Create feed
+  // Create feed with default extraction method set to "readability"
   const feed = await prisma.feeds.create({
     data: {
       id: `feed_${Date.now()}_${Math.random().toString(36).substring(7)}`,
@@ -64,6 +64,11 @@ export async function createFeed(data: CreateFeedInput): Promise<feeds> {
       siteUrl: data.siteUrl,
       imageUrl: data.imageUrl,
       fetchInterval: data.fetchInterval || 60,
+      settings: {
+        extraction: {
+          method: "readability",
+        },
+      },
       // updatedAt is auto-managed by Prisma via @updatedAt directive
       feed_categories: data.categoryIds
         ? {

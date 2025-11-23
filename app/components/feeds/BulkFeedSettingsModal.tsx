@@ -22,7 +22,7 @@ const DEFAULTS = {
   refreshInterval: 60,
   maxArticlesPerFeed: 500,
   maxArticleAge: 90,
-  extractionMethod: "rss" as const,
+  extractionMethod: "readability" as const,
 };
 
 export function BulkFeedSettingsModal({
