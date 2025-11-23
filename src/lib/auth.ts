@@ -120,7 +120,7 @@ export const authConfig: NextAuthConfig = {
               showRelatedExcerpts: false,
               bounceThreshold: 0.25,
               showLowRelevanceArticles: true,
-              updatedAt: new Date(),
+              // updatedAt is auto-managed by Prisma via @updatedAt directive
             },
           });
         }

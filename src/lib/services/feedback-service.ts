@@ -43,13 +43,13 @@ export async function recordExplicitFeedback(
       feedbackType: "explicit",
       feedbackValue,
       estimatedTime,
-      updatedAt: new Date(),
+      // updatedAt is auto-managed by Prisma via @updatedAt directive
     },
     update: {
       feedbackType: "explicit",
       feedbackValue,
       estimatedTime,
-      updatedAt: new Date(),
+      // updatedAt is auto-managed by Prisma via @updatedAt directive
     },
   });
 }
@@ -151,14 +151,14 @@ export async function recordArticleExit(
       feedbackValue,
       timeSpent,
       estimatedTime,
-      updatedAt: new Date(),
+      // updatedAt is auto-managed by Prisma via @updatedAt directive
     },
     update: {
       feedbackType: "implicit",
       feedbackValue,
       timeSpent,
       estimatedTime,
-      updatedAt: new Date(),
+      // updatedAt is auto-managed by Prisma via @updatedAt directive
     },
   });
 }

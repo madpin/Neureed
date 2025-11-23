@@ -65,7 +65,7 @@ export async function createCategory(
       id: `cat_${Date.now()}_${Math.random().toString(36).substring(7)}`,
       name: name.trim(),
       description: description?.trim(),
-      updatedAt: new Date(),
+      // updatedAt is auto-managed by Prisma via @updatedAt directive
     },
   });
 }

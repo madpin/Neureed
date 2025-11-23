@@ -245,7 +245,7 @@ export async function updateUserPatterns(
           keyword,
           weight: weightChange,
           feedbackCount: 1,
-          updatedAt: new Date(),
+          // updatedAt is auto-managed by Prisma via @updatedAt directive
         },
         update: {
           weight: {
@@ -254,7 +254,7 @@ export async function updateUserPatterns(
           feedbackCount: {
             increment: 1,
           },
-          updatedAt: new Date(),
+          // updatedAt is auto-managed by Prisma via @updatedAt directive
         },
       });
     }

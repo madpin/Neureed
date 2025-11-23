@@ -443,14 +443,14 @@ async function updateAdminSetting(
       update: {
         value,
         description: description || undefined,
-        updatedAt: new Date(),
+        // updatedAt is auto-managed by Prisma via @updatedAt directive
       },
       create: {
         id: `admin_${key}_${Date.now()}`,
         key,
         value,
         description,
-        updatedAt: new Date(),
+        // updatedAt is auto-managed by Prisma via @updatedAt directive
       },
     });
   } catch (error) {

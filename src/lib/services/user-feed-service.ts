@@ -30,7 +30,7 @@ export async function subscribeFeed(
       userId,
       feedId,
       customName,
-      updatedAt: new Date(),
+      // updatedAt is auto-managed by Prisma via @updatedAt directive
     },
   });
 

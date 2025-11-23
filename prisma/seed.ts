@@ -18,7 +18,6 @@ async function main() {
       id: "cat_tech_001",
       name: "Technology",
       description: "Tech news and articles",
-      updatedAt: new Date(),
     },
   });
 
@@ -29,7 +28,6 @@ async function main() {
       id: "cat_news_001",
       name: "News",
       description: "General news content",
-      updatedAt: new Date(),
     },
   });
 
@@ -40,7 +38,6 @@ async function main() {
       id: "cat_science_001",
       name: "Science",
       description: "Science and research content",
-      updatedAt: new Date(),
     },
   });
 
@@ -51,7 +48,6 @@ async function main() {
       id: "cat_positive_001",
       name: "Positive News",
       description: "Uplifting and positive news stories",
-      updatedAt: new Date(),
     },
   });
 
@@ -62,7 +58,6 @@ async function main() {
       id: "cat_satire_001",
       name: "Satire",
       description: "Satirical news and comedy",
-      updatedAt: new Date(),
     },
   });
 
@@ -73,7 +68,6 @@ async function main() {
       id: "cat_ai_001",
       name: "AI & Machine Learning",
       description: "Artificial Intelligence and ML content",
-      updatedAt: new Date(),
     },
   });
 
@@ -84,7 +78,6 @@ async function main() {
       id: "cat_webdev_001",
       name: "Web Development",
       description: "Web development tutorials and news",
-      updatedAt: new Date(),
     },
   });
 
@@ -101,7 +94,6 @@ async function main() {
       settings: {
         refreshInterval: 3600,
       },
-      updatedAt: new Date(),
     },
   });
 
@@ -115,7 +107,6 @@ async function main() {
       settings: {
         refreshInterval: 3600,
       },
-      updatedAt: new Date(),
     },
   });
 
@@ -129,7 +120,6 @@ async function main() {
       settings: {
         refreshInterval: 3600,
       },
-      updatedAt: new Date(),
     },
   });
 
@@ -143,7 +133,6 @@ async function main() {
       settings: {
         refreshInterval: 1800, // 30 minutes for news
       },
-      updatedAt: new Date(),
     },
   });
 
@@ -157,7 +146,6 @@ async function main() {
       settings: {
         refreshInterval: 7200, // 2 hours for science journals
       },
-      updatedAt: new Date(),
     },
   });
 
@@ -171,7 +159,6 @@ async function main() {
       settings: {
         refreshInterval: 7200,
       },
-      updatedAt: new Date(),
     },
   });
 
@@ -185,7 +172,6 @@ async function main() {
       settings: {
         refreshInterval: 7200,
       },
-      updatedAt: new Date(),
     },
   });
 
@@ -199,7 +185,6 @@ async function main() {
       settings: {
         refreshInterval: 7200,
       },
-      updatedAt: new Date(),
     },
   });
 
@@ -213,7 +198,6 @@ async function main() {
       settings: {
         refreshInterval: 3600,
       },
-      updatedAt: new Date(),
     },
   });
 
@@ -228,7 +212,6 @@ async function main() {
       settings: {
         refreshInterval: 7200,
       },
-      updatedAt: new Date(),
     },
   });
 
@@ -242,7 +225,6 @@ async function main() {
       settings: {
         refreshInterval: 86400,
       },
-      updatedAt: new Date(),
     },
   });
 
@@ -420,7 +402,6 @@ async function main() {
       content: "This is a sample technology article for testing purposes from Hacker News.",
       url: "https://example.com/tech-article-hn",
       publishedAt: new Date("2024-01-01"),
-      updatedAt: new Date(),
     },
     {
       id: "art_002",
@@ -429,7 +410,6 @@ async function main() {
       content: "Sample content about a tech startup raising funding.",
       url: "https://example.com/startup-funding",
       publishedAt: new Date("2024-01-02"),
-      updatedAt: new Date(),
     },
     {
       id: "art_003",
@@ -438,7 +418,6 @@ async function main() {
       content: "Sample content about international news.",
       url: "https://example.com/global-summit",
       publishedAt: new Date("2024-01-03"),
-      updatedAt: new Date(),
     },
     {
       id: "art_004",
@@ -447,7 +426,6 @@ async function main() {
       content: "Sample content about scientific breakthrough.",
       url: "https://example.com/quantum-discovery",
       publishedAt: new Date("2024-01-04"),
-      updatedAt: new Date(),
     },
     {
       id: "art_005",
@@ -456,7 +434,6 @@ async function main() {
       content: "Sample content about positive community action.",
       url: "https://example.com/community-help",
       publishedAt: new Date("2024-01-05"),
-      updatedAt: new Date(),
     },
   ];
 
@@ -479,7 +456,6 @@ async function main() {
       email: "test@neureed.com",
       name: "Test User",
       emailVerified: new Date(),
-      updatedAt: new Date(),
     },
   });
 
@@ -499,7 +475,6 @@ async function main() {
       showReadArticles: true,
       autoMarkAsRead: false,
       showRelatedExcerpts: false,
-      updatedAt: new Date(),
     },
   });
 
@@ -518,7 +493,6 @@ async function main() {
       id: "userfeed_001",
       userId: testUser.id,
       feedId: hackerNewsFeed.id,
-      updatedAt: new Date(),
     },
   });
 
@@ -535,7 +509,6 @@ async function main() {
       userId: testUser.id,
       feedId: vercelBlogFeed.id,
       customName: "Vercel Updates",
-      updatedAt: new Date(),
     },
   });
 
@@ -575,7 +548,6 @@ async function main() {
       key: "embedding_auto_generate",
       value: false,
       description: "Automatically generate embeddings when importing feed articles",
-      updatedAt: new Date(),
     },
   });
 

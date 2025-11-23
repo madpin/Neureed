@@ -53,7 +53,7 @@ export async function createNotification(
         message: data.message,
         metadata: data.metadata ?? undefined,
         read: false,
-        updatedAt: new Date(),
+        // updatedAt is auto-managed by Prisma via @updatedAt directive
       },
     });
 
@@ -155,7 +155,7 @@ export async function markNotificationAsRead(
     },
     data: {
       read: true,
-      updatedAt: new Date(),
+      // updatedAt is auto-managed by Prisma via @updatedAt directive
     },
   });
 }
@@ -173,7 +173,7 @@ export async function markAllNotificationsAsRead(
     },
     data: {
       read: true,
-      updatedAt: new Date(),
+      // updatedAt is auto-managed by Prisma via @updatedAt directive
     },
   });
 

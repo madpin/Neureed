@@ -74,7 +74,7 @@ export async function ensureDefaultFeedsExist(): Promise<void> {
           id: `cat_${feedData.categoryName.toLowerCase().replace(/\s+/g, "_")}_${Date.now()}`,
           name: feedData.categoryName,
           description: `${feedData.categoryName} content`,
-          updatedAt: new Date(),
+          // updatedAt is auto-managed by Prisma via @updatedAt directive
         },
       });
 
@@ -91,7 +91,7 @@ export async function ensureDefaultFeedsExist(): Promise<void> {
           settings: {
             refreshInterval: 3600, // 1 hour default
           },
-          updatedAt: new Date(),
+          // updatedAt is auto-managed by Prisma via @updatedAt directive
         },
       });
 

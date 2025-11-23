@@ -160,7 +160,7 @@ export async function createArticle(
       contentHash,
       // Ensure publishedAt always has a value, fallback to current time
       publishedAt: data.publishedAt || new Date(),
-      updatedAt: new Date(),
+      // updatedAt is auto-managed by Prisma via @updatedAt directive
     },
   });
 }
@@ -405,7 +405,7 @@ export async function markArticleAsUpdated(
     data: {
       content: newContent,
       contentHash,
-      updatedAt: new Date(),
+      // updatedAt is auto-managed by Prisma via @updatedAt directive
     },
   });
 

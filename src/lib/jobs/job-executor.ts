@@ -38,7 +38,7 @@ export async function executeTrackedJob<T>(
       status: "RUNNING",
       triggeredBy,
       startedAt: new Date(),
-      updatedAt: new Date(),
+      // updatedAt is auto-managed by Prisma via @updatedAt directive
     },
   });
 
@@ -62,7 +62,7 @@ export async function executeTrackedJob<T>(
           status: "SUCCESS",
           completedAt: new Date(),
           durationMs: duration,
-          updatedAt: new Date(),
+          // updatedAt is auto-managed by Prisma via @updatedAt directive
           stats: result.stats || {},
           logs: (result.logs || []) as any,
         },
@@ -77,7 +77,7 @@ export async function executeTrackedJob<T>(
           status: "FAILED",
           completedAt: new Date(),
           durationMs: duration,
-          updatedAt: new Date(),
+          // updatedAt is auto-managed by Prisma via @updatedAt directive
           errorMessage: result.error,
           logs: (result.logs || []) as any,
         },
@@ -96,7 +96,7 @@ export async function executeTrackedJob<T>(
         status: "FAILED",
         completedAt: new Date(),
         durationMs: duration,
-        updatedAt: new Date(),
+        // updatedAt is auto-managed by Prisma via @updatedAt directive
         errorMessage,
         logs: [] as any, // No logs captured if exception thrown before handler completes
       },

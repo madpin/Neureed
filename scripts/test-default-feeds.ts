@@ -23,7 +23,7 @@ async function testDefaultFeeds() {
         email: `test_${Date.now()}@neureed.com`,
         name: "Test User for Default Feeds",
         emailVerified: new Date(),
-        updatedAt: new Date(),
+        // updatedAt is auto-managed by Prisma via @updatedAt directive
       },
     });
 

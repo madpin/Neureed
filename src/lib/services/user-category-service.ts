@@ -173,7 +173,7 @@ export async function createUserCategory(
       settings,
       icon: icon || "📁",
       order,
-      updatedAt: new Date(),
+      // updatedAt is auto-managed by Prisma via @updatedAt directive
     },
   });
 }

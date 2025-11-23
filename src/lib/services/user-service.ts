@@ -33,7 +33,7 @@ export async function createUser(data: {
     data: {
       id: `user_${Date.now()}_${Math.random().toString(36).slice(2)}`,
       ...data,
-      updatedAt: new Date(),
+      // updatedAt is auto-managed by Prisma via @updatedAt directive
     },
   });
 }

@@ -60,7 +60,7 @@ async function main() {
       status: "FAILED",
       completedAt: new Date(),
       errorMessage: "Job timed out - marked as failed by cleanup script",
-      updatedAt: new Date(),
+      // updatedAt is auto-managed by Prisma via @updatedAt directive
     },
   });
 

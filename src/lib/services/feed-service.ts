@@ -64,7 +64,7 @@ export async function createFeed(data: CreateFeedInput): Promise<feeds> {
       siteUrl: data.siteUrl,
       imageUrl: data.imageUrl,
       fetchInterval: data.fetchInterval || 60,
-      updatedAt: new Date(),
+      // updatedAt is auto-managed by Prisma via @updatedAt directive
       feed_categories: data.categoryIds
         ? {
             create: data.categoryIds.map((categoryId) => ({
