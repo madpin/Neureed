@@ -24,7 +24,7 @@ export function getNextRunTime(cronExpression: string): Date | null {
   const [minutePart, hourPart, dayPart, monthPart, weekdayPart] = parts;
 
   // Create a new date starting from current time
-  let nextRun = new Date(now);
+  const nextRun = new Date(now);
   nextRun.setSeconds(0);
   nextRun.setMilliseconds(0);
 
