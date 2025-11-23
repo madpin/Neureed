@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.railpack.com",
   "deploy": {
-    "startCommand": "npx prisma migrate deploy --schema=./prisma/schema.prisma && npm start"
+    "startCommand": "npx prisma migrate deploy --schema=./prisma/schema.prisma && npx prisma generate && npm start"
   }
 }
