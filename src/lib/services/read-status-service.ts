@@ -1,5 +1,5 @@
 import { prisma } from "../db";
-import type { read_articles } from "@prisma/client";
+import type { read_articles } from "@/generated/prisma/client";
 import type { ReadArticleStatus } from "@/types/user";
 
 /**

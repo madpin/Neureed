@@ -73,7 +73,7 @@ if (
 }
 
 export const authConfig: NextAuthConfig = {
-  adapter: PrismaAdapter(prisma),
+  adapter: PrismaAdapter(prisma as any),
   providers,
   session: {
     strategy: "jwt",

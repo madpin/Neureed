@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { generateContentHash } from "@/lib/feed-parser";
-import type { articles } from "@prisma/client";
+import type { articles } from "@/generated/prisma/client";
 import type { ParsedArticle } from "@/lib/feed-parser";
 
 /**

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { user_notifications } from "@prisma/client";
+import { user_notifications } from "@/generated/prisma/client";
 import { nanoid } from "nanoid";
 import { logger } from "@/lib/logger";
 

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { feeds } from "@prisma/client";
+import type { feeds } from "@/generated/prisma/client";
 import { FeedSettingsPanel } from "./FeedSettingsPanel";
 
 interface FeedWithStats extends feeds {

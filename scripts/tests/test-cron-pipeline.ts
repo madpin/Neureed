@@ -4,12 +4,11 @@
  * Tests the entire feed refresh pipeline from cron to article display
  */
 
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../src/lib/db";
 import { refreshFeed } from "../../src/lib/services/feed-refresh-service";
 import { getFeedsToRefresh, getUserFeedsToRefresh } from "../../src/lib/services/feed-service";
 import { getSchedulerStatus } from "../../src/lib/jobs/scheduler";
 
-const prisma = new PrismaClient();
 
 async function main() {
   console.log("=".repeat(80));

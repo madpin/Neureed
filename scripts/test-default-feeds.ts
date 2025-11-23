@@ -5,10 +5,9 @@
  *   npx tsx scripts/test-default-feeds.ts
  */
 
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../src/lib/db";
 import { subscribeUserToDefaultFeeds, DEFAULT_FEEDS } from "../src/lib/services/default-feeds-service";
 
-const prisma = new PrismaClient();
 
 async function testDefaultFeeds() {
   console.log("🧪 Testing Default Feeds Subscription\n");

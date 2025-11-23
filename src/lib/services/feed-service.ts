@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { parseFeedUrl, validateFeedUrl, normalizeFeedUrl, isSafeFeedUrl } from "@/lib/feed-parser";
-import type { feeds, Prisma } from "@prisma/client";
+import type { feeds, Prisma } from "@/generated/prisma/client";
 
 /**
  * Input types for feed operations

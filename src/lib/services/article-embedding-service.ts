@@ -6,7 +6,7 @@
 import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { generateEmbedding, generateEmbeddings } from "./embedding-service";
-import type { articles } from "@prisma/client";
+import type { articles } from "@/generated/prisma/client";
 import type { EmbeddingProvider } from "@/lib/embeddings/types";
 
 /**

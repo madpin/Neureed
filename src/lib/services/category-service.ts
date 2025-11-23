@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import type { categories } from "@prisma/client";
+import type { categories } from "@/generated/prisma/client";
 
 /**
  * Get all categories

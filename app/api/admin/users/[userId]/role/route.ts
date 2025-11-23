@@ -6,7 +6,7 @@
 import { createHandler } from "@/lib/api-handler";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/generated/prisma/client";
 
 export const dynamic = "force-dynamic";
 

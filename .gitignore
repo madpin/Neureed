@@ -44,6 +44,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# prisma generated client
+/src/generated/
+
 # repository analysis files
 repomix-output.xml
 repomix-*.xml

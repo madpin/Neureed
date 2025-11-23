@@ -1,5 +1,5 @@
 import { prisma } from "../db";
-import type { user_preferences } from "@prisma/client";
+import type { user_preferences } from "@/generated/prisma/client";
 import { encrypt, decrypt, maskApiKey } from "../crypto";
 import { logger } from "../logger";
 import {

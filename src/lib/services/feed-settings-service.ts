@@ -3,7 +3,7 @@ import type { ExtractionSettings } from "@/lib/extractors/types";
 import { encrypt, decrypt } from "@/lib/services/encryption-service";
 import { testExtraction } from "@/lib/services/content-extraction-service";
 import { logger } from "@/lib/logger";
-import type { feeds } from "@prisma/client";
+import type { feeds } from "@/generated/prisma/client";
 
 /**
  * Feed settings service

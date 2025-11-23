@@ -8,7 +8,7 @@ import {
 import { cacheDeletePattern } from "@/lib/cache/cache-service";
 import { InvalidationPatterns } from "@/lib/cache/cache-keys";
 import { logger } from "@/lib/logger";
-import type { articles, Prisma } from "@prisma/client";
+import type { articles, Prisma } from "@/generated/prisma/client";
 import type { ParsedArticle } from "@/lib/feed-parser";
 
 /**

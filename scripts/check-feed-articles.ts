@@ -1,6 +1,5 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../src/lib/db";
 
-const prisma = new PrismaClient();
 
 async function main() {
   const feeds = await prisma.feeds.findMany({

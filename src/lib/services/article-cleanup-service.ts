@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 import { getEffectiveFeedSettings } from "./feed-settings-cascade";
 import { logger } from "@/lib/logger";
 

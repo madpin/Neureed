@@ -16,7 +16,7 @@ import {
   type LLMProviderConfig,
 } from "../llm/types";
 import { getUserPreferencesWithDecryptedKey } from "./user-preferences-service";
-import type { user_preferences } from "@prisma/client";
+import type { user_preferences } from "@/generated/prisma/client";
 import { trackSummarizationCost } from "./summarization-cost-tracker";
 
 /**

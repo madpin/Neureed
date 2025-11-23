@@ -4,7 +4,7 @@ import { getUserPatternsMap } from "./pattern-detection-service";
 import { stripHtml } from "../content-processor";
 import { cacheGet, cacheSet, cacheGetMany, cacheSetMany } from "../cache/cache-service";
 import { CacheKeys, CacheTTL } from "../cache/cache-keys";
-import type { articles } from "@prisma/client";
+import type { articles } from "@/generated/prisma/client";
 
 /**
  * Article score result

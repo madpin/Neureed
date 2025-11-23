@@ -6,7 +6,7 @@
 import { prisma } from "@/lib/db";
 import { env } from "@/env";
 import { logger } from "@/lib/logger";
-import { admin_settings } from "@prisma/client";
+import { admin_settings } from "@/generated/prisma/client";
 import { encrypt, decrypt, maskApiKey } from "@/lib/crypto";
 
 /**

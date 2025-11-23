@@ -1,5 +1,5 @@
 import { prisma } from "../db";
-import type { user_feeds, feeds } from "@prisma/client";
+import type { user_feeds, feeds } from "@/generated/prisma/client";
 import type { UserFeedSubscription, FeedWithSubscription } from "@/types/user";
 import { assignFeedToCategory } from "./user-category-service";
 

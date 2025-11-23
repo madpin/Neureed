@@ -3,7 +3,7 @@ import { stripHtml } from "../content-processor";
 import { logger } from "../logger";
 import { cacheDeletePattern } from "../cache/cache-service";
 import { InvalidationPatterns } from "../cache/cache-keys";
-import type { user_patterns } from "@prisma/client";
+import type { user_patterns } from "@/generated/prisma/client";
 
 /**
  * Common English stop words to filter out

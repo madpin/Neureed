@@ -1,5 +1,5 @@
 import { prisma } from "../db";
-import type { article_feedback } from "@prisma/client";
+import type { article_feedback } from "@/generated/prisma/client";
 import { estimateReadingTime } from "../content-processor";
 
 /**

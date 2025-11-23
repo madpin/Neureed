@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import type { user_categories, user_feed_categories, feeds } from "@prisma/client";
+import type { user_categories, user_feed_categories, feeds } from "@/generated/prisma/client";
 
 export interface UserCategoryWithFeeds extends user_categories {
   feedCount: number;

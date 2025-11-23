@@ -1,7 +1,7 @@
 import { auth } from "../auth";
 import { apiError } from "../api-response";
 import { prisma } from "../db";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/generated/prisma/client";
 
 /**
  * Get the current authenticated user from the session

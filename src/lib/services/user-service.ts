@@ -1,5 +1,5 @@
 import { prisma } from "../db";
-import type { User, user_preferences } from "@prisma/client";
+import type { User, user_preferences } from "@/generated/prisma/client";
 import type { UserWithPreferences } from "@/types/user";
 
 /**

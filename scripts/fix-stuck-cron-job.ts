@@ -7,9 +7,8 @@
  * Usage: npx tsx scripts/fix-stuck-cron-job.ts
  */
 
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../src/lib/db";
 
-const prisma = new PrismaClient();
 
 async function main() {
   console.log("Checking for stuck cron job runs...\n");

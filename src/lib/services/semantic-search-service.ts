@@ -6,7 +6,7 @@
 import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { generateEmbedding } from "./embedding-service";
-import type { articles, feeds } from "@prisma/client";
+import type { articles, feeds } from "@/generated/prisma/client";
 import type { EmbeddingProvider } from "@/lib/embeddings/types";
 
 export interface SearchResult extends articles {

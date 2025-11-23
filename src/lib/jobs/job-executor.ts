@@ -4,7 +4,7 @@
 
 import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import type { CronJobStatus, CronJobTrigger } from "@prisma/client";
+import type { CronJobStatus, CronJobTrigger } from "@/generated/prisma/client";
 import type { LogEntry } from "./job-logger";
 
 export interface JobResult<T = unknown> {

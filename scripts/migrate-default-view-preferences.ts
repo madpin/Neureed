@@ -11,9 +11,8 @@
  * Run with: npx tsx scripts/migrate-default-view-preferences.ts
  */
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../src/lib/db';
 
-const prisma = new PrismaClient();
 
 async function main() {
   console.log('Starting defaultView migration...');

@@ -1,4 +1,4 @@
-import type { User, user_preferences, user_feeds, feeds, read_articles } from "@prisma/client";
+import type { User, user_preferences, user_feeds, feeds, read_articles } from "@/generated/prisma/client";
 
 export type UserWithPreferences = User & {
   user_preferences: user_preferences | null;

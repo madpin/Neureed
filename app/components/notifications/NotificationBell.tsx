@@ -10,7 +10,7 @@ import {
   useMarkAllNotificationsAsRead,
   useDeleteNotification,
 } from "@/hooks/queries/use-notifications";
-import { user_notifications } from "@prisma/client";
+import { user_notifications } from "@/generated/prisma/client";
 
 export function NotificationBell() {
   const { data: session, status } = useSession();

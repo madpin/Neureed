@@ -1,5 +1,5 @@
 import { parseStringPromise, Builder } from "xml2js";
-import type { feeds, categories } from "@prisma/client";
+import type { feeds, categories } from "@/generated/prisma/client";
 
 /**
  * Represents a parsed feed from OPML

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { user_notifications } from "@prisma/client";
+import { user_notifications } from "@/generated/prisma/client";
 
 interface NotificationsResponse {
   data: user_notifications[];
