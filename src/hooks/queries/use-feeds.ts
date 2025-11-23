@@ -540,3 +540,44 @@ export function useClearFeedSummarizationSettings() {
     },
   });
 }
+
+/**
+ * Refresh last X articles response
+ */
+export interface RefreshArticlesResponse {
+  feedId: string;
+  articlesProcessed: number;
+  articlesUpdated: number;
+  articlesFailed: number;
+  embeddingsGenerated: number;
+  embeddingTokens: number;
+  duration: number;
+}
+
+/**
+ * Refresh last X articles for a feed
+ */
+async function refreshLastArticles(
+  feedId: string,
+  count: number
+): Promise<RefreshArticlesResponse> {
+  return await apiPost<RefreshArticlesResponse>(`/api/feeds/${feedId}/refresh-articles`, { count });
+}
+
+/**
+ * Hook to refresh last X articles for a feed
+ * Re-extracts content using the current extraction settings
+ */
+export function useRefreshLastArticles() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ feedId, count }: { feedId: string; count: number }) =>
+      refreshLastArticles(feedId, count),
+    onSuccess: () => {
+      // Invalidate articles to show updated content
+      queryClient.invalidateQueries({ queryKey: queryKeys.articles.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.feeds.all });
+    },
+  });
+}

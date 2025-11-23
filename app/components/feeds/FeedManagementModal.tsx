@@ -21,6 +21,7 @@ import {
   useFeedSummarizationSettings,
   useUpdateFeedSummarizationSettings,
   useClearFeedSummarizationSettings,
+  useRefreshLastArticles,
   type Feed as _Feed,
   type UserFeed as _UserFeed,
   type SummarizationSettings
@@ -888,6 +889,7 @@ function FeedSettingsView({
   const refreshFeedMutation = useRefreshFeed();
   const deleteFeedMutation = useDeleteFeed();
   const unsubscribeFeedMutation = useUnsubscribeFeed();
+  const refreshLastArticlesMutation = useRefreshLastArticles();
 
   // Summarization hooks
   const { data: summarizationConfigRaw } = useFeedSummarizationSettings(feedId);
@@ -910,6 +912,10 @@ function FeedSettingsView({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUnsubscribing, setIsUnsubscribing] = useState(false);
   const [showDangerZone, setShowDangerZone] = useState(false);
+
+  // Refresh articles state
+  const [isRefreshingArticles, setIsRefreshingArticles] = useState(false);
+  const [articlesToRefresh, setArticlesToRefresh] = useState(10);
 
   // Summarization state
   const [summarizationEnabled, setSummarizationEnabled] = useState(false);
@@ -1017,30 +1023,30 @@ function FeedSettingsView({
       setIsRefreshing(true);
       const feedName = feed?.name || "Feed";
       const toastId = `refresh-modal-${feedId}`;
-      
+
       toast.loading(
-        <div 
-          className="cursor-pointer" 
+        <div
+          className="cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
             toast.dismiss(toastId);
           }}
         >
           Refreshing {feedName}...
-        </div>, 
+        </div>,
         { id: toastId }
       );
-      
+
       // Let's check use-feeds.ts. useRefreshFeed expects `feedId: string`.
       // So removing parseInt.
       const data = await refreshFeedMutation.mutateAsync(feedId);
       const result = (data as any)?.data || data;
       const hasUpdates = (result?.newArticles || 0) > 0 || (result?.updatedArticles || 0) > 0;
-      
+
       if (hasUpdates) {
         toast.success(
-          <div 
-            className="flex flex-col gap-2 cursor-pointer" 
+          <div
+            className="flex flex-col gap-2 cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
               toast.dismiss(toastId);
@@ -1084,6 +1090,83 @@ function FeedSettingsView({
       toast.error(`Failed to refresh ${feedName}`, { id: toastId });
     } finally {
       setIsRefreshing(false);
+    }
+  };
+
+  const handleRefreshLastArticles = async () => {
+    try {
+      setIsRefreshingArticles(true);
+      const feedName = feed?.name || "Feed";
+      const toastId = `refresh-articles-modal-${feedId}`;
+
+      toast.loading(
+        <div
+          className="cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            toast.dismiss(toastId);
+          }}
+        >
+          Re-extracting last {articlesToRefresh} articles from {feedName}...
+        </div>,
+        { id: toastId }
+      );
+
+      const data = await refreshLastArticlesMutation.mutateAsync({
+        feedId,
+        count: articlesToRefresh
+      });
+      const result = (data as any)?.data || data;
+
+      toast.success(
+        <div
+          className="flex flex-col gap-2 cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            toast.dismiss(toastId);
+          }}
+        >
+          <div className="font-semibold">Articles re-extracted</div>
+          <div className="flex flex-wrap gap-2 text-xs">
+            <span className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded">
+              📄 {result.articlesProcessed} processed
+            </span>
+            {result.articlesUpdated > 0 && (
+              <span className="flex items-center gap-1 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded">
+                ✅ {result.articlesUpdated} updated
+              </span>
+            )}
+            {result.articlesFailed > 0 && (
+              <span className="flex items-center gap-1 bg-red-100 dark:bg-red-900/30 px-2 py-0.5 rounded">
+                ❌ {result.articlesFailed} failed
+              </span>
+            )}
+            {result.embeddingsGenerated > 0 && (
+              <span className="flex items-center gap-1 bg-purple-100 dark:bg-purple-900/30 px-2 py-0.5 rounded">
+                🧠 {result.embeddingsGenerated} embeddings
+              </span>
+            )}
+          </div>
+          <div className="text-xs text-gray-500 italic">Click to dismiss</div>
+        </div>,
+        { id: toastId, duration: 6000 }
+      );
+
+      onRefreshData?.();
+    } catch (error) {
+      console.error("Failed to refresh articles:", error);
+      const feedName = feed?.name || "Feed";
+      const toastId = `refresh-articles-modal-${feedId}`;
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      toast.error(
+        <div className="flex flex-col gap-1">
+          <div>Failed to refresh articles</div>
+          <div className="text-xs opacity-80">{errorMessage}</div>
+        </div>,
+        { id: toastId }
+      );
+    } finally {
+      setIsRefreshingArticles(false);
     }
   };
 
@@ -1245,7 +1328,7 @@ function FeedSettingsView({
       {/* Advanced Settings */}
       <div className="mb-6 space-y-4">
         <h3 className="text-base font-semibold">Advanced Settings</h3>
-        
+
         <div className="space-y-4 rounded-lg border border-border bg-background p-4">
           <div className="flex items-center gap-2">
             <input
@@ -1293,6 +1376,48 @@ function FeedSettingsView({
           </div>
         </div>
       </div>
+
+      {/* Re-extract Articles Section */}
+      {extractionMethod !== "rss" && (
+        <div className="mb-6 space-y-4">
+          <h3 className="text-base font-semibold">Re-extract Existing Articles</h3>
+
+          <div className="space-y-4 rounded-lg border border-border bg-background p-4">
+            <div className="rounded-lg bg-primary/10 p-3 dark:bg-primary/20">
+              <p className="text-xs text-primary/80 dark:text-primary/90">
+                <strong>When to use:</strong> If you changed the extraction method or merge strategy above,
+                you can re-extract recent articles to apply the new settings. This is especially useful when
+                switching from RSS to Readability/Playwright extraction.
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium">
+                Number of articles to re-extract (max 50)
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="50"
+                value={articlesToRefresh}
+                onChange={(e) => setArticlesToRefresh(Math.min(50, Math.max(1, parseInt(e.target.value, 10) || 1)))}
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+              <p className="mt-1.5 text-xs text-foreground/50">
+                Re-extracts the last X articles using the current extraction settings
+              </p>
+            </div>
+
+            <button
+              onClick={handleRefreshLastArticles}
+              disabled={isRefreshingArticles}
+              className="w-full rounded-lg border border-primary/30 px-4 py-2 font-medium text-primary hover:bg-primary/10 disabled:opacity-50 dark:border-primary/60 dark:text-primary dark:hover:bg-primary/20"
+            >
+              {isRefreshingArticles ? "Re-extracting..." : `Re-extract Last ${articlesToRefresh} Articles`}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Article Summarization */}
       <div className="mb-6 space-y-4">

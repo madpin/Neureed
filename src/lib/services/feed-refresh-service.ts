@@ -476,3 +476,246 @@ export function getRefreshStats(results: RefreshResult[]): {
   };
 }
 
+/**
+ * Result of refreshing specific articles
+ */
+export interface RefreshArticlesResult {
+  feedId: string;
+  success: boolean;
+  articlesProcessed: number;
+  articlesUpdated: number;
+  articlesFailed: number;
+  embeddingsGenerated: number;
+  embeddingTokens: number;
+  error?: string;
+  duration: number;
+}
+
+/**
+ * Refresh the last X articles for a feed
+ * Re-extracts content using the current extraction settings
+ * Useful when changing extraction methods
+ *
+ * @param feedId - Feed ID
+ * @param count - Number of articles to refresh (max 50)
+ * @param userId - Optional user ID for user-specific settings
+ */
+export async function refreshLastArticles(
+  feedId: string,
+  count: number = 10,
+  userId?: string
+): Promise<RefreshArticlesResult> {
+  const startTime = Date.now();
+
+  // Limit to 50 articles
+  const articleCount = Math.min(Math.max(1, count), 50);
+
+  try {
+    // Get feed and check extraction settings
+    const feed = await getFeed(feedId);
+    if (!feed) {
+      return {
+        feedId,
+        success: false,
+        articlesProcessed: 0,
+        articlesUpdated: 0,
+        articlesFailed: 0,
+        embeddingsGenerated: 0,
+        embeddingTokens: 0,
+        error: "Feed not found",
+        duration: Date.now() - startTime,
+      };
+    }
+
+    const settings = (feed.settings as any)?.extraction;
+    if (!settings || settings.method === "rss") {
+      return {
+        feedId,
+        success: false,
+        articlesProcessed: 0,
+        articlesUpdated: 0,
+        articlesFailed: 0,
+        embeddingsGenerated: 0,
+        embeddingTokens: 0,
+        error: "Feed does not have extraction settings or uses RSS only",
+        duration: Date.now() - startTime,
+      };
+    }
+
+    logger.info(`[RefreshLastArticles] Starting refresh of last ${articleCount} articles for feed ${feedId}`);
+
+    // Get the last X articles for this feed
+    const { prisma } = await import("@/lib/db");
+    const articles = await prisma.articles.findMany({
+      where: { feedId },
+      orderBy: { publishedAt: "desc" },
+      take: articleCount,
+    });
+
+    if (articles.length === 0) {
+      return {
+        feedId,
+        success: true,
+        articlesProcessed: 0,
+        articlesUpdated: 0,
+        articlesFailed: 0,
+        embeddingsGenerated: 0,
+        embeddingTokens: 0,
+        duration: Date.now() - startTime,
+      };
+    }
+
+    logger.info(`[RefreshLastArticles] Found ${articles.length} articles to refresh`);
+
+    let articlesUpdated = 0;
+    let articlesFailed = 0;
+    const updatedArticleIds: string[] = [];
+    const mergeStrategy = settings.contentMergeStrategy || "replace";
+
+    // Process each article
+    for (const article of articles) {
+      try {
+        if (!article.url) {
+          logger.warn(`[RefreshLastArticles] Article ${article.id} has no URL, skipping`);
+          articlesFailed++;
+          continue;
+        }
+
+        // Extract content
+        const extracted = await extractContent(article.url, feedId);
+
+        if (!extracted.success) {
+          logger.warn(`[RefreshLastArticles] Failed to extract content for article ${article.id}: ${extracted.error}`);
+          articlesFailed++;
+          continue;
+        }
+
+        // Prepare update data
+        const updateData: any = {};
+        let hasChanges = false;
+
+        // Update metadata if available
+        if (extracted.title && extracted.title !== article.title) {
+          updateData.title = extracted.title;
+          hasChanges = true;
+        }
+        if (extracted.excerpt && extracted.excerpt !== article.excerpt) {
+          updateData.excerpt = extracted.excerpt;
+          hasChanges = true;
+        }
+        if (extracted.author && extracted.author !== article.author) {
+          updateData.author = extracted.author;
+          hasChanges = true;
+        }
+        if (extracted.imageUrl && extracted.imageUrl !== article.imageUrl) {
+          updateData.imageUrl = extracted.imageUrl;
+          hasChanges = true;
+        }
+        if (extracted.publishedAt) {
+          const newDate = new Date(extracted.publishedAt);
+          const existingDate = article.publishedAt ? new Date(article.publishedAt) : null;
+          if (!existingDate || newDate.getTime() !== existingDate.getTime()) {
+            updateData.publishedAt = newDate;
+            hasChanges = true;
+          }
+        }
+
+        // Handle content based on merge strategy
+        const extractedContent = extracted.content || "";
+        let newContent = "";
+
+        switch (mergeStrategy) {
+          case "prepend":
+            newContent = extractedContent + "\n\n" + (article.content || "");
+            break;
+          case "append":
+            newContent = (article.content || "") + "\n\n" + extractedContent;
+            break;
+          case "replace":
+          default:
+            newContent = extractedContent;
+            break;
+        }
+
+        // Check if content actually changed
+        if (newContent !== article.content) {
+          updateData.content = newContent;
+          hasChanges = true;
+        }
+
+        // Only update if there are changes
+        if (hasChanges) {
+          await prisma.articles.update({
+            where: { id: article.id },
+            data: updateData,
+          });
+
+          updatedArticleIds.push(article.id);
+          articlesUpdated++;
+
+          logger.info(`[RefreshLastArticles] Updated article ${article.id}: ${article.title} (strategy: ${mergeStrategy})`);
+        } else {
+          logger.info(`[RefreshLastArticles] No changes for article ${article.id}, skipping update`);
+        }
+
+      } catch (error) {
+        logger.error(`[RefreshLastArticles] Error processing article ${article.id}: ${error}`);
+        articlesFailed++;
+      }
+    }
+
+    // Generate embeddings for updated articles if enabled
+    let embeddingsGenerated = 0;
+    let embeddingTokens = 0;
+
+    const autoGenerateEmbeddings = await shouldAutoGenerateEmbeddings();
+    if (autoGenerateEmbeddings && updatedArticleIds.length > 0) {
+      try {
+        logger.info(`[RefreshLastArticles] Generating embeddings for ${updatedArticleIds.length} updated articles`);
+
+        const embeddingResult = await generateBatchEmbeddings(
+          updatedArticleIds,
+          undefined,
+          userId
+        );
+        embeddingsGenerated = embeddingResult.processed;
+        embeddingTokens = embeddingResult.totalTokens;
+
+        logger.info(`[RefreshLastArticles] Generated ${embeddingsGenerated} embeddings`);
+      } catch (error) {
+        logger.error(`[RefreshLastArticles] Failed to generate embeddings: ${error}`);
+        // Don't fail the operation if embedding generation fails
+      }
+    }
+
+    logger.info(`[RefreshLastArticles] Completed: ${articlesUpdated} updated, ${articlesFailed} failed`);
+
+    return {
+      feedId,
+      success: true,
+      articlesProcessed: articles.length,
+      articlesUpdated,
+      articlesFailed,
+      embeddingsGenerated,
+      embeddingTokens,
+      duration: Date.now() - startTime,
+    };
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    logger.error(`[RefreshLastArticles] Error: ${errorMessage}`);
+
+    return {
+      feedId,
+      success: false,
+      articlesProcessed: 0,
+      articlesUpdated: 0,
+      articlesFailed: 0,
+      embeddingsGenerated: 0,
+      embeddingTokens: 0,
+      error: errorMessage,
+      duration: Date.now() - startTime,
+    };
+  }
+}
+
