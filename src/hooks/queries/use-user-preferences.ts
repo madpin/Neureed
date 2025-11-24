@@ -15,6 +15,10 @@ import { apiGet, apiPut, ApiError } from "@/lib/query/api-client";
 export interface UserPreferences {
   theme?: string;
   fontSize?: string;
+  sidebarFontSize?: string;
+  cardFontSize?: string;
+  modalFontSize?: string;
+  uiFontSize?: string;
   articlesPerPage?: number;
   /** @deprecated Use articleCardDensity instead */
   defaultView?: "compact" | "expanded";

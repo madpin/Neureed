@@ -153,11 +153,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (preferences && mounted) {
       applyFontSizeVariables({
-        fontSize: preferences.fontSize,
-        sidebarFontSize: preferences.sidebarFontSize,
-        cardFontSize: preferences.cardFontSize,
-        modalFontSize: preferences.modalFontSize,
-        uiFontSize: preferences.uiFontSize,
+        fontSize: preferences.fontSize || 'medium',
+        sidebarFontSize: preferences.sidebarFontSize || 'smaller',
+        cardFontSize: preferences.cardFontSize || 'same',
+        modalFontSize: preferences.modalFontSize || 'same',
+        uiFontSize: preferences.uiFontSize || 'same',
       });
     }
   }, [preferences, mounted]);
