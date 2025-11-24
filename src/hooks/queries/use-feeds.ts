@@ -224,6 +224,27 @@ export function useUserFeeds(includeAll = false) {
 }
 
 /**
+ * Hook to fetch a single user feed by ID
+ * More efficient than fetching all feeds when you only need one
+ */
+export function useFeed(feedId: string | undefined) {
+  return useQuery({
+    queryKey: [...queryKeys.feeds.userFeeds(), feedId],
+    queryFn: async () => {
+      const feeds = await fetchUserFeeds(false);
+      const feed = feeds.find((f) => f.id === feedId);
+      if (!feed) {
+        throw new Error(`Feed ${feedId} not found`);
+      }
+      return feed as UserFeed;
+    },
+    enabled: !!feedId,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+}
+
+/**
  * Hook to fetch feeds grouped by category
  */
 export function useGroupedFeeds() {

@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Tooltip } from "../layout/Tooltip";
-import { IconPicker } from "./IconPicker";
 import { EmptyState } from "../layout/EmptyState";
 import {
   useGroupedFeeds,
@@ -31,6 +30,8 @@ interface CategoryListProps {
   isCollapsed?: boolean;
   onOpenFeedSettings?: (feedId: string) => void;
   onOpenCategorySettings?: (categoryId: string) => void;
+  onOpenRenameCategory?: (categoryId: string, currentName: string) => void;
+  onOpenIconPicker?: (categoryId: string, currentIcon?: string) => void;
   onCloseMobileMenu?: () => void;
 }
 
@@ -42,6 +43,8 @@ export function CategoryList({
   isCollapsed = false,
   onOpenFeedSettings,
   onOpenCategorySettings,
+  onOpenRenameCategory,
+  onOpenIconPicker,
   onCloseMobileMenu,
 }: CategoryListProps) {
   const router = useRouter();
@@ -68,14 +71,26 @@ export function CategoryList({
   const [draggedFeedId, setDraggedFeedId] = useState<string | null>(null);
   const [draggedFeedUserFeedId, setDraggedFeedUserFeedId] = useState<string | null>(null);
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [iconPickerState, setIconPickerState] = useState<{
-    isOpen: boolean;
-    categoryId?: string;
-    currentIcon?: string;
-  }>({ isOpen: false });
+  const categoryMenuRef = useRef<HTMLDivElement>(null);
 
   const categories = groupedFeeds?.categories || [];
   const uncategorizedFeeds = groupedFeeds?.uncategorized || [];
+
+  // Close category menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (categoryMenuRef.current && !categoryMenuRef.current.contains(event.target as Node)) {
+        setCategoryActionsId(null);
+      }
+    };
+
+    if (categoryActionsId) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [categoryActionsId]);
 
   const handleSelectFeed = (feedId: string | null) => {
     if (onSelectFeed) {
@@ -207,10 +222,6 @@ export function CategoryList({
 
   const handleRenameCategory = (categoryId: string, newName: string) => {
     updateCategory.mutate({ categoryId, data: { name: newName } });
-  };
-
-  const handleUpdateCategoryIcon = (categoryId: string, icon: string) => {
-    updateCategory.mutate({ categoryId, data: { name: "", icon } as any });
   };
 
   const handleDeleteCategory = (categoryId: string) => {
@@ -476,102 +487,102 @@ export function CategoryList({
 
     return (
       <div key={category.id} className="mb-2">
-        <div
-          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg transition-colors ${
-            isSelected ? "bg-accent/10 text-primary" : "hover:bg-muted"
-          } ${isDragging ? "opacity-50" : ""} ${isDragOver || (draggedFeedId && !isDragging) ? "border-2 border-blue-500" : ""}`}
-          draggable={true}
-          onDragStart={(e) => handleCategoryDragStart(e, category.id)}
-          onDragOver={(e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = "move";
-            // Show drop indicator for both category reordering and feed assignment
-            if (draggedCategoryId || draggedFeedId) {
-              setDragOverCategoryId(category.id);
-            }
-          }}
-          onDragLeave={handleCategoryDragLeave}
-          onDrop={(e) => handleCategoryDrop(e, category.id)}
-          onDragEnd={handleCategoryDragEnd}
-        >
-          {/* Expand/Collapse Arrow */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleCategory(category.id);
+        {/* Category Header and Menu - wrapped in relative container */}
+        <div className="relative">
+          <div
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg transition-colors ${
+              isSelected ? "bg-accent/10 text-primary" : "hover:bg-muted"
+            } ${isDragging ? "opacity-50" : ""} ${isDragOver || (draggedFeedId && !isDragging) ? "border-2 border-blue-500" : ""}`}
+            draggable={true}
+            onDragStart={(e) => handleCategoryDragStart(e, category.id)}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
+              // Show drop indicator for both category reordering and feed assignment
+              if (draggedCategoryId || draggedFeedId) {
+                setDragOverCategoryId(category.id);
+              }
             }}
-            onDragStart={(e) => e.stopPropagation()}
-            draggable={false}
-            className="p-0.5 hover:bg-muted rounded flex-shrink-0"
-            title={isExpanded ? "Collapse" : "Expand"}
+            onDragLeave={handleCategoryDragLeave}
+            onDrop={(e) => handleCategoryDrop(e, category.id)}
+            onDragEnd={handleCategoryDragEnd}
           >
-            <svg
-              className={`h-3 w-3 transition-transform ${isExpanded ? "rotate-90" : ""}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+            {/* Expand/Collapse Arrow */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleCategory(category.id);
+              }}
+              onDragStart={(e) => e.stopPropagation()}
+              draggable={false}
+              className="p-0.5 hover:bg-muted rounded flex-shrink-0"
+              title={isExpanded ? "Collapse" : "Expand"}
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-
-          {/* Category Name - Single click to show feeds in this category, double click to expand */}
-          <button
-            onClick={() => handleCategoryClick(category.id)}
-            onDragStart={(e) => e.stopPropagation()}
-            draggable={false}
-            className="flex flex-1 items-center gap-2 text-left text-sm font-normal"
-          >
-            {(category as any).icon ? (
-              <span className="text-base">{(category as any).icon}</span>
-            ) : (
-              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              <svg
+                className={`h-3 w-3 transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-            )}
-            <span className="flex-1">{category.name}</span>
-            <span className="text-xs text-secondary">{category.feeds?.length || 0}</span>
-          </button>
+            </button>
 
-          {/* Menu Button */}
-          <button
-            id={`category-menu-${category.id}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              setCategoryActionsId(category.id === categoryActionsId ? null : category.id);
-            }}
-            onDragStart={(e) => e.stopPropagation()}
-            draggable={false}
-            className="p-1 hover:bg-muted rounded flex-shrink-0"
-          >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+            {/* Category Name - Single click to show feeds in this category, double click to expand */}
+            <button
+              onClick={() => handleCategoryClick(category.id)}
+              onDragStart={(e) => e.stopPropagation()}
+              draggable={false}
+              className="flex flex-1 items-center gap-2 text-left text-sm font-normal"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-              />
-            </svg>
-          </button>
-        </div>
+              {(category as any).icon ? (
+                <span className="text-base">{(category as any).icon}</span>
+              ) : (
+                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+              )}
+              <span className="flex-1">{category.name}</span>
+              <span className="text-xs text-secondary">{category.feeds?.length || 0}</span>
+            </button>
 
-        {/* Category Actions Menu */}
-        {categoryActionsId === category.id && (
-          <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-border bg-background shadow-lg"
-          >
+            {/* Menu Button */}
+            <button
+              id={`category-menu-${category.id}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setCategoryActionsId(category.id === categoryActionsId ? null : category.id);
+              }}
+              onDragStart={(e) => e.stopPropagation()}
+              draggable={false}
+              className="p-1 hover:bg-muted rounded flex-shrink-0"
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                />
+              </svg>
+            </button>
+          </div>
+
+          {/* Category Actions Menu */}
+          {categoryActionsId === category.id && (
+            <div
+              ref={categoryMenuRef}
+              className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-border bg-background shadow-lg"
+            >
             <button
               onClick={() => {
-                // Open rename dialog
-                const newName = prompt(`Rename category "${category.name}":`, category.name);
-                if (newName && newName.trim() && newName !== category.name) {
-                  handleRenameCategory(category.id, newName.trim());
-                }
                 setCategoryActionsId(null);
+                onOpenRenameCategory?.(category.id, category.name);
               }}
               className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-muted"
             >
@@ -583,11 +594,7 @@ export function CategoryList({
             <button
               onClick={() => {
                 setCategoryActionsId(null);
-                setIconPickerState({
-                  isOpen: true,
-                  categoryId: category.id,
-                  currentIcon: (category as any).icon || "📁",
-                });
+                onOpenIconPicker?.(category.id, (category as any).icon);
               }}
               className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-muted"
             >
@@ -610,23 +617,9 @@ export function CategoryList({
               </svg>
               Settings
             </button>
-            <hr className="my-1 border-border" />
-            <button
-              onClick={() => {
-                if (confirm(`Are you sure you want to delete the category "${category.name}"?\n\nFeeds in this category will become uncategorized.`)) {
-                  handleDeleteCategory(category.id);
-                }
-                setCategoryActionsId(null);
-              }}
-              className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-              Delete Category
-            </button>
           </div>
         )}
+        </div>
 
         {isExpanded && category.feeds && (
           <div className="ml-4 mt-1 space-y-1">
@@ -763,16 +756,6 @@ export function CategoryList({
         />
       )}
 
-      {/* Icon Picker Modal */}
-      {iconPickerState.isOpen && iconPickerState.categoryId && (
-        <IconPicker
-          currentIcon={iconPickerState.currentIcon}
-          onSelect={(icon) => {
-            handleUpdateCategoryIcon(iconPickerState.categoryId!, icon);
-          }}
-          onClose={() => setIconPickerState({ isOpen: false })}
-        />
-      )}
     </div>
   );
 }

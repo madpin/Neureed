@@ -117,6 +117,43 @@ async function updateCategoryState(
 }
 
 /**
+ * Category settings (for cascade system)
+ */
+export interface CategorySettings {
+  refreshInterval?: number | null;
+  maxArticlesPerFeed?: number | null;
+  maxArticleAge?: number | null;
+  summarization?: {
+    enabled?: boolean;
+    minContentLength?: number;
+    includeKeyPoints?: boolean;
+    includeTopics?: boolean;
+  } | null;
+}
+
+/**
+ * Fetch category settings
+ */
+async function fetchCategorySettings(categoryId: string): Promise<CategorySettings> {
+  const response = await apiGet<CategorySettings>(`/api/user/categories/${categoryId}/settings`);
+  return response;
+}
+
+/**
+ * Update category settings
+ */
+async function updateCategorySettings(
+  categoryId: string,
+  settings: CategorySettings
+): Promise<CategorySettings> {
+  const response = await apiPut<CategorySettings>(
+    `/api/user/categories/${categoryId}/settings`,
+    settings
+  );
+  return response;
+}
+
+/**
  * Hook to fetch all categories
  */
 export function useCategories() {
@@ -334,6 +371,40 @@ export function useUpdateCategoryState() {
     onSettled: () => {
       // Also update user preferences cache
       queryClient.invalidateQueries({ queryKey: queryKeys.user.preferences() });
+    },
+  });
+}
+
+/**
+ * Hook to fetch category settings
+ */
+export function useCategorySettings(categoryId: string | undefined) {
+  return useQuery({
+    queryKey: ["categories", categoryId, "settings"],
+    queryFn: () => fetchCategorySettings(categoryId!),
+    enabled: !!categoryId,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Hook to update category settings
+ */
+export function useUpdateCategorySettings() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ categoryId, settings }: {
+      categoryId: string;
+      settings: CategorySettings;
+    }) => updateCategorySettings(categoryId, settings),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["categories", variables.categoryId, "settings"],
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.feeds.all });
     },
   });
 }

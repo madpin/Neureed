@@ -9,6 +9,7 @@ import { CategoryList } from "./components/feeds/CategoryList";
 import { FeedManagementModal } from "./components/feeds/FeedManagementModal";
 import { AddFeedForm } from "./components/feeds/AddFeedForm";
 import { FeedBrowser } from "./components/feeds/FeedBrowser";
+import { IconPicker } from "./components/feeds/IconPicker";
 import { ArticleList } from "./components/articles/ArticleList";
 import { SignInWithGoogleButton, SignInWithGitHubButton } from "./components/auth/SignInButton";
 import { Tooltip } from "./components/layout/Tooltip";
@@ -16,9 +17,10 @@ import { LoadingSpinner } from "./components/layout/LoadingSpinner";
 import type { ArticleSortOrder, ArticleSortDirection } from "@/lib/validations/article-validation";
 import { useUserPreferences, useUpdatePreference } from "@/hooks/queries/use-user-preferences";
 import { useInfiniteArticles } from "@/hooks/queries/use-articles";
-import { 
+import {
   useAddFeed,
 } from "@/hooks/queries/use-feeds";
+import { useUpdateCategory } from "@/hooks/queries/use-categories";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/query-keys";
 
@@ -42,6 +44,17 @@ export default function Home() {
     feedId?: string;
     categoryId?: string;
   }>({ isOpen: false });
+  const [renameCategoryState, setRenameCategoryState] = useState<{
+    isOpen: boolean;
+    categoryId?: string;
+    currentName?: string;
+  }>({ isOpen: false });
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [iconPickerState, setIconPickerState] = useState<{
+    isOpen: boolean;
+    categoryId?: string;
+    currentIcon?: string;
+  }>({ isOpen: false });
 
   // Search State
   const [searchMode, setSearchMode] = useState<"semantic" | "hybrid">("semantic");
@@ -53,6 +66,7 @@ export default function Home() {
   const { data: preferences } = useUserPreferences();
   const updatePreference = useUpdatePreference();
   const addFeed = useAddFeed();
+  const updateCategory = useUpdateCategory();
 
   // Derived State from Preferences
   const sortOrder = (preferences?.articleSortOrder as ArticleSortOrder) || "publishedAt";
@@ -128,6 +142,31 @@ export default function Home() {
 
   const handleSelectCategory = (categoryId: string) => {
     router.push(`/?categoryId=${categoryId}`);
+  };
+
+  const handleOpenRenameCategory = (categoryId: string, currentName: string) => {
+    setRenameCategoryState({
+      isOpen: true,
+      categoryId,
+      currentName,
+    });
+    setNewCategoryName(currentName);
+  };
+
+  const handleRenameCategory = (categoryId: string, newName: string) => {
+    updateCategory.mutate({ categoryId, data: { name: newName } });
+  };
+
+  const handleOpenIconPicker = (categoryId: string, currentIcon?: string) => {
+    setIconPickerState({
+      isOpen: true,
+      categoryId,
+      currentIcon: currentIcon || "📁",
+    });
+  };
+
+  const handleUpdateCategoryIcon = (categoryId: string, icon: string) => {
+    updateCategory.mutate({ categoryId, data: { icon } as any });
   };
 
   const _handleSearchSubmit = (e: React.FormEvent) => {
@@ -295,6 +334,8 @@ export default function Home() {
             isCollapsed={isCollapsed}
             onOpenFeedSettings={(feedId) => setManagementModalState({ isOpen: true, view: 'feed', feedId })}
             onOpenCategorySettings={(categoryId) => setManagementModalState({ isOpen: true, view: 'category', categoryId })}
+            onOpenRenameCategory={handleOpenRenameCategory}
+            onOpenIconPicker={handleOpenIconPicker}
             onCloseMobileMenu={closeMobileMenu}
           />
         </div>
@@ -532,6 +573,74 @@ export default function Home() {
             setManagementModalState({ isOpen: false });
             setIsFeedBrowserOpen(true);
           }}
+        />
+      )}
+
+      {/* Rename Category Modal */}
+      {renameCategoryState.isOpen && renameCategoryState.categoryId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-md rounded-lg border border-border bg-background p-6 shadow-xl">
+            <h3 className="mb-4 text-lg font-semibold">Rename Category</h3>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const trimmedName = newCategoryName.trim();
+                if (trimmedName && trimmedName !== renameCategoryState.currentName) {
+                  handleRenameCategory(renameCategoryState.categoryId!, trimmedName);
+                }
+                setRenameCategoryState({ isOpen: false });
+                setNewCategoryName("");
+              }}
+            >
+              <div className="mb-4">
+                <label htmlFor="category-name" className="mb-2 block text-sm font-medium">
+                  Category Name
+                </label>
+                <input
+                  id="category-name"
+                  type="text"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Enter category name"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRenameCategoryState({ isOpen: false });
+                    setNewCategoryName("");
+                  }}
+                  className="rounded-lg border border-border bg-background px-4 py-2 text-sm hover:bg-muted"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!newCategoryName.trim() || newCategoryName.trim() === renameCategoryState.currentName}
+                  className="rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Rename
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Icon Picker Modal */}
+      {iconPickerState.isOpen && iconPickerState.categoryId && (
+        <IconPicker
+          currentIcon={iconPickerState.currentIcon}
+          onSelect={(icon) => {
+            handleUpdateCategoryIcon(iconPickerState.categoryId!, icon);
+            setIconPickerState({ isOpen: false });
+          }}
+          onClose={() => setIconPickerState({ isOpen: false })}
         />
       )}
     </MainLayout>

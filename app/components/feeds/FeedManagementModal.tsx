@@ -1,18 +1,21 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
 import { toast } from "sonner";
 import { OpmlExportModal } from "./OpmlExportModal";
 import { OpmlImportModal } from "./OpmlImportModal";
 import { BulkFeedSettingsModal, type BulkSettings } from "./BulkFeedSettingsModal";
 import { formatSmartDate } from "@/lib/date-utils";
-import { 
-  useCategories, 
-  useCreateCategory, 
-  useDeleteCategory, 
+import {
+  useCategories,
+  useCreateCategory,
+  useDeleteCategory,
+  useCategorySettings,
+  useUpdateCategorySettings,
 } from "@/hooks/queries/use-categories";
 import {
   useUserFeeds,
+  useFeed,
   useUpdateFeedSettings,
   useRefreshFeed,
   useUnsubscribeFeed,
@@ -324,6 +327,151 @@ export function FeedManagementModal({
   );
 }
 
+// Memoized FeedRow Component for performance
+const FeedRow = memo(({
+  feed,
+  isSelected,
+  onToggleSelect,
+  onNavigateToFeed,
+}: {
+  feed: _UserFeed;
+  isSelected: boolean;
+  onToggleSelect: (feedId: string) => void;
+  onNavigateToFeed: (feedId: string) => void;
+}) => {
+  const feedSettings = feed.settings || {};
+  const refreshInterval = feedSettings.refreshInterval || 60;
+  const hasExtractionSettings = (feed as any).settings?.extraction;
+  const extractionMethod = hasExtractionSettings?.method || "readability";
+
+  return (
+    <tr
+      key={feed.id}
+      onClick={() => onToggleSelect(feed.id)}
+      className={`hover:bg-muted/30 transition-colors cursor-pointer ${
+        isSelected ? "bg-accent/5" : ""
+      }`}
+    >
+      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={() => onToggleSelect(feed.id)}
+          className="h-4 w-4 rounded border-border cursor-pointer"
+        />
+      </td>
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-3 min-w-0">
+          {feed.imageUrl ? (
+            <img
+              src={feed.imageUrl}
+              alt=""
+              className="h-8 w-8 rounded object-cover flex-shrink-0"
+            />
+          ) : (
+            <div className="h-8 w-8 rounded bg-muted flex items-center justify-center flex-shrink-0">
+              <svg className="h-4 w-4 text-foreground/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 5c7.18 0 13 5.82 13 13M6 11a7 7 0 017 7m-6 0a1 1 0 11-2 0 1 1 0 012 0z" />
+              </svg>
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-medium truncate">{feed.name}</div>
+            {feed.category && (
+              <div className="text-xs text-foreground/50 truncate">
+                {feed.category.name}
+              </div>
+            )}
+          </div>
+        </div>
+      </td>
+      <td className="px-4 py-3 text-sm text-foreground/60 whitespace-nowrap">
+        {feed.lastFetched ? formatSmartDate(new Date(feed.lastFetched)) : "Never"}
+      </td>
+      <td className="px-4 py-3 text-sm text-foreground/60">
+        <span className="inline-flex items-center gap-1">
+          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          {refreshInterval}m
+        </span>
+      </td>
+      <td className="px-4 py-3 text-sm">
+        <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium border ${
+          extractionMethod === "rss"
+            ? "bg-accent/10 text-accent border-accent/20"
+            : extractionMethod === "readability"
+            ? "bg-primary/10 text-primary border-primary/20"
+            : "bg-secondary/10 text-secondary border-secondary/20"
+        }`}>
+          {extractionMethod}
+        </span>
+      </td>
+      <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+        <button
+          onClick={() => onNavigateToFeed(feed.id)}
+          className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors"
+          title="Edit feed settings"
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span className="hidden sm:inline">Settings</span>
+        </button>
+      </td>
+    </tr>
+  );
+});
+
+FeedRow.displayName = "FeedRow";
+
+// Memoized CategoryCard Component for performance
+const CategoryCard = memo(({
+  category,
+  onNavigateToCategory,
+  onDeleteCategory,
+}: {
+  category: any;
+  onNavigateToCategory: (categoryId: string) => void;
+  onDeleteCategory: (categoryId: string, categoryName: string) => void;
+}) => (
+  <div className="flex items-center justify-between rounded-lg border border-border p-4 hover:bg-muted/50">
+    <div className="flex items-center gap-3">
+      <span className="text-2xl">{category.icon || "📁"}</span>
+      <div>
+        <h3 className="font-medium">{category.name}</h3>
+        <p className="text-sm text-foreground/60">
+          {category.feedCount || 0} feeds
+          {category.description && ` • ${category.description}`}
+        </p>
+      </div>
+    </div>
+    <div className="flex items-center gap-2">
+      <button
+        onClick={() => onNavigateToCategory(category.id)}
+        className="p-2 hover:bg-muted rounded-lg text-foreground/70 hover:text-foreground"
+        title="Edit Category"
+      >
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+        </svg>
+      </button>
+      <button
+        onClick={() => onDeleteCategory(category.id, category.name)}
+        className="p-2 hover:bg-red-100 rounded-lg text-red-600 hover:text-red-700 dark:hover:bg-red-900/20"
+        title="Delete Category"
+      >
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      </button>
+    </div>
+  </div>
+));
+
+CategoryCard.displayName = "CategoryCard";
+
 // Management Overview Component
 function ManagementOverview({
   onNavigateToCategory,
@@ -359,12 +507,13 @@ function ManagementOverview({
 
   const isLoading = loadingCategories || loadingFeeds;
 
-  const statistics: Statistics = {
+  // Memoize statistics calculation to avoid recalculating on every render
+  const statistics: Statistics = useMemo(() => ({
     totalCategories: categories.length,
     totalFeeds: subscriptions.length,
     totalArticles: 0, // We don't have this data readily available in these hooks
     uncategorizedFeeds: subscriptions.filter(s => !s.category).length,
-  };
+  }), [categories.length, subscriptions]);
 
   const handleCreateCategory = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -409,16 +558,16 @@ function ManagementOverview({
     onRefreshData?.();
   };
 
-  // Bulk operations handlers
-  const handleToggleSelectAll = () => {
+  // Bulk operations handlers - memoized with useCallback
+  const handleToggleSelectAll = useCallback(() => {
     if (selectedFeedIds.size === subscriptions.length) {
       setSelectedFeedIds(new Set());
     } else {
       setSelectedFeedIds(new Set(subscriptions.map(s => s.id)));
     }
-  };
+  }, [selectedFeedIds.size, subscriptions]);
 
-  const handleToggleSelect = (feedId: string) => {
+  const handleToggleSelect = useCallback((feedId: string) => {
     const newSet = new Set(selectedFeedIds);
     if (newSet.has(feedId)) {
       newSet.delete(feedId);
@@ -426,25 +575,29 @@ function ManagementOverview({
       newSet.add(feedId);
     }
     setSelectedFeedIds(newSet);
-  };
+  }, [selectedFeedIds]);
 
-  const handleBulkApply = async (settings: BulkSettings) => {
+  const handleBulkApply = useCallback(async (settings: BulkSettings) => {
     const feedIds = Array.from(selectedFeedIds);
-    
+
     try {
       await bulkUpdateMutation.mutateAsync({
         feedIds,
         settings,
       });
-      
+
       setSelectedFeedIds(new Set());
       onRefreshData?.();
     } catch (error) {
       throw error;
     }
-  };
+  }, [selectedFeedIds, bulkUpdateMutation, onRefreshData]);
 
-  const selectedFeeds = subscriptions.filter(s => selectedFeedIds.has(s.id));
+  // Memoize selectedFeeds calculation
+  const selectedFeeds = useMemo(
+    () => subscriptions.filter(s => selectedFeedIds.has(s.id)),
+    [subscriptions, selectedFeedIds]
+  );
 
   if (isLoading) {
     return (
@@ -634,91 +787,15 @@ function ManagementOverview({
                     </td>
                   </tr>
                 ) : (
-                  subscriptions.map((feed) => {
-                    const feedSettings = feed.settings || {};
-                    const refreshInterval = feedSettings.refreshInterval || 60;
-                    const hasExtractionSettings = (feed as any).settings?.extraction;
-                    const extractionMethod = hasExtractionSettings?.method || "readability";
-                    
-                    return (
-                      <tr 
-                        key={feed.id} 
-                        onClick={() => handleToggleSelect(feed.id)}
-                        className={`hover:bg-muted/30 transition-colors cursor-pointer ${
-                          selectedFeedIds.has(feed.id) ? "bg-accent/5" : ""
-                        }`}
-                      >
-                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type="checkbox"
-                            checked={selectedFeedIds.has(feed.id)}
-                            onChange={() => handleToggleSelect(feed.id)}
-                            className="h-4 w-4 rounded border-border cursor-pointer"
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3 min-w-0">
-                            {feed.imageUrl ? (
-                              <img
-                                src={feed.imageUrl}
-                                alt=""
-                                className="h-8 w-8 rounded object-cover flex-shrink-0"
-                              />
-                            ) : (
-                              <div className="h-8 w-8 rounded bg-muted flex items-center justify-center flex-shrink-0">
-                                <svg className="h-4 w-4 text-foreground/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 5c7.18 0 13 5.82 13 13M6 11a7 7 0 017 7m-6 0a1 1 0 11-2 0 1 1 0 012 0z" />
-                                </svg>
-                              </div>
-                            )}
-                            <div className="min-w-0 flex-1">
-                              <div className="text-sm font-medium truncate">{feed.name}</div>
-                              {feed.category && (
-                                <div className="text-xs text-foreground/50 truncate">
-                                  {feed.category.name}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-foreground/60 whitespace-nowrap">
-                          {feed.lastFetched ? formatSmartDate(new Date(feed.lastFetched)) : "Never"}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-foreground/60">
-                          <span className="inline-flex items-center gap-1">
-                            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            {refreshInterval}m
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium border ${
-                            extractionMethod === "rss" 
-                              ? "bg-accent/10 text-accent border-accent/20"
-                              : extractionMethod === "readability"
-                              ? "bg-primary/10 text-primary border-primary/20"
-                              : "bg-secondary/10 text-secondary border-secondary/20"
-                          }`}>
-                            {extractionMethod}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            onClick={() => onNavigateToFeed(feed.id)}
-                            className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors"
-                            title="Edit feed settings"
-                          >
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            <span className="hidden sm:inline">Settings</span>
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })
+                  subscriptions.map((feed) => (
+                    <FeedRow
+                      key={feed.id}
+                      feed={feed}
+                      isSelected={selectedFeedIds.has(feed.id)}
+                      onToggleSelect={handleToggleSelect}
+                      onNavigateToFeed={onNavigateToFeed}
+                    />
+                  ))
                 )}
               </tbody>
             </table>
@@ -774,38 +851,12 @@ function ManagementOverview({
         {/* Categories Display */}
         <div className="space-y-2">
           {categories.map((category: any) => (
-            <div key={category.id} className="flex items-center justify-between rounded-lg border border-border p-4 hover:bg-muted/50">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{category.icon || "📁"}</span>
-                <div>
-                  <h3 className="font-medium">{category.name}</h3>
-                  <p className="text-sm text-foreground/60">
-                    {category.feedCount || 0} feeds
-                    {category.description && ` • ${category.description}`}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => onNavigateToCategory(category.id)}
-                  className="p-2 hover:bg-muted rounded-lg text-foreground/70 hover:text-foreground"
-                  title="Edit Category"
-                >
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                  </svg>
-                </button>
-                <button
-                  onClick={() => handleDeleteCategory(category.id, category.name)}
-                  className="p-2 hover:bg-red-100 rounded-lg text-red-600 hover:text-red-700 dark:hover:bg-red-900/20"
-                  title="Delete Category"
-                >
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+            <CategoryCard
+              key={category.id}
+              category={category}
+              onNavigateToCategory={onNavigateToCategory}
+              onDeleteCategory={handleDeleteCategory}
+            />
           ))}
           
           {categories.length === 0 && !isLoading && (
@@ -837,7 +888,7 @@ function ManagementOverview({
   );
 }
 
-// Placeholder for CategorySettingsView - would need full implementation similarly
+// Category Settings View Component
 function CategorySettingsView({
   categoryId,
   onNavigateToFeed,
@@ -849,23 +900,270 @@ function CategorySettingsView({
   onNavigateToOverview: () => void;
   onRefreshData?: () => void;
 }) {
-  // In a real implementation we'd fetch category details here
-  
+  // Fetch category details and settings
+  const { data: categories = [] } = useCategories();
+  const category = categories.find((c: any) => c.id === categoryId);
+  const { data: categorySettingsData, isLoading: loadingSettings } = useCategorySettings(categoryId);
+  const updateCategorySettingsMutation = useUpdateCategorySettings();
+
+  // Local state for form
+  const [refreshInterval, setRefreshInterval] = useState<number | null>(null);
+  const [maxArticlesPerFeed, setMaxArticlesPerFeed] = useState<number | null>(null);
+  const [maxArticleAge, setMaxArticleAge] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Initialize form when settings load
+  useEffect(() => {
+    if (categorySettingsData) {
+      const settings = (categorySettingsData as any).settings || {};
+      setRefreshInterval(settings.refreshInterval ?? null);
+      setMaxArticlesPerFeed(settings.maxArticlesPerFeed ?? null);
+      setMaxArticleAge(settings.maxArticleAge ?? null);
+    }
+  }, [categorySettingsData]);
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+
+      await updateCategorySettingsMutation.mutateAsync({
+        categoryId,
+        settings: {
+          refreshInterval,
+          maxArticlesPerFeed,
+          maxArticleAge,
+        },
+      });
+
+      toast.success("Category settings saved successfully");
+      onRefreshData?.();
+    } catch (error) {
+      console.error("Failed to save category settings:", error);
+      toast.error("Failed to save settings");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleReset = () => {
+    setRefreshInterval(null);
+    setMaxArticlesPerFeed(null);
+    setMaxArticleAge(null);
+  };
+
+  if (loadingSettings) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-gray-500">Loading category settings...</div>
+      </div>
+    );
+  }
+
+  const feedsInCategory = (categorySettingsData as any)?.feeds || [];
+  const feedCount = (categorySettingsData as any)?.feedCount || 0;
+
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-4xl mx-auto">
+      {/* Header */}
       <div className="mb-6 flex items-center gap-4">
-        <button onClick={onNavigateToOverview} className="p-2 hover:bg-muted rounded-lg">
+        <button onClick={onNavigateToOverview} className="p-2 hover:bg-muted rounded-lg transition-colors">
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
         </button>
-        <h1 className="text-2xl font-bold">Category Settings</h1>
+        <div className="flex items-center gap-3">
+          <span className="text-3xl">{(category as any)?.icon || "📁"}</span>
+          <div>
+            <h1 className="text-2xl font-bold">{category?.name || "Category"} Settings</h1>
+            {(category as any)?.description && (
+              <p className="text-sm text-foreground/60">{(category as any).description}</p>
+            )}
+          </div>
+        </div>
       </div>
-      <div className="text-center py-12 text-foreground/50">
-        Category settings implementation pending...
-        <br/>
-        (ID: {categoryId})
+
+      {/* Info Box */}
+      <div className="mb-6 rounded-lg border border-primary/20 bg-primary/5 p-4">
+        <h3 className="mb-2 font-semibold text-primary">Settings Cascade Priority</h3>
+        <p className="text-sm text-primary/80">
+          Settings configured here apply to all <strong>{feedCount} feeds</strong> in this category.
+          Feed-specific settings will override these category settings.
+        </p>
+        <div className="mt-3 flex items-center gap-2 text-xs text-primary/70">
+          <div className="flex items-center gap-1">
+            <span className="font-semibold">1.</span> Feed Settings
+          </div>
+          <span>→</span>
+          <div className="flex items-center gap-1 font-semibold text-primary">
+            <span>2.</span> Category Settings (here)
+          </div>
+          <span>→</span>
+          <div className="flex items-center gap-1">
+            <span>3.</span> User Defaults
+          </div>
+          <span>→</span>
+          <div className="flex items-center gap-1">
+            <span>4.</span> System Defaults
+          </div>
+        </div>
       </div>
+
+      {/* Settings Form */}
+      <div className="space-y-6">
+        {/* Refresh Interval */}
+        <div className="rounded-lg border border-border bg-background p-5">
+          <label className="mb-2 block text-sm font-medium">
+            Refresh Interval (minutes)
+          </label>
+          <p className="mb-3 text-xs text-foreground/60">
+            How often feeds in this category should be checked for new articles
+          </p>
+          <div className="flex items-center gap-3">
+            <input
+              type="number"
+              value={refreshInterval ?? ""}
+              onChange={(e) => setRefreshInterval(e.target.value ? Number(e.target.value) : null)}
+              placeholder="Default: 60"
+              min={15}
+              max={1440}
+              className="w-40 rounded-lg border border-border px-3 py-2 text-sm"
+            />
+            <span className="text-sm text-foreground/60">
+              {refreshInterval ? `${refreshInterval} minutes` : "Using default"}
+            </span>
+            {refreshInterval && (
+              <button
+                onClick={() => setRefreshInterval(null)}
+                className="text-xs text-primary hover:text-primary/80"
+              >
+                Reset to default
+              </button>
+            )}
+          </div>
+          <p className="mt-2 text-xs text-foreground/50">
+            Valid range: 15-1440 minutes
+          </p>
+        </div>
+
+        {/* Max Articles Per Feed */}
+        <div className="rounded-lg border border-border bg-background p-5">
+          <label className="mb-2 block text-sm font-medium">
+            Max Articles Per Feed
+          </label>
+          <p className="mb-3 text-xs text-foreground/60">
+            Maximum number of articles to keep for each feed in this category
+          </p>
+          <div className="flex items-center gap-3">
+            <input
+              type="number"
+              value={maxArticlesPerFeed ?? ""}
+              onChange={(e) => setMaxArticlesPerFeed(e.target.value ? Number(e.target.value) : null)}
+              placeholder="Default: 1000"
+              min={50}
+              max={5000}
+              className="w-40 rounded-lg border border-border px-3 py-2 text-sm"
+            />
+            <span className="text-sm text-foreground/60">
+              {maxArticlesPerFeed ? `${maxArticlesPerFeed} articles` : "Using default"}
+            </span>
+            {maxArticlesPerFeed && (
+              <button
+                onClick={() => setMaxArticlesPerFeed(null)}
+                className="text-xs text-primary hover:text-primary/80"
+              >
+                Reset to default
+              </button>
+            )}
+          </div>
+          <p className="mt-2 text-xs text-foreground/50">
+            Valid range: 50-5000 articles
+          </p>
+        </div>
+
+        {/* Max Article Age */}
+        <div className="rounded-lg border border-border bg-background p-5">
+          <label className="mb-2 block text-sm font-medium">
+            Max Article Age (days)
+          </label>
+          <p className="mb-3 text-xs text-foreground/60">
+            How long to keep articles before automatically deleting them
+          </p>
+          <div className="flex items-center gap-3">
+            <input
+              type="number"
+              value={maxArticleAge ?? ""}
+              onChange={(e) => setMaxArticleAge(e.target.value ? Number(e.target.value) : null)}
+              placeholder="Default: 90"
+              min={1}
+              max={365}
+              className="w-40 rounded-lg border border-border px-3 py-2 text-sm"
+            />
+            <span className="text-sm text-foreground/60">
+              {maxArticleAge ? `${maxArticleAge} days` : "Using default"}
+            </span>
+            {maxArticleAge && (
+              <button
+                onClick={() => setMaxArticleAge(null)}
+                className="text-xs text-primary hover:text-primary/80"
+              >
+                Reset to default
+              </button>
+            )}
+          </div>
+          <p className="mt-2 text-xs text-foreground/50">
+            Valid range: 1-365 days
+          </p>
+        </div>
+
+        {/* Save/Reset Actions */}
+        <div className="flex items-center gap-3 pt-4 border-t border-border">
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+          >
+            {isSaving ? "Saving..." : "Save Settings"}
+          </button>
+          <button
+            onClick={handleReset}
+            disabled={isSaving}
+            className="rounded-lg border border-border px-6 py-2.5 text-sm font-medium hover:bg-muted disabled:opacity-50 transition-colors"
+          >
+            Reset All to Defaults
+          </button>
+        </div>
+      </div>
+
+      {/* Feeds in Category */}
+      {feedsInCategory.length > 0 && (
+        <div className="mt-8 space-y-4">
+          <h2 className="text-lg font-semibold">Feeds in this Category ({feedCount})</h2>
+          <div className="rounded-lg border border-border overflow-hidden">
+            <div className="divide-y divide-border">
+              {feedsInCategory.map((feed: any) => (
+                <button
+                  key={feed.id}
+                  onClick={() => onNavigateToFeed(feed.id)}
+                  className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <svg className="h-5 w-5 text-foreground/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 5c7.18 0 13 5.82 13 13M6 11a7 7 0 017 7m-6 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                    </svg>
+                    <span className="text-sm font-medium">{feed.name}</span>
+                  </div>
+                  <svg className="h-4 w-4 text-foreground/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              ))}
+            </div>
+          </div>
+          <p className="text-xs text-foreground/50">
+            Click on a feed to configure feed-specific settings that override these category settings.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -880,28 +1178,24 @@ function FeedSettingsView({
   onRefreshData?: () => void;
   onClose: () => void;
 }) {
-  // Only fetch what we need - categories and user subscriptions
-  // We get the specific feed from the subscriptions list which already contains all feed data
-  const { data: subscriptions = [], isLoading: loadingSubscriptions } = useUserFeeds();
+  // Optimized: Only fetch the specific feed we need, not all subscriptions
+  const { data: feed, isLoading: loadingFeed } = useFeed(feedId);
+  // Only fetch categories list for the dropdown (already optimized with staleTime)
   const { data: categories = [], isLoading: loadingCategories } = useCategories();
-  
+
   const updateFeedSettingsMutation = useUpdateFeedSettings();
   const refreshFeedMutation = useRefreshFeed();
   const deleteFeedMutation = useDeleteFeed();
   const unsubscribeFeedMutation = useUnsubscribeFeed();
   const refreshLastArticlesMutation = useRefreshLastArticles();
 
-  // Summarization hooks
+  // Summarization hooks - only fetched when needed
   const { data: summarizationConfigRaw } = useFeedSummarizationSettings(feedId);
   const updateSummarizationMutation = useUpdateFeedSummarizationSettings();
   const clearSummarizationMutation = useClearFeedSummarizationSettings();
 
   // Unwrap the double-wrapped data (API returns {data: {...}}, then it's wrapped again by our response format)
   const summarizationConfig = (summarizationConfigRaw as any)?.data || summarizationConfigRaw;
-
-  // Find the subscription - it contains all the feed data we need
-  const subscription = subscriptions.find(s => (s as any).id === feedId || (s as any).feedId === feedId);
-  const feed = subscription; // Use subscription data which includes the feed details
 
   // Local State
   const [customName, setCustomName] = useState("");
@@ -938,17 +1232,17 @@ function FeedSettingsView({
   
   // Initialize state when data loads
   useEffect(() => {
-    if (subscription) {
-      setCustomName((subscription as any).name || "");
-      if (subscription.category) {
-        setSelectedCategory(subscription.category.id);
+    if (feed) {
+      setCustomName((feed as any).name || "");
+      if (feed.category) {
+        setSelectedCategory(feed.category.id);
       }
-      
-      if (subscription.settings) {
-        setFetchInterval(subscription.settings.refreshInterval || 60);
-        
+
+      if (feed.settings) {
+        setFetchInterval(feed.settings.refreshInterval || 60);
+
         // Load extraction settings if they exist
-        const extractionSettings = (subscription.settings as any)?.extraction;
+        const extractionSettings = (feed.settings as any)?.extraction;
         if (extractionSettings) {
           if (extractionSettings.method) {
             setExtractionMethod(extractionSettings.method);
@@ -965,7 +1259,7 @@ function FeedSettingsView({
         }
       }
     }
-  }, [subscription, feed]);
+  }, [feed]);
 
   // Initialize summarization settings
   useEffect(() => {
@@ -1171,7 +1465,7 @@ function FeedSettingsView({
   };
 
   const handleUnsubscribe = async () => {
-    if (!confirm(`Are you sure you want to unsubscribe from "${feed?.name || (subscription as any)?.name}"?`)) {
+    if (!confirm(`Are you sure you want to unsubscribe from "${feed?.name}"?`)) {
       return;
     }
 
@@ -1236,7 +1530,7 @@ function FeedSettingsView({
   };
 
   // Show loading state while fetching data
-  if (loadingSubscriptions || loadingCategories) {
+  if (loadingFeed || loadingCategories) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-gray-500">Loading feed settings...</div>
@@ -1245,7 +1539,7 @@ function FeedSettingsView({
   }
 
   // Check if feed exists
-  if (!subscription) {
+  if (!feed) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-gray-500">Feed not found or not subscribed</div>
@@ -1253,7 +1547,7 @@ function FeedSettingsView({
     );
   }
 
-  const displayFeed = subscription;
+  const displayFeed = feed;
 
   return (
     <div className="p-6">
