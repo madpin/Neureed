@@ -299,12 +299,12 @@ export function CategoryList({
             className="flex flex-1 items-center gap-2 text-left min-w-0"
           >
             {renderFeedIcon(feed)}
-            <div className="flex-1 min-w-0" style={{ fontSize: 'var(--font-size-sidebar)' }}>
+            <div className="flex-1 min-w-0 flex items-center justify-between" style={{ fontSize: 'var(--font-size-sidebar)' }}>
               <div className="font-normal truncate">{feed.name}</div>
               {(feed.unreadCount !== undefined && feed.unreadCount > 0) && (
-                <div className="text-secondary" style={{ fontSize: '0.7em', fontWeight: '300' }}>
-                  {feed.unreadCount} unread
-                </div>
+                <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium leading-none rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 flex-shrink-0">
+                  {feed.unreadCount > 99 ? '99+' : feed.unreadCount}
+                </span>
               )}
             </div>
           </button>

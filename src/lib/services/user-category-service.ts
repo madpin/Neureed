@@ -8,6 +8,7 @@ export interface UserCategoryWithFeeds extends user_categories {
     name: string;
     imageUrl: string | null;
     userFeedId: string;
+    unreadCount?: number;
   }>;
 }
 
@@ -19,6 +20,7 @@ export interface FeedsGroupedByCategory {
     imageUrl: string | null;
     userFeedId: string;
     feedId: string;
+    unreadCount?: number;
   }>;
 }
 
@@ -454,7 +456,7 @@ export async function getFeedsGroupedByCategory(
       userFeedId: uf.id,
       feedId: uf.feeds.id,
       lastFetched: uf.feeds.lastFetched,
-      articleCount: unreadCountMap.get(uf.feeds.id) || 0,
+      unreadCount: unreadCountMap.get(uf.feeds.id) || 0,
     }));
 
   // Map categories with their feeds
@@ -476,7 +478,7 @@ export async function getFeedsGroupedByCategory(
         imageUrl: ufc.user_feeds.feeds.imageUrl,
         userFeedId: ufc.user_feeds.id,
         lastFetched: ufc.user_feeds.feeds.lastFetched,
-        articleCount: unreadCountMap.get(ufc.user_feeds.feeds.id) || 0,
+        unreadCount: unreadCountMap.get(ufc.user_feeds.feeds.id) || 0,
       })),
     })
   );

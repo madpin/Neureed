@@ -54,6 +54,16 @@ export class OpenAILLMProvider implements LLMProviderInterface {
         content: request.prompt,
       });
 
+      logger.debug("Making LLM request", {
+        model: this.model,
+        baseUrl: this.baseUrl,
+        messageCount: messages.length,
+        temperature: request.temperature ?? 0.7,
+        maxTokens: request.maxTokens ?? 1000,
+      });
+
+      // Note: response_format parameter removed as it may not be supported by all LiteLLM proxies
+      // Relying on explicit prompting instead
       const response = await fetch(this.apiUrl, {
         method: "POST",
         headers: {
@@ -76,6 +86,14 @@ export class OpenAILLMProvider implements LLMProviderInterface {
 
       const data = await response.json();
       const choice = data.choices[0];
+
+      logger.debug("LLM response received", {
+        model: data.model,
+        promptTokens: data.usage.prompt_tokens,
+        completionTokens: data.usage.completion_tokens,
+        finishReason: choice.finish_reason,
+        contentLength: choice.message.content.length,
+      });
 
       return {
         content: choice.message.content,
@@ -100,9 +118,15 @@ export class OpenAILLMProvider implements LLMProviderInterface {
     title: string,
     content: string
   ): Promise<ArticleSummary> {
-    const systemPrompt = `You are a helpful assistant that summarizes articles. 
+    const systemPrompt = `You are a helpful assistant that summarizes articles.
 Provide a concise summary, extract 3-5 key points, identify 3-5 main topics/tags, and determine the sentiment.
-Respond in JSON format with keys: summary, keyPoints (array), topics (array), sentiment (positive/neutral/negative).`;
+You MUST respond ONLY with valid JSON in this exact format:
+{
+  "summary": "A concise 2-3 sentence summary",
+  "keyPoints": ["point 1", "point 2", "point 3"],
+  "topics": ["topic1", "topic2", "topic3"],
+  "sentiment": "positive" or "neutral" or "negative"
+}`;
 
     // Truncate content if too long (approximately 10000 tokens = 40000 characters)
     const truncatedContent =
@@ -133,8 +157,11 @@ Respond in JSON format with keys: summary, keyPoints (array), topics (array), se
         };
       } catch (parseError) {
         // Fallback: extract from text response
-        logger.warn("Failed to parse LLM JSON response, using fallback", {
-          parseError,
+        logger.error("Failed to parse LLM JSON response, using fallback", {
+          parseError: parseError instanceof Error ? parseError.message : String(parseError),
+          fullRawResponse: response.content,
+          responseLength: response.content.length,
+          model: this.model,
         });
 
         return {
@@ -156,7 +183,7 @@ Respond in JSON format with keys: summary, keyPoints (array), topics (array), se
   async extractKeyPoints(content: string, count = 5): Promise<string[]> {
     const systemPrompt = `You are a helpful assistant that extracts key points from articles.
 Provide ${count} concise bullet points that capture the main ideas.
-Respond with a JSON array of strings.`;
+You MUST respond ONLY with a valid JSON array of strings like: ["point 1", "point 2", "point 3"]`;
 
     const truncatedContent =
       content.length > 40000 ? content.substring(0, 40000) + "..." : content;
@@ -201,7 +228,7 @@ Respond with a JSON array of strings.`;
   async detectTopics(title: string, content: string): Promise<string[]> {
     const systemPrompt = `You are a helpful assistant that identifies topics and tags from articles.
 Provide 3-5 relevant topics/tags that categorize the article.
-Respond with a JSON array of lowercase strings.`;
+You MUST respond ONLY with a valid JSON array of lowercase strings like: ["topic1", "topic2", "topic3"]`;
 
     const truncatedContent =
       content.length > 20000 ? content.substring(0, 20000) + "..." : content;

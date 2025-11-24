@@ -18,7 +18,7 @@ import {
 import { getUserPreferencesWithDecryptedKey } from "./user-preferences-service";
 import type { user_preferences } from "@/generated/prisma/client";
 import { trackSummarizationCost } from "./summarization-cost-tracker";
-import { getSystemLLMCredentials } from "./admin-settings-service";
+import { getSystemLLMConfig } from "./admin-llm-config-service";
 
 /**
  * Get LLM provider instance
@@ -57,19 +57,31 @@ async function resolveLLMConfig(userId?: string): Promise<LLMProviderConfig> {
   // If no user credentials, try to use system credentials
   if (!apiKey) {
     try {
-      const systemCreds = await getSystemLLMCredentials(false);
-      if (systemCreds.provider === "openai" || !systemCreds.provider) {
-        apiKey = systemCreds.apiKey || undefined;
-        baseUrl = baseUrl || systemCreds.baseUrl || undefined;
-        model = model || systemCreds.model || undefined;
-        
-        logger.info("Using system LLM credentials for summarization", {
-          hasSystemKey: !!systemCreds.apiKey,
+      const systemConfig = await getSystemLLMConfig();
+      if (systemConfig.provider === "openai" || !systemConfig.provider) {
+        // Get and decrypt API key for use
+        const setting = await prisma.admin_settings.findUnique({
+          where: { key: "system_llm_api_key" },
+        });
+        if (setting?.value) {
+          try {
+            const { decrypt } = await import("../crypto");
+            apiKey = decrypt(setting.value as string) || undefined;
+          } catch (error) {
+            logger.warn("Failed to decrypt system API key", { error });
+          }
+        }
+        baseUrl = baseUrl || systemConfig.baseUrl || undefined;
+        model = model || systemConfig.summaryModel || undefined;
+
+        logger.info("Using system LLM configuration for summarization", {
+          hasSystemKey: !!apiKey,
+          model,
           userId,
         });
       }
     } catch (error) {
-      logger.warn("Failed to get system LLM credentials", { error, userId });
+      logger.warn("Failed to get system LLM configuration", { error, userId });
     }
   }
 
