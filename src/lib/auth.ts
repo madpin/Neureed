@@ -96,9 +96,35 @@ export const authConfig: NextAuthConfig = {
       }
       return token;
     },
+    async signIn({ user }) {
+      // Ensure madpin@gmail.com is always an admin
+      if (user.email === "madpin@gmail.com" && user.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { role: true },
+        });
+
+        // Update role to ADMIN if not already
+        if (dbUser?.role !== "ADMIN") {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { role: "ADMIN" },
+          });
+        }
+      }
+      return true;
+    },
   },
   events: {
     async createUser({ user }) {
+      // Set admin role for madpin@gmail.com
+      if (user.email === "madpin@gmail.com" && user.id) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { role: "ADMIN" },
+        });
+      }
+
       // Create default preferences for new users
       if (user.id) {
         // Check if preferences already exist (e.g., when linking accounts)
