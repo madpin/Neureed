@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 import { user_notifications } from "@/generated/prisma/client";
 
 interface NotificationsResponse {
@@ -105,11 +106,14 @@ export function useNotifications(
   offset: number = 0,
   enabled: boolean = true
 ) {
+  const { status } = useSession();
+  const isAuthenticated = status === "authenticated";
+
   return useQuery({
     queryKey: ["notifications", unreadOnly, limit, offset],
     queryFn: () => fetchNotifications(unreadOnly, limit, offset),
     refetchInterval: 60000, // Refetch every minute
-    enabled, // Only fetch when enabled
+    enabled: enabled && isAuthenticated, // Only fetch when enabled AND authenticated
     retry: (failureCount, error) => {
       // Don't retry on auth errors (401)
       if (error instanceof Error && error.message.includes("401")) {
@@ -125,11 +129,14 @@ export function useNotifications(
  * Hook to get unread notification count
  */
 export function useUnreadNotificationCount(enabled: boolean = true) {
+  const { status } = useSession();
+  const isAuthenticated = status === "authenticated";
+
   return useQuery({
     queryKey: ["notifications", "unread-count"],
     queryFn: fetchUnreadCount,
     refetchInterval: 30000, // Refetch every 30 seconds
-    enabled, // Only fetch when enabled
+    enabled: enabled && isAuthenticated, // Only fetch when enabled AND authenticated
     retry: (failureCount, error) => {
       // Don't retry on auth errors (401)
       if (error instanceof Error && error.message.includes("401")) {
