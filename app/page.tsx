@@ -165,22 +165,19 @@ export default function Home() {
     });
   };
 
-  const handleAddFeed = async (url: string, name?: string) => {
+  const handleAddFeed = async (
+    url: string,
+    name?: string,
+    categoryIds?: string[],
+    extractionMethod?: "rss" | "readability" | "playwright" | "custom"
+  ) => {
     try {
-      await addFeed.mutateAsync(url); // addFeed mutation signature might be object or string? Checked: it takes `url`. Wait, `useAddFeed` calls `addFeed(url)`. But `apiPost` usually takes body. 
-      // Checking use-feeds.ts: mutationFn: addFeed. addFeed(url: string). Correct.
-      // But wait, the form passes (url, name).
-      // The current useAddFeed only takes url. I should check if I need to support name.
-      // app/api/feeds/route.ts POST accepts { url, name }.
-      // use-feeds.ts addFeed function only accepts url.
-      // I should probably update useAddFeed to accept name too.
-      
-      // For now, I'll just pass url.
-      
-      // Update: I'll fix useAddFeed later if needed, but for now assuming it works as is or I'll quickly fix it.
-      // Actually let's stick to the hook signature.
-      
-      // Trigger feed reload? The hook invalidates queries.
+      await addFeed.mutateAsync({
+        url,
+        name,
+        categoryIds,
+        settings: extractionMethod ? { method: extractionMethod } : undefined,
+      });
     } catch (error) {
       throw error; // The form handles the error
     }
@@ -505,12 +502,7 @@ export default function Home() {
 
       {isAddFeedOpen && (
         <AddFeedForm
-          onAdd={async (url, name) => {
-             // Workaround for hook signature mismatch: we call the hook but we might miss the name if hook doesn't support it.
-             // But I'll fix the hook in a separate step if needed.
-             // For now, calling the handler.
-             await handleAddFeed(url, name);
-          }}
+          onAdd={handleAddFeed}
           onClose={() => setIsAddFeedOpen(false)}
         />
       )}

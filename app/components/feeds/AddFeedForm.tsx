@@ -2,15 +2,25 @@
 
 import { useState } from "react";
 import { useValidateFeed } from "@/hooks/queries/use-feeds";
+import { useCategories } from "@/hooks/queries/use-categories";
+
+type ExtractionMethod = "rss" | "readability" | "playwright" | "custom";
 
 interface AddFeedFormProps {
-  onAdd: (url: string, name?: string) => Promise<void>;
+  onAdd: (
+    url: string,
+    name?: string,
+    categoryIds?: string[],
+    extractionMethod?: ExtractionMethod
+  ) => Promise<void>;
   onClose: () => void;
 }
 
 export function AddFeedForm({ onAdd, onClose }: AddFeedFormProps) {
   const [url, setUrl] = useState("");
   const [name, setName] = useState("");
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+  const [extractionMethod, setExtractionMethod] = useState<ExtractionMethod>("readability");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [feedInfo, setFeedInfo] = useState<{
@@ -19,8 +29,9 @@ export function AddFeedForm({ onAdd, onClose }: AddFeedFormProps) {
     itemCount: number;
   } | null>(null);
 
-  // Use React Query hook for validation
+  // Use React Query hooks
   const validateMutation = useValidateFeed();
+  const { data: categories } = useCategories();
 
   const handleValidate = async () => {
     if (!url) return;
@@ -31,15 +42,15 @@ export function AddFeedForm({ onAdd, onClose }: AddFeedFormProps) {
     try {
       const result = await validateMutation.mutateAsync(url);
 
-      if (result.valid && result.feed) {
-        // Convert Feed to feedInfo format
+      if (result.valid && result.feedInfo) {
+        // Use feedInfo from API response
         setFeedInfo({
-          title: result.feed.name || "",
-          description: result.feed.description,
-          itemCount: 0, // API doesn't return item count in validation
+          title: result.feedInfo.title || "",
+          description: result.feedInfo.description,
+          itemCount: result.feedInfo.itemCount || 0,
         });
-        if (!name && result.feed.name) {
-          setName(result.feed.name);
+        if (!name && result.feedInfo.title) {
+          setName(result.feedInfo.title);
         }
       } else {
         setError(result.error || "Invalid feed URL");
@@ -55,7 +66,12 @@ export function AddFeedForm({ onAdd, onClose }: AddFeedFormProps) {
     setError(null);
 
     try {
-      await onAdd(url, name || undefined);
+      await onAdd(
+        url,
+        name || undefined,
+        selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
+        extractionMethod
+      );
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add feed");
@@ -184,6 +200,58 @@ export function AddFeedForm({ onAdd, onClose }: AddFeedFormProps) {
               placeholder="Auto-detected from feed"
               className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border bg-background"
             />
+          </div>
+
+          <div>
+            <label
+              htmlFor="categories"
+              className="mb-1 block text-sm font-medium text-foreground/70"
+            >
+              Categories (optional)
+            </label>
+            <select
+              id="categories"
+              multiple
+              value={selectedCategoryIds}
+              onChange={(e) => {
+                const selected = Array.from(e.target.selectedOptions, option => option.value);
+                setSelectedCategoryIds(selected);
+              }}
+              className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border bg-background"
+              size={Math.min((categories?.length || 0) + 1, 5)}
+            >
+              {categories?.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-foreground/60">
+              Hold Ctrl/Cmd to select multiple categories
+            </p>
+          </div>
+
+          <div>
+            <label
+              htmlFor="extractionMethod"
+              className="mb-1 block text-sm font-medium text-foreground/70"
+            >
+              Extraction Method
+            </label>
+            <select
+              id="extractionMethod"
+              value={extractionMethod}
+              onChange={(e) => setExtractionMethod(e.target.value as ExtractionMethod)}
+              className="w-full rounded-lg border border-border px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary border-border bg-background"
+            >
+              <option value="readability">Readability (Default - Fast)</option>
+              <option value="rss">RSS Only (No extraction)</option>
+              <option value="playwright">Playwright (JS-rendered content)</option>
+              <option value="custom">Custom Selector</option>
+            </select>
+            <p className="mt-1 text-xs text-foreground/60">
+              Choose how to extract article content. Readability works for most sites.
+            </p>
           </div>
 
           <div className="flex gap-2 pt-2">

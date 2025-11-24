@@ -134,7 +134,13 @@ async function unsubscribeFeed(feedId: string): Promise<void> {
  */
 async function validateFeed(url: string): Promise<{
   valid: boolean;
-  feed?: Partial<Feed>;
+  feedInfo?: {
+    title: string;
+    description?: string;
+    link?: string;
+    imageUrl?: string;
+    itemCount: number;
+  };
   error?: string;
 }> {
   return await apiPost("/api/feeds/validate", { url });
@@ -143,8 +149,15 @@ async function validateFeed(url: string): Promise<{
 /**
  * Add a new feed
  */
-async function addFeed(url: string): Promise<Feed> {
-  const response = await apiPost<{ feed: Feed }>("/api/feeds", { url });
+async function addFeed(data: {
+  url: string;
+  name?: string;
+  categoryIds?: string[];
+  settings?: {
+    method?: "rss" | "readability" | "playwright" | "custom";
+  };
+}): Promise<Feed> {
+  const response = await apiPost<{ feed: Feed }>("/api/feeds", data);
   return response.feed;
 }
 

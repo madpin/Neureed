@@ -9,6 +9,9 @@ export const createFeedSchema = z.object({
   name: z.string().min(1, "Name is required").max(255, "Name too long").optional(),
   categoryIds: z.array(z.string()).optional(),
   fetchInterval: z.number().int().min(5).max(1440).optional(), // 5 minutes to 24 hours
+  settings: z.object({
+    method: z.enum(["rss", "readability", "playwright", "custom"]).optional(),
+  }).optional(),
 });
 
 export const updateFeedSchema = z.object({
