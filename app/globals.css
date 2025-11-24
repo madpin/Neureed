@@ -41,6 +41,12 @@
   --accent: #3b82f6;
   --muted: #f1f5f9;
   --border: #e2e8f0;
+
+  /* Font size variables - dynamically updated by ThemeProvider */
+  --font-size-sidebar: 14px; /* Default: medium (16px) + smaller (-2px) */
+  --font-size-card: 16px;    /* Default: medium (16px) + same (0) */
+  --font-size-modal: 16px;   /* Default: medium (16px) + same (0) */
+  --font-size-ui: 16px;      /* Default: medium (16px) + same (0) */
 }
 
 /* Dark mode via class */

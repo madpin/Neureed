@@ -103,6 +103,28 @@ function getDensityClasses(density: string) {
   }
 }
 
+// Density-based font size styles (scales with --font-size-card)
+function getDensityFontStyles(density: string) {
+  switch (density) {
+    case "compact":
+      return {
+        titleStyle: { fontSize: 'var(--font-size-card)' }, // base
+        metaStyle: { fontSize: 'calc(var(--font-size-card) * 0.75)' }, // xs
+      };
+    case "comfortable":
+      return {
+        titleStyle: { fontSize: 'calc(var(--font-size-card) * 1.25)' }, // xl
+        metaStyle: { fontSize: 'var(--font-size-card)' }, // base
+      };
+    case "normal":
+    default:
+      return {
+        titleStyle: { fontSize: 'calc(var(--font-size-card) * 1.125)' }, // lg
+        metaStyle: { fontSize: 'calc(var(--font-size-card) * 0.875)' }, // sm
+      };
+  }
+}
+
 // Border width CSS classes
 function getBorderWidthClasses(width?: string) {
   switch (width) {
@@ -192,6 +214,7 @@ export const ArticleCard = React.memo(({
   }, [propPreferences, variant]);
 
   const densityClasses = useMemo(() => getDensityClasses(preferences.density), [preferences.density]);
+  const densityFontStyles = useMemo(() => getDensityFontStyles(preferences.density), [preferences.density]);
 
   // Sync local state when article prop changes
   useEffect(() => {
@@ -256,7 +279,7 @@ export const ArticleCard = React.memo(({
         }
 
         return (
-          <div key="feedInfo" className={`mb-2 flex items-center ${densityClasses.gap} ${densityClasses.metaSize} text-secondary flex-wrap`}>
+          <div key="feedInfo" className={`mb-2 flex items-center ${densityClasses.gap} text-secondary flex-wrap`} style={densityFontStyles.metaStyle}>
             {preferences.showFeedInfo && article.feeds?.imageUrl && (
               <img
                 src={article.feeds.imageUrl}
@@ -313,7 +336,7 @@ export const ArticleCard = React.memo(({
           className="group-hover:text-primary transition-colors"
           onClick={handleArticleClick}
         >
-          <h3 className={`mb-2 ${densityClasses.titleSize} font-semibold leading-tight line-clamp-2`}>
+          <h3 className="mb-2 font-semibold leading-tight line-clamp-2" style={densityFontStyles.titleStyle}>
             {article.title}
           </h3>
         </Link>
@@ -325,7 +348,7 @@ export const ArticleCard = React.memo(({
         }
 
         return (
-          <p key="excerpt" className={`mb-3 ${densityClasses.metaSize} text-foreground line-clamp-2`}>
+          <p key="excerpt" className="mb-3 text-foreground line-clamp-2" style={densityFontStyles.metaStyle}>
             {article.excerpt}
           </p>
         );
@@ -338,7 +361,8 @@ export const ArticleCard = React.memo(({
               href={article.url}
               target="_blank"
               rel="noopener noreferrer"
-              className={`inline-flex items-center gap-1 ${densityClasses.metaSize} text-primary hover:underline`}
+              className="inline-flex items-center gap-1 text-primary hover:underline"
+              style={densityFontStyles.metaStyle}
             >
               <svg
                 className="h-3 w-3"
@@ -355,11 +379,12 @@ export const ArticleCard = React.memo(({
               </svg>
               Original
             </Link>
-            
+
             <button
               onClick={toggleReadStatus}
               disabled={isTogglingRead}
-              className={`inline-flex items-center gap-1 ${densityClasses.metaSize} text-secondary hover:text-foreground disabled:opacity-50 transition-colors`}
+              className="inline-flex items-center gap-1 text-secondary hover:text-foreground disabled:opacity-50 transition-colors"
+              style={densityFontStyles.metaStyle}
               title={isRead ? "Mark as unread" : "Mark as read"}
             >
               {isTogglingRead ? (
