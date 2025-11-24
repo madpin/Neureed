@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, createContext, useContext, startTrans
 import { useSession } from "next-auth/react";
 import { Toaster } from "sonner";
 import { useUserPreferences } from "@/hooks/queries/use-user-preferences";
+import { applyFontSizeVariables } from "@/lib/typography-utils";
 
 type ThemeMode = "light" | "dark" | "nord-light" | "nord-dark" | "solarized-light" | "solarized-dark" | "barbie-light" | "barbie-dark" | "purple-light" | "purple-dark" | "orange-light" | "orange-dark" | "rainbow-light" | "rainbow-dark" | "system";
 
@@ -147,6 +148,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener("preferencesUpdated" as any, handlePreferencesUpdate);
     return () => window.removeEventListener("preferencesUpdated" as any, handlePreferencesUpdate);
   }, []);
+
+  // Apply section-specific font sizes when preferences change
+  useEffect(() => {
+    if (preferences && mounted) {
+      applyFontSizeVariables({
+        fontSize: preferences.fontSize || 'medium',
+        sidebarFontSize: preferences.sidebarFontSize || 'smaller',
+        cardFontSize: preferences.cardFontSize || 'same',
+        modalFontSize: preferences.modalFontSize || 'same',
+        uiFontSize: preferences.uiFontSize || 'same',
+      });
+    }
+  }, [preferences, mounted]);
 
   // Show loading state only on initial client-side load if we don't have local storage values
   // But we set mounted=true after checking local storage, so this should be fast.

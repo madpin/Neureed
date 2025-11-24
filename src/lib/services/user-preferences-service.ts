@@ -180,6 +180,10 @@ export async function getDefaultPreferences(): Promise<
   return {
     theme: "system",
     fontSize: "medium",
+    sidebarFontSize: "smaller",
+    cardFontSize: "same",
+    modalFontSize: "same",
+    uiFontSize: "same",
     articlesPerPage: 20,
     defaultView: "expanded",
     showReadArticles: true,

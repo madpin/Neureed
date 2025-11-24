@@ -299,10 +299,10 @@ export function CategoryList({
             className="flex flex-1 items-center gap-2 text-left min-w-0"
           >
             {renderFeedIcon(feed)}
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-normal truncate">{feed.name}</div>
+            <div className="flex-1 min-w-0" style={{ fontSize: 'var(--font-size-sidebar)' }}>
+              <div className="font-normal truncate">{feed.name}</div>
               {(feed.unreadCount !== undefined && feed.unreadCount > 0) && (
-                <div className="text-xs text-secondary">
+                <div className="text-secondary" style={{ fontSize: '0.7em', fontWeight: '300' }}>
                   {feed.unreadCount} unread
                 </div>
               )}
@@ -405,7 +405,8 @@ export function CategoryList({
                 });
                 setExpandedFeedId(null);
               }}
-              className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-muted"
+              className="flex w-full items-center gap-2 px-4 py-2 text-left hover:bg-muted"
+              style={{ fontSize: 'var(--font-size-sidebar)' }}
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -418,7 +419,8 @@ export function CategoryList({
                 onCloseMobileMenu?.();
                 onOpenFeedSettings?.(feed.id);
               }}
-              className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-muted"
+              className="flex w-full items-center gap-2 px-4 py-2 text-left hover:bg-muted"
+              style={{ fontSize: 'var(--font-size-sidebar)' }}
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -433,7 +435,8 @@ export function CategoryList({
                 }
                 setExpandedFeedId(null);
               }}
-              className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-muted"
+              className="flex w-full items-center gap-2 px-4 py-2 text-left hover:bg-muted"
+              style={{ fontSize: 'var(--font-size-sidebar)' }}
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
@@ -533,17 +536,18 @@ export function CategoryList({
               onClick={() => handleCategoryClick(category.id)}
               onDragStart={(e) => e.stopPropagation()}
               draggable={false}
-              className="flex flex-1 items-center gap-2 text-left text-sm font-normal"
+              className="flex flex-1 items-center gap-2 text-left font-normal"
+              style={{ fontSize: 'var(--font-size-sidebar)' }}
             >
               {(category as any).icon ? (
-                <span className="text-base">{(category as any).icon}</span>
+                <span style={{ fontSize: 'calc(var(--font-size-sidebar) * 1.143)' }}>{(category as any).icon}</span>
               ) : (
                 <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                 </svg>
               )}
               <span className="flex-1">{category.name}</span>
-              <span className="text-xs text-secondary">{category.feeds?.length || 0}</span>
+              <span className="text-secondary" style={{ fontSize: '0.7em', fontWeight: '300' }}>{category.feeds?.length || 0}</span>
             </button>
 
             {/* Menu Button */}
@@ -584,7 +588,8 @@ export function CategoryList({
                 setCategoryActionsId(null);
                 onOpenRenameCategory?.(category.id, category.name);
               }}
-              className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-muted"
+              className="flex w-full items-center gap-2 px-4 py-2 text-left hover:bg-muted"
+              style={{ fontSize: 'var(--font-size-sidebar)' }}
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -596,7 +601,8 @@ export function CategoryList({
                 setCategoryActionsId(null);
                 onOpenIconPicker?.(category.id, (category as any).icon);
               }}
-              className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-muted"
+              className="flex w-full items-center gap-2 px-4 py-2 text-left hover:bg-muted"
+              style={{ fontSize: 'var(--font-size-sidebar)' }}
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -609,7 +615,8 @@ export function CategoryList({
                 onCloseMobileMenu?.();
                 onOpenCategorySettings?.(category.id);
               }}
-              className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-muted"
+              className="flex w-full items-center gap-2 px-4 py-2 text-left hover:bg-muted"
+              style={{ fontSize: 'var(--font-size-sidebar)' }}
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -654,7 +661,7 @@ export function CategoryList({
             </svg>
           </div>
           <div className="flex-1">
-            <div className="text-sm font-normal">All Articles</div>
+            <div className="font-normal" style={{ fontSize: 'var(--font-size-sidebar)' }}>All Articles</div>
           </div>
         </button>
       ) : (
@@ -681,7 +688,7 @@ export function CategoryList({
       {categories.length > 0 && (
         <div className="mt-4">
           {!isCollapsed && (
-            <h3 className="mb-2 px-4 text-xs font-semibold uppercase tracking-wide text-secondary">
+            <h3 className="mb-2 px-4 font-semibold uppercase tracking-wide text-secondary" style={{ fontSize: 'calc(var(--font-size-sidebar) * 0.857)' }}>
               Categories
             </h3>
           )}
@@ -693,10 +700,11 @@ export function CategoryList({
       {uncategorizedFeeds.length > 0 && (
         <div className="mt-4">
           {!isCollapsed && (
-            <div 
-              className={`mb-2 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-secondary rounded-lg ${
+            <div
+              className={`mb-2 px-4 py-2 font-semibold uppercase tracking-wide text-secondary rounded-lg ${
                 draggedFeedId && dragOverCategoryId === "uncategorized" ? "border-2 border-blue-500 bg-muted/50" : ""
               }`}
+              style={{ fontSize: 'calc(var(--font-size-sidebar) * 0.857)' }}
               onDragOver={(e) => {
                 e.preventDefault();
                 if (draggedFeedId) {

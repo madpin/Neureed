@@ -11,9 +11,9 @@ import { AddFeedForm } from "./components/feeds/AddFeedForm";
 import { FeedBrowser } from "./components/feeds/FeedBrowser";
 import { IconPicker } from "./components/feeds/IconPicker";
 import { ArticleList } from "./components/articles/ArticleList";
-import { SignInWithGoogleButton, SignInWithGitHubButton } from "./components/auth/SignInButton";
 import { Tooltip } from "./components/layout/Tooltip";
 import { LoadingSpinner } from "./components/layout/LoadingSpinner";
+import { LandingPage } from "./components/landing/LandingPage";
 import type { ArticleSortOrder, ArticleSortDirection } from "@/lib/validations/article-validation";
 import { useUserPreferences, useUpdatePreference } from "@/hooks/queries/use-user-preferences";
 import { useInfiniteArticles } from "@/hooks/queries/use-articles";
@@ -237,29 +237,9 @@ export default function Home() {
     );
   }
 
-  // Not Authenticated
+  // Not Authenticated - Show Landing Page
   if (!session?.user) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-background text-foreground">
-        <div className="w-full max-w-md space-y-8 rounded-lg border border-border bg-background p-8">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-foreground">
-              Welcome to NeuReed
-            </h1>
-            <p className="mt-2 text-foreground/70">
-              Sign in to access your personalized RSS feed reader
-            </p>
-          </div>
-          <div className="space-y-4">
-            <SignInWithGoogleButton />
-            <SignInWithGitHubButton />
-          </div>
-          <p className="text-center text-sm text-foreground/60">
-            Your feeds and preferences will be synced across all your devices
-          </p>
-        </div>
-      </div>
-    );
+    return <LandingPage />;
   }
 
   return (

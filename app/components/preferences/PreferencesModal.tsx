@@ -7,6 +7,7 @@ import { ThemePalette } from "./ThemePalette";
 import { DraggableOrderEditor } from "./DraggableOrderEditor";
 import { ArticleCard, type ArticleDisplayPreferences } from "@/app/components/articles/ArticleCard";
 import { useUserPreferences, useUpdateUserPreferences, useResetPatterns, type UserPreferences } from "@/hooks/queries/use-user-preferences";
+import { applyFontSizeVariables } from "@/lib/typography-utils";
 
 type ViewType = 'profile' | 'appearance' | 'articleDisplay' | 'reading' | 'learning' | 'llm' | 'feeds';
 
@@ -275,6 +276,26 @@ export function PreferencesModal({
   ) => {
     setLocalPreferences((prev) => (prev ? { ...prev, [key]: value } : null));
   };
+
+  // Update CSS variables for preview when font size preferences change
+  useEffect(() => {
+    if (localPreferences) {
+      console.log('Updating font size preview with:', localPreferences);
+      applyFontSizeVariables({
+        fontSize: localPreferences.fontSize || 'medium',
+        sidebarFontSize: localPreferences.sidebarFontSize || 'smaller',
+        cardFontSize: localPreferences.cardFontSize || 'same',
+        modalFontSize: localPreferences.modalFontSize || 'same',
+        uiFontSize: localPreferences.uiFontSize || 'same',
+      });
+    }
+  }, [
+    localPreferences?.fontSize,
+    localPreferences?.sidebarFontSize,
+    localPreferences?.cardFontSize,
+    localPreferences?.modalFontSize,
+    localPreferences?.uiFontSize
+  ]);
 
   // Get label for current view
   const getViewLabel = (view: ViewType) => {
@@ -622,6 +643,96 @@ function AppearanceView({
                 className="w-32 rounded-lg border border-border bg-muted px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             )}
+          </div>
+        </div>
+
+        {/* Section-Specific Font Sizes */}
+        <div className="rounded-lg border border-border bg-muted/50 p-4">
+          <h3 className="mb-3 text-base font-semibold">Section-Specific Font Sizes</h3>
+          <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+            Customize text sizes for different sections relative to your main font size.
+            "Smaller" is -2px, "Same" is ±0, "Larger" is +2px.
+          </p>
+
+          <div className="space-y-4">
+            {/* Sidebar Font Size */}
+            <div>
+              <label className="mb-2 block text-sm font-medium">Sidebar</label>
+              <select
+                value={preferences.sidebarFontSize || "smaller"}
+                onChange={(e) => updatePreference("sidebarFontSize", e.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="smaller">Smaller (Main -2px)</option>
+                <option value="same">Same as Main</option>
+                <option value="larger">Larger (Main +2px)</option>
+              </select>
+            </div>
+
+            {/* Article Cards Font Size */}
+            <div>
+              <label className="mb-2 block text-sm font-medium">Article Cards</label>
+              <select
+                value={preferences.cardFontSize || "same"}
+                onChange={(e) => updatePreference("cardFontSize", e.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="smaller">Smaller (Main -2px)</option>
+                <option value="same">Same as Main</option>
+                <option value="larger">Larger (Main +2px)</option>
+              </select>
+            </div>
+
+            {/* Modals Font Size */}
+            <div>
+              <label className="mb-2 block text-sm font-medium">Modals & Dialogs</label>
+              <select
+                value={preferences.modalFontSize || "same"}
+                onChange={(e) => updatePreference("modalFontSize", e.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="smaller">Smaller (Main -2px)</option>
+                <option value="same">Same as Main</option>
+                <option value="larger">Larger (Main +2px)</option>
+              </select>
+            </div>
+
+            {/* UI Elements Font Size */}
+            <div>
+              <label className="mb-2 block text-sm font-medium">UI Elements (Buttons, Badges, etc.)</label>
+              <select
+                value={preferences.uiFontSize || "same"}
+                onChange={(e) => updatePreference("uiFontSize", e.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="smaller">Smaller (Main -2px)</option>
+                <option value="same">Same as Main</option>
+                <option value="larger">Larger (Main +2px)</option>
+              </select>
+            </div>
+
+            {/* Preview */}
+            <div className="mt-4 rounded-lg bg-background p-4 border border-border">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Preview</p>
+              <div className="space-y-2">
+                <div style={{ fontSize: `var(--font-size-sidebar)` }}>
+                  <span className="text-gray-500">Sidebar: </span>
+                  <span>The quick brown fox jumps over the lazy dog</span>
+                </div>
+                <div style={{ fontSize: `var(--font-size-card)` }}>
+                  <span className="text-gray-500">Cards: </span>
+                  <span>The quick brown fox jumps over the lazy dog</span>
+                </div>
+                <div style={{ fontSize: `var(--font-size-modal)` }}>
+                  <span className="text-gray-500">Modals: </span>
+                  <span>The quick brown fox jumps over the lazy dog</span>
+                </div>
+                <div style={{ fontSize: `var(--font-size-ui)` }}>
+                  <span className="text-gray-500">UI: </span>
+                  <span>The quick brown fox jumps over the lazy dog</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

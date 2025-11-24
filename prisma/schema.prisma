@@ -248,6 +248,10 @@ model user_preferences {
   userId                    String   @unique
   theme                     String   @default("system")
   fontSize                  String   @default("medium")
+  sidebarFontSize           String   @default("smaller")
+  cardFontSize              String   @default("same")
+  modalFontSize             String   @default("same")
+  uiFontSize                String   @default("same")
   articlesPerPage           Int      @default(20)
   defaultView               String   @default("expanded")
   showReadArticles          Boolean  @default(true)

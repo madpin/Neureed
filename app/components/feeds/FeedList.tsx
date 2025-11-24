@@ -82,17 +82,17 @@ export function FeedList({
           </svg>
         </div>
         <div className="flex-1">
-          <div className="text-sm font-normal">All Articles</div>
+          <div className="font-normal" style={{ fontSize: 'var(--font-size-sidebar)' }}>All Articles</div>
         </div>
       </button>
 
       {/* Feed List */}
       <div className="mt-4">
-        <h3 className="mb-2 px-4 text-xs font-semibold uppercase tracking-wide text-secondary">
+        <h3 className="mb-2 px-4 font-semibold uppercase tracking-wide text-secondary" style={{ fontSize: 'calc(var(--font-size-sidebar) * 0.857)' }}>
           Feeds
         </h3>
         {feeds.length === 0 ? (
-          <div className="px-4 py-8 text-center text-sm text-secondary">
+          <div className="px-4 py-8 text-center text-secondary" style={{ fontSize: 'var(--font-size-sidebar)' }}>
             No feeds yet. Add your first feed to get started!
           </div>
         ) : (
@@ -132,10 +132,10 @@ export function FeedList({
                       </svg>
                     </div>
                   )}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-normal truncate">{feed.name}</div>
+                  <div className="flex-1 min-w-0" style={{ fontSize: 'var(--font-size-sidebar)' }}>
+                    <div className="font-normal truncate">{feed.name}</div>
                     {feed.articleCount !== undefined && (
-                      <div className="text-xs text-secondary">
+                      <div className="text-secondary" style={{ fontSize: '0.7em', fontWeight: '300' }}>
                         {feed.articleCount} articles
                       </div>
                     )}
@@ -172,7 +172,8 @@ export function FeedList({
                       onRefreshFeed(feed.id);
                       setExpandedFeedId(null);
                     }}
-                    className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-muted"
+                    className="flex w-full items-center gap-2 px-4 py-2 text-left hover:bg-muted"
+                    style={{ fontSize: 'var(--font-size-sidebar)' }}
                   >
                     <svg
                       className="h-4 w-4"
@@ -194,7 +195,8 @@ export function FeedList({
                       setSettingsFeedId(feed.id);
                       setExpandedFeedId(null);
                     }}
-                    className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-muted"
+                    className="flex w-full items-center gap-2 px-4 py-2 text-left hover:bg-muted"
+                    style={{ fontSize: 'var(--font-size-sidebar)' }}
                   >
                     <svg
                       className="h-4 w-4"

@@ -6,6 +6,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 import { queryKeys } from "@/lib/query/query-keys";
 import { apiGet, apiPut, ApiError } from "@/lib/query/api-client";
 
@@ -15,6 +16,10 @@ import { apiGet, apiPut, ApiError } from "@/lib/query/api-client";
 export interface UserPreferences {
   theme?: string;
   fontSize?: string;
+  sidebarFontSize?: string;
+  cardFontSize?: string;
+  modalFontSize?: string;
+  uiFontSize?: string;
   articlesPerPage?: number;
   /** @deprecated Use articleCardDensity instead */
   defaultView?: "compact" | "expanded";
@@ -144,7 +149,7 @@ async function updateUserPreferences(
  *
  * This hook provides cached access to user preferences with automatic
  * background updates. The data is shared across all components.
- * 
+ *
  * Note: This hook automatically handles authentication state. When the user
  * is not authenticated, the query is disabled and no API call is made.
  *
@@ -160,11 +165,15 @@ async function updateUserPreferences(
  * ```
  */
 export function useUserPreferences() {
+  const { status } = useSession();
+  const isAuthenticated = status === "authenticated";
+
   return useQuery({
     queryKey: queryKeys.user.preferences(),
     queryFn: fetchUserPreferences,
     staleTime: 5 * 60 * 1000, // 5 minutes - preferences don't change often
     retry: false, // Don't retry on auth errors
+    enabled: isAuthenticated, // Only fetch when user is authenticated
   });
 }
 

@@ -16,8 +16,39 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NeuReed - Intelligent RSS Reader",
-  description: "A highly customizable, LLM-focused RSS reader with semantic search capabilities",
+  title: "NeuReed - AI-Powered RSS Feed Reader | Semantic Search & Personalization",
+  description: "Your RSS reader, but way smarter. Self-hosted feed reader with AI personalization, semantic search powered by pgvector, and 14 beautiful themes. Privacy-first, open source, and completely free.",
+  keywords: ["RSS reader", "feed reader", "AI RSS", "semantic search", "self-hosted", "open source", "pgvector", "personalization", "Next.js"],
+  authors: [{ name: "madpin", url: "https://github.com/madpin" }],
+  creator: "madpin",
+  publisher: "madpin",
+  openGraph: {
+    title: "NeuReed - AI-Powered RSS Feed Reader",
+    description: "Your RSS reader, but way smarter. Self-hosted with AI personalization, semantic search, and beautiful themes.",
+    url: "https://neureed.madpin.dev",
+    siteName: "NeuReed",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "NeuReed - AI-Powered RSS Feed Reader",
+    description: "Your RSS reader, but way smarter. Self-hosted with AI personalization and semantic search.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
