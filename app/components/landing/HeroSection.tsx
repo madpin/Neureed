@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Brain, Sparkles, Shield, Zap } from "lucide-react";
 import { SignInWithGoogleButton, SignInWithGitHubButton } from "../auth/SignInButton";
+import Image from "next/image";
 
 export function HeroSection() {
   return (
@@ -108,21 +109,22 @@ export function HeroSection() {
             </a>
           </motion.div>
 
-          {/* Hero Image Placeholder */}
+          {/* Hero Screenshot */}
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.6 }}
             className="mt-16 rounded-xl border border-border bg-muted/50 p-4 shadow-2xl backdrop-blur-sm"
           >
-            <div className="aspect-video w-full overflow-hidden rounded-lg bg-background/50">
-              {/* Screenshot will go here */}
-              <div className="flex h-full items-center justify-center text-foreground/30">
-                <div className="text-center">
-                  <Brain className="mx-auto h-16 w-16 mb-4" />
-                  <p className="text-sm">App Screenshot Coming Soon</p>
-                </div>
-              </div>
+            <div className="w-full overflow-hidden rounded-lg">
+              <Image
+                src="/screenshots/07-main-article-reading-panel.jpeg"
+                alt="NeuReed beautiful reading experience with split-pane layout"
+                width={1200}
+                height={800}
+                className="w-full h-auto"
+                priority
+              />
             </div>
           </motion.div>
         </div>
