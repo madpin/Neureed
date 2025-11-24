@@ -1,0 +1,201 @@
+'use client';
+
+/**
+ * Search Template Gallery Component
+ *
+ * Displays pre-defined search templates that users can browse and apply
+ */
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Search, Sparkles } from 'lucide-react';
+import type { SearchTemplate } from '@/lib/services/search-templates-service';
+
+interface SearchTemplateGalleryProps {
+  onSelectTemplate: (template: SearchTemplate) => void;
+  onClose?: () => void;
+}
+
+export function SearchTemplateGallery({
+  onSelectTemplate,
+  onClose,
+}: SearchTemplateGalleryProps) {
+  const [templates, setTemplates] = useState<SearchTemplate[]>([]);
+  const [filteredTemplates, setFilteredTemplates] = useState<SearchTemplate[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  // Fetch templates
+  useEffect(() => {
+    async function fetchTemplates() {
+      try {
+        const [templatesRes, categoriesRes] = await Promise.all([
+          fetch('/api/saved-searches/templates'),
+          fetch('/api/saved-searches/templates?categories=true'),
+        ]);
+
+        const templatesData = await templatesRes.json();
+        const categoriesData = await categoriesRes.json();
+
+        setTemplates(templatesData.data || []);
+        setFilteredTemplates(templatesData.data || []);
+        setCategories(categoriesData.data || []);
+      } catch (error) {
+        console.error('Failed to fetch templates:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchTemplates();
+  }, []);
+
+  // Filter templates
+  useEffect(() => {
+    let filtered = templates;
+
+    // Filter by category
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(t => t.category === selectedCategory);
+    }
+
+    // Filter by search keyword
+    if (searchKeyword) {
+      const keyword = searchKeyword.toLowerCase();
+      filtered = filtered.filter(
+        t =>
+          t.name.toLowerCase().includes(keyword) ||
+          t.description.toLowerCase().includes(keyword) ||
+          t.tags.some(tag => tag.toLowerCase().includes(keyword))
+      );
+    }
+
+    setFilteredTemplates(filtered);
+  }, [selectedCategory, searchKeyword, templates]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h2 className="text-2xl font-bold mb-2">Search Templates</h2>
+        <p className="text-muted-foreground">
+          Start with a pre-built template and customize it to your needs
+        </p>
+      </div>
+
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search templates..."
+          value={searchKeyword}
+          onChange={(e) => setSearchKeyword(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
+      {/* Category Tabs */}
+      <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
+        <TabsList className="w-full justify-start overflow-x-auto">
+          <TabsTrigger value="all">
+            All ({templates.length})
+          </TabsTrigger>
+          {categories.map((cat) => (
+            <TabsTrigger key={cat.category} value={cat.category}>
+              {cat.icon} {cat.label} ({cat.count})
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        <TabsContent value={selectedCategory} className="mt-6">
+          {filteredTemplates.length === 0 ? (
+            <Card className="p-12 text-center">
+              <p className="text-muted-foreground">
+                No templates found matching your criteria
+              </p>
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {filteredTemplates.map((template) => (
+                <Card
+                  key={template.id}
+                  className="cursor-pointer transition-all hover:shadow-lg hover:border-primary"
+                  onClick={() => onSelectTemplate(template)}
+                >
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="text-3xl">{template.icon}</div>
+                      {template.usageCount && template.usageCount > 100 && (
+                        <Badge variant="secondary" className="gap-1">
+                          <Sparkles className="h-3 w-3" />
+                          Popular
+                        </Badge>
+                      )}
+                    </div>
+                    <CardTitle className="text-lg">{template.name}</CardTitle>
+                    <CardDescription className="line-clamp-2">
+                      {template.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {/* Query Preview */}
+                      <div className="bg-muted/50 p-2 rounded text-xs font-mono line-clamp-2">
+                        {template.query}
+                      </div>
+
+                      {/* Tags */}
+                      <div className="flex flex-wrap gap-1">
+                        {template.tags.slice(0, 3).map((tag) => (
+                          <Badge key={tag} variant="outline" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                        {template.tags.length > 3 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{template.tags.length - 3}
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Stats */}
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>Threshold: {Math.round((template.threshold || 0.6) * 100)}%</span>
+                        {template.recencyBias && template.recencyBias > 0 && (
+                          <span>Recency Bias: {template.recencyBias}</span>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Actions */}
+      {onClose && (
+        <div className="flex justify-end">
+          <Button variant="outline" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}

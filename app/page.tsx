@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { MainLayout } from "./components/layout/MainLayout";
 import { ReadingPanelLayout } from "./components/layout/ReadingPanelLayout";
 import { CategoryList } from "./components/feeds/CategoryList";
+import { SavedSearchList } from "./components/saved-searches/SavedSearchList";
 import { FeedManagementModal } from "./components/feeds/FeedManagementModal";
 import { AddFeedForm } from "./components/feeds/AddFeedForm";
 import { FeedBrowser } from "./components/feeds/FeedBrowser";
@@ -20,6 +21,7 @@ import { useInfiniteArticles } from "@/hooks/queries/use-articles";
 import {
   useAddFeed,
 } from "@/hooks/queries/use-feeds";
+import { useInfiniteMatchingArticles } from "@/hooks/queries/use-saved-searches";
 import { useUpdateCategory } from "@/hooks/queries/use-categories";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/query-keys";
@@ -34,6 +36,7 @@ export default function Home() {
   const selectedFeedId = searchParams.get('feed') || undefined;
   const selectedCategoryId = searchParams.get('categoryId') || undefined;
   const searchQuery = searchParams.get('search') || "";
+  const selectedSavedSearchId = searchParams.get('savedSearch') || undefined;
 
   // Local State
   const [isAddFeedOpen, setIsAddFeedOpen] = useState(false);
@@ -75,15 +78,8 @@ export default function Home() {
   const searchRecencyWeight = preferences?.searchRecencyWeight ?? 0.3;
   const searchRecencyDecayDays = preferences?.searchRecencyDecayDays ?? 30;
 
-  // Articles Query
-  const { 
-    data: articlesData,
-    isLoading: isLoadingArticles,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    refetch: refetchArticles
-  } = useInfiniteArticles({
+  // Articles Query - conditionally use saved search or normal articles
+  const normalArticlesQuery = useInfiniteArticles({
     feedId: selectedFeedId,
     categoryId: selectedCategoryId,
     search: searchQuery,
@@ -96,6 +92,24 @@ export default function Home() {
     sortBy: sortOrder,
     sortOrder: sortDirection,
   });
+
+  const savedSearchArticlesQuery = useInfiniteMatchingArticles(
+    selectedSavedSearchId || '',
+    {
+      sortBy: 'relevance',
+    },
+    20
+  );
+
+  // Use the appropriate query based on whether a saved search is selected
+  const {
+    data: articlesData,
+    isLoading: isLoadingArticles,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch: refetchArticles
+  } = selectedSavedSearchId ? savedSearchArticlesQuery : normalArticlesQuery;
 
   const articles = articlesData?.pages.flatMap(page => page.articles) ?? [];
 
@@ -248,7 +262,7 @@ export default function Home() {
       sortDirection={sortDirection}
       onSortChange={handleSortChange}
       isLoadingArticles={isLoadingArticles}
-      sidebar={({ isCollapsed, closeMobileMenu }) => (
+      sidebar={({ isCollapsed, closeMobileMenu, onOpenCreateModal, onOpenEditModal, onOpenOnboarding }) => (
         <div className="flex flex-col gap-4">
           {!isCollapsed && (
             <div className="space-y-2">
@@ -318,6 +332,23 @@ export default function Home() {
             onOpenIconPicker={handleOpenIconPicker}
             onCloseMobileMenu={closeMobileMenu}
           />
+
+          {/* Saved Searches */}
+          <div className="border-t border-border pt-4">
+            {!isCollapsed && (
+              <h3 className="mb-2 px-2 text-xs font-semibold text-secondary uppercase tracking-wide">
+                Saved Searches
+              </h3>
+            )}
+            <SavedSearchList
+              selectedSearchId={selectedSavedSearchId}
+              isCollapsed={isCollapsed}
+              onCloseMobileMenu={closeMobileMenu}
+              onOpenCreateModal={onOpenCreateModal}
+              onOpenEditModal={onOpenEditModal}
+              onOpenOnboarding={onOpenOnboarding}
+            />
+          </div>
         </div>
       )}
     >

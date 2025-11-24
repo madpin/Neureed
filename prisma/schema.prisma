@@ -61,26 +61,27 @@ model article_feedback {
 }
 
 model articles {
-  id               String                 @id
-  feedId           String
-  title            String
-  content          String
-  url              String                 @unique
-  publishedAt      DateTime?              @db.Timestamptz
-  embedding        Unsupported("vector")?
-  createdAt        DateTime               @default(now()) @db.Timestamptz
-  updatedAt        DateTime               @updatedAt @db.Timestamptz
-  author           String?
-  contentHash      String?
-  excerpt          String?
-  guid             String?
-  imageUrl         String?
-  keyPoints        Json?
-  summary          String?
-  topics           String[]
-  article_feedback article_feedback[]
-  feeds            feeds                  @relation(fields: [feedId], references: [id], onDelete: Cascade)
-  read_articles    read_articles[]
+  id                   String                 @id
+  feedId               String
+  title                String
+  content              String
+  url                  String                 @unique
+  publishedAt          DateTime?              @db.Timestamptz
+  embedding            Unsupported("vector")?
+  createdAt            DateTime               @default(now()) @db.Timestamptz
+  updatedAt            DateTime               @updatedAt @db.Timestamptz
+  author               String?
+  contentHash          String?
+  excerpt              String?
+  guid                 String?
+  imageUrl             String?
+  keyPoints            Json?
+  summary              String?
+  topics               String[]
+  article_feedback     article_feedback[]
+  feeds                feeds                  @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  read_articles        read_articles[]
+  saved_search_matches saved_search_matches[]
 
   @@index([contentHash])
   @@index([feedId])
@@ -191,6 +192,7 @@ model user_categories {
   icon                 String?                @default("📁")
   users                User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   user_feed_categories user_feed_categories[]
+  saved_searches       saved_searches[]
 
   @@unique([userId, name])
   @@index([userId])
@@ -318,6 +320,50 @@ model user_notifications {
   @@index([userId, read])
 }
 
+model saved_searches {
+  id              String                @id @default(cuid())
+  userId          String
+  name            String
+  query           String                @db.Text
+  icon            String?               @default("🔍")
+  threshold       Float                 @default(0.6)
+  categoryId      String?
+  notifyOnMatch   Boolean               @default(false)
+  notifyThreshold Float                 @default(0.85)
+  dailyDigest     Boolean               @default(false)
+  recencyBias     Float                 @default(0.0)
+  prioritySources Json?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  lastMatchedAt   DateTime?
+  totalMatches    Int                   @default(0)
+  archived        Boolean               @default(false)
+  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category        user_categories?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  matches         saved_search_matches[]
+
+  @@index([userId])
+  @@index([userId, archived])
+}
+
+model saved_search_matches {
+  id             String         @id @default(cuid())
+  savedSearchId  String
+  articleId      String
+  relevanceScore Float
+  matchedTerms   Json
+  matchReason    String?        @db.Text
+  createdAt      DateTime       @default(now())
+  notified       Boolean        @default(false)
+  savedSearch    saved_searches @relation(fields: [savedSearchId], references: [id], onDelete: Cascade)
+  article        articles       @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@unique([savedSearchId, articleId])
+  @@index([savedSearchId, relevanceScore])
+  @@index([articleId])
+  @@index([createdAt])
+}
+
 model User {
   id                 String               @id @default(cuid())
   name               String?
@@ -336,6 +382,7 @@ model User {
   user_patterns      user_patterns[]
   user_preferences   user_preferences?
   user_notifications user_notifications[]
+  saved_searches     saved_searches[]
 
   @@map("users")
 }

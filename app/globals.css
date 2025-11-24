@@ -376,3 +376,23 @@ body {
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
 }
+
+/* Mobile bottom sheet animation */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Swipe gesture indicator */
+@keyframes swipeHint {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-10px);
+  }
+}

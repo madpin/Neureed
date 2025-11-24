@@ -209,6 +209,58 @@ Implementation: [src/lib/services/feed-settings-cascade.ts](src/lib/services/fee
 - Quick bounce (<25% time) = negative signal
 - Completion (>90% time) = positive signal
 
+### Saved Searches Architecture
+
+**Overview:**
+Saved Searches is a dynamic content monitoring system that allows users to create persistent queries that automatically match against new articles. It combines semantic search (vector embeddings) with keyword matching to find relevant content.
+
+**Core Components:**
+- **Query Parser** ([search-query-parser.ts](src/lib/services/search-query-parser.ts)): Parses complex query syntax into AST
+- **Search Execution** ([saved-search-execution.ts](src/lib/services/saved-search-execution.ts)): Executes queries against article database
+- **Matcher Service** ([saved-search-matcher.ts](src/lib/services/saved-search-matcher.ts)): Automatically matches new articles
+- **Cache Service** ([saved-search-cache-service.ts](src/lib/services/saved-search-cache-service.ts)): Multi-level caching
+- **Batch Processor** ([saved-search-batch-processor.ts](src/lib/services/saved-search-batch-processor.ts)): Efficient batch matching
+
+**Query Syntax:**
+```
+Basic: "AI"                           # Simple semantic search
+OR:    "AI, machine learning"         # Match any term
+AND:   "AI +ethics"                   # Required term
+NOT:   "AI -cryptocurrency"           # Excluded term
+Phrase: "machine learning"            # Exact phrase
+Groups: "(AI, ML) +ethics"            # Grouped expressions
+```
+
+**Integration Points:**
+1. Feed refresh job automatically triggers matching for new articles
+2. Articles scored for relevance (0-1 scale)
+3. High-relevance matches (>0.85) trigger notifications
+4. Results cached for performance (5-minute TTL)
+5. Mobile-optimized with offline support
+
+**Database Schema:**
+- `saved_searches`: User-created search configurations with settings
+- `saved_search_matches`: Join table with relevance scores and match reasons
+- Indexed on `(savedSearchId, relevanceScore)` and `(savedSearchId, articleId)` for fast retrieval
+
+**Performance Optimizations:**
+- Query AST caching (24h TTL, 80% reduction in parsing time)
+- Batch processing (100 articles/batch, 5 concurrent searches)
+- Vector search with HNSW index
+- Compound database indexes for common query patterns
+- Target throughput: 1000+ articles/minute
+
+**Testing:**
+- 60+ unit tests covering parser, execution, matching, templates
+- Integration tests for end-to-end workflows
+- Performance benchmarks validated
+
+**Documentation:**
+- User Guide: [docs/USER_GUIDE_SAVED_SEARCHES.md](docs/USER_GUIDE_SAVED_SEARCHES.md)
+- Feature Spec: [docs/FEATURE_SAVED_SEARCHES.md](docs/FEATURE_SAVED_SEARCHES.md)
+- Performance Guide: [docs/SAVED_SEARCH_PERFORMANCE_GUIDE.md](docs/SAVED_SEARCH_PERFORMANCE_GUIDE.md)
+- Testing Guide: [docs/TESTING_SAVED_SEARCHES.md](docs/TESTING_SAVED_SEARCHES.md)
+
 ### Authentication Architecture (NextAuth.js v5)
 
 **Configuration** ([src/lib/auth.ts](src/lib/auth.ts)):
@@ -278,6 +330,7 @@ export const POST = createHandler(
 - `/api/user/*` - User-specific data (preferences, subscriptions, notifications)
 - `/api/admin/*` - Administrative operations
 - `/api/jobs/*` - Manual job triggers
+- `/api/saved-searches/*` - Saved search CRUD, matching, templates, insights
 
 ## Important Development Notes
 

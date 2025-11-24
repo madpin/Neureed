@@ -6,6 +6,7 @@ import { createJobExecutor, type JobResult } from "./job-executor";
 import { createScheduledJob } from "./job-scheduler";
 import { JobLogger } from "./job-logger";
 import { createFeedRefreshNotification, cleanupOldNotifications } from "../services/notification-service";
+import { matchNewArticles } from "../services/saved-search-matcher";
 
 /**
  * Cron job for refreshing feeds
@@ -247,6 +248,54 @@ async function runFeedRefresh(): Promise<JobResult> {
   jobLogger.info("Feed refresh completed", summaryDetails);
   logger.info("Feed refresh completed", summaryDetails);
 
+  // Match new articles against saved searches
+  if (stats.totalNewArticles > 0) {
+    try {
+      jobLogger.info("Starting saved search matching for new articles", {
+        newArticles: stats.totalNewArticles,
+      });
+
+      // Get recently created articles (from the last hour to be safe)
+      const recentArticles = await prisma.articles.findMany({
+        where: {
+          createdAt: {
+            gte: new Date(Date.now() - 60 * 60 * 1000),
+          },
+          feedId: {
+            in: feedIds,
+          },
+        },
+        select: { id: true },
+      });
+
+      const articleIds = recentArticles.map(a => a.id);
+
+      if (articleIds.length > 0) {
+        const matchStats = await matchNewArticles(articleIds);
+
+        jobLogger.info("Saved search matching completed", {
+          articlesChecked: matchStats.totalArticles,
+          searchesMatched: matchStats.totalSearches,
+          matchesCreated: matchStats.totalMatches,
+          notificationsSent: matchStats.notificationsSent,
+          duration: `${(matchStats.duration / 1000).toFixed(2)}s`,
+        });
+
+        logger.info("Saved search matching completed", { ...matchStats });
+      } else {
+        jobLogger.info("No recent articles found for saved search matching");
+      }
+    } catch (error) {
+      jobLogger.error("Saved search matching failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      logger.error("Saved search matching failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      // Don't fail the job if saved search matching fails
+    }
+  }
+
   // Create notifications for all affected users
   const affectedUserIds = Array.from(new Set(userFeeds.map(uf => uf.userId)));
   jobLogger.info(`Creating notifications for ${affectedUserIds.length} user(s)`);
@@ -407,6 +456,58 @@ export async function executeUserFeedRefreshJob(userId: string): Promise<void> {
     
     jobLogger.info("User feed refresh completed", summaryDetails);
     logger.info("User feed refresh completed", summaryDetails);
+
+    // Match new articles against saved searches for this user
+    if (stats.totalNewArticles > 0) {
+      try {
+        jobLogger.info("Starting saved search matching for user's new articles", {
+          userId,
+          newArticles: stats.totalNewArticles,
+        });
+
+        // Get recently created articles from user's feeds (from the last hour to be safe)
+        const recentArticles = await prisma.articles.findMany({
+          where: {
+            createdAt: {
+              gte: new Date(Date.now() - 60 * 60 * 1000),
+            },
+            feedId: {
+              in: feedIds,
+            },
+          },
+          select: { id: true },
+        });
+
+        const articleIds = recentArticles.map(a => a.id);
+
+        if (articleIds.length > 0) {
+          const matchStats = await matchNewArticles(articleIds, userId);
+
+          jobLogger.info("Saved search matching completed for user", {
+            userId,
+            articlesChecked: matchStats.totalArticles,
+            searchesMatched: matchStats.totalSearches,
+            matchesCreated: matchStats.totalMatches,
+            notificationsSent: matchStats.notificationsSent,
+            duration: `${(matchStats.duration / 1000).toFixed(2)}s`,
+          });
+
+          logger.info("User saved search matching completed", { userId, ...matchStats });
+        } else {
+          jobLogger.info("No recent articles found for saved search matching");
+        }
+      } catch (error) {
+        jobLogger.error("Saved search matching failed for user", {
+          userId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        logger.error("User saved search matching failed", {
+          userId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        // Don't fail the job if saved search matching fails
+      }
+    }
 
     // Create notification for the user
     try {

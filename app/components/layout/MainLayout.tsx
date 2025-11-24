@@ -1,15 +1,24 @@
 "use client";
 
-import { ReactNode, useState, useRef, useEffect } from "react";
+import { ReactNode, useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { UserMenu } from "@/app/components/auth/UserMenu";
 import { ArticleSortDropdown } from "@/app/components/articles/ArticleSortDropdown";
 import { NotificationBell } from "@/app/components/notifications/NotificationBell";
+import { SavedSearchModal } from "@/app/components/saved-searches/SavedSearchModal";
+import { SavedSearchOnboarding } from "@/app/components/saved-searches/SavedSearchOnboarding";
 import type { ArticleSortOrder, ArticleSortDirection } from "@/lib/validations/article-validation";
 import { useUserPreferences, useUpdatePreference } from "@/hooks/queries/use-user-preferences";
+import type { SavedSearch } from "@/hooks/queries/use-saved-searches";
 
 interface MainLayoutProps {
-  sidebar: ReactNode | ((props: { isCollapsed: boolean; closeMobileMenu: () => void }) => ReactNode);
+  sidebar: ReactNode | ((props: {
+    isCollapsed: boolean;
+    closeMobileMenu: () => void;
+    onOpenCreateModal: () => void;
+    onOpenEditModal: (search: SavedSearch) => void;
+    onOpenOnboarding: () => void;
+  }) => ReactNode);
   children: ReactNode;
   sortOrder?: ArticleSortOrder;
   sortDirection?: ArticleSortDirection;
@@ -44,6 +53,11 @@ export function MainLayout({
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Saved search modal state
+  const [isSaveSearchModalOpen, setIsSaveSearchModalOpen] = useState(false);
+  const [editingSavedSearch, setEditingSavedSearch] = useState<SavedSearch | undefined>();
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Detect if we're on mobile
   useEffect(() => {
@@ -112,6 +126,29 @@ export function MainLayout({
     updatePreference.mutate({ sidebarCollapsed: !isSidebarCollapsed });
   };
 
+  // Saved search modal handlers
+  const handleOpenCreateModal = useCallback(() => {
+    setEditingSavedSearch(undefined);
+    setIsSaveSearchModalOpen(true);
+  }, []);
+
+  const handleOpenEditModal = useCallback((search: SavedSearch) => {
+    setEditingSavedSearch(search);
+    setIsSaveSearchModalOpen(true);
+  }, []);
+
+  const handleOpenOnboarding = useCallback(() => {
+    setShowOnboarding(true);
+  }, []);
+
+  const handleCompleteOnboarding = useCallback(() => {
+    setShowOnboarding(false);
+    localStorage.setItem('neureed_saved_search_onboarding_seen', 'true');
+    // Open create modal after completing onboarding
+    setEditingSavedSearch(undefined);
+    setIsSaveSearchModalOpen(true);
+  }, []);
+
   // Search handlers
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -179,7 +216,10 @@ export function MainLayout({
             {typeof sidebar === "function"
               ? sidebar({
                   isCollapsed: isMobile ? false : isSidebarCollapsed,
-                  closeMobileMenu: () => setIsMobileMenuOpen(false)
+                  closeMobileMenu: () => setIsMobileMenuOpen(false),
+                  onOpenCreateModal: handleOpenCreateModal,
+                  onOpenEditModal: handleOpenEditModal,
+                  onOpenOnboarding: handleOpenOnboarding,
                 })
               : sidebar}
           </div>
@@ -310,6 +350,30 @@ export function MainLayout({
                     />
                   </svg>
                 </button>
+                {/* Save Search Button */}
+                {isSearchOpen && searchQuery.trim().length >= 2 && (
+                  <button
+                    type="button"
+                    onClick={() => setIsSaveSearchModalOpen(true)}
+                    className="p-2 hover:bg-muted rounded-lg transition-colors ml-1"
+                    title="Save this search"
+                    aria-label="Save Search"
+                  >
+                    <svg
+                      className="h-5 w-5 text-foreground"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                      />
+                    </svg>
+                  </button>
+                )}
               </form>
 
               {/* Mobile: Button opens modal */}
@@ -386,6 +450,24 @@ export function MainLayout({
           </div>
         </div>
       )}
+
+      {/* Saved Search Modal */}
+      <SavedSearchModal
+        isOpen={isSaveSearchModalOpen}
+        onClose={() => {
+          setIsSaveSearchModalOpen(false);
+          setEditingSavedSearch(undefined);
+        }}
+        initialQuery={searchQuery}
+        savedSearch={editingSavedSearch}
+      />
+
+      {/* Onboarding Modal */}
+      <SavedSearchOnboarding
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+        onComplete={handleCompleteOnboarding}
+      />
     </div>
   );
 }

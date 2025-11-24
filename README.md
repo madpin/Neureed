@@ -298,6 +298,7 @@ NeuReed comes with a variety of beautiful themes to match your style and mood:
 
 ### Smart Article Discovery
 - **Semantic search**: Find articles by meaning, not keywords
+- **Saved searches**: Create persistent queries that auto-match new articles
 - **Related articles**: Discover content similar to what you're reading
 - **Personalized scoring**: Articles ranked by how much you'll like them
 - **Smart filtering**: Hide read articles, filter by feed or category
@@ -314,6 +315,14 @@ NeuReed comes with a variety of beautiful themes to match your style and mood:
 - **Per-feed settings**: Different refresh rates, retention policies
 - **OPML support**: Import/export your subscriptions
 
+### Saved Searches (NEW!)
+- **Dynamic feeds**: Create searches that continuously monitor all your articles
+- **Advanced syntax**: Use AND/OR/NOT operators and grouped queries
+- **Relevance scoring**: See how well each article matches your query
+- **Smart notifications**: Get alerted only for high-relevance matches
+- **Templates**: Start quickly with pre-built search patterns
+- **Mobile optimized**: Swipe gestures, offline support, responsive design
+
 ### AI-Powered Features
 - **Article summaries**: TL;DR powered by GPT
 - **Embedding generation**: Automatic or on-demand
@@ -329,6 +338,8 @@ NeuReed comes with a variety of beautiful themes to match your style and mood:
 ## 📚 Documentation
 
 - **[Getting Started](docs/README.md)** - Complete documentation index
+- **[Saved Searches User Guide](docs/USER_GUIDE_SAVED_SEARCHES.md)** - Master dynamic content monitoring
+- **[Saved Searches Feature Spec](docs/FEATURE_SAVED_SEARCHES.md)** - Complete feature documentation
 - **[Deployment Guide](docs/deployment/deployment.md)** - Deploy to production
 - **[Configuration Reference](docs/configuration/configuration-reference.md)** - All the settings
 - **[API Documentation](docs/api/)** - If you're building integrations

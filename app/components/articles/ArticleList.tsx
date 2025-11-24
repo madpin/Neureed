@@ -40,8 +40,9 @@ export function ArticleList({
   const { data: preferences } = useUserPreferences();
 
   // Extract article IDs and use React Query to fetch scores
+  // Filter out any undefined/null articles
   const articleIds = useMemo(
-    () => articles.map((a) => a.id),
+    () => articles.filter((a) => a != null).map((a) => a.id),
     [articles]
   );
 
@@ -125,7 +126,7 @@ export function ArticleList({
 
   return (
     <div className={`${spacingClass} transition-all duration-300 ease-in-out`}>
-      {articles.map((article) => {
+      {articles.filter((article) => article != null).map((article) => {
         const score = scores.get(article.id);
         const hasSimilarity = 'similarity' in article && article.similarity !== undefined;
         const similarity = hasSimilarity ? (article as any).similarity : undefined;
