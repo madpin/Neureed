@@ -21,7 +21,7 @@ describe('Saved Search Service', () => {
   let testUserId: string;
   let testUserId2: string;
   let testCategoryId: string;
-  let createdSearchIds: string[] = [];
+  const createdSearchIds: string[] = [];
 
   beforeAll(async () => {
     // Create test users

@@ -779,26 +779,26 @@ function ReadingView({
             <div>
               <label className="mb-2 block text-sm font-medium">Reading Mode</label>
               <div className="grid grid-cols-1 gap-2">
-                {[
+                {([
                   {
-                    value: "side_panel",
+                    value: "side_panel" as const,
                     label: "Side Panel",
                     description: "Split-view with resizable panel",
                     icon: "⊞"
                   },
                   {
-                    value: "inline",
+                    value: "inline" as const,
                     label: "Inline",
                     description: "Accordion-style expansion in list",
                     icon: "⬍"
                   },
                   {
-                    value: "standalone",
+                    value: "standalone" as const,
                     label: "Standalone",
                     description: "Full-page dedicated view",
                     icon: "□"
                   },
-                ].map((mode) => (
+                ] as const).map((mode) => (
                   <button
                     key={mode.value}
                     onClick={() => updatePreference("readingMode", mode.value)}

@@ -10,7 +10,7 @@ import { useUserPreferences, useUpdatePreference } from "@/hooks/queries/use-use
 type Position = "right" | "left" | "top" | "bottom";
 
 interface ReadingPanelLayoutProps {
-  children: ReactNode | ((props: { onArticleSelect?: (articleId: string) => void; selectedArticleId?: string | null }) => ReactNode);
+  children: ReactNode | ((props: { onArticleSelect?: (articleId: string | null) => void; selectedArticleId?: string | null }) => ReactNode);
   onArticleReadStatusChange?: () => void;
 }
 

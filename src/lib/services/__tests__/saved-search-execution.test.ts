@@ -11,7 +11,7 @@ import { nanoid } from 'nanoid';
 
 describe('Saved Search Execution Service', () => {
   let testUserId: string;
-  let testArticleIds: string[] = [];
+  const testArticleIds: string[] = [];
 
   beforeAll(async () => {
     // Create test user

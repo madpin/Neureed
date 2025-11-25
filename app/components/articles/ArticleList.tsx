@@ -14,7 +14,7 @@ interface ArticleListProps {
   articles: Article[];
   isLoading?: boolean;
   variant?: "compact" | "expanded";
-  onArticleSelect?: (articleId: string) => void;
+  onArticleSelect?: (articleId: string | null) => void;
   selectedArticleId?: string | null;
   onReadStatusChange?: () => void;
   // Infinite scroll props

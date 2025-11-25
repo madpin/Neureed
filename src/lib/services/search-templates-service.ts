@@ -306,12 +306,12 @@ export function suggestTemplates(
 /**
  * Validate that a template query is still valid
  */
-export function validateTemplate(template: SearchTemplate): {
+export async function validateTemplate(template: SearchTemplate): Promise<{
   valid: boolean;
   errors: string[];
-} {
+}> {
   // Import parseQuery only when needed to avoid circular dependencies
-  const { parseQuery } = require('./search-query-parser');
+  const { parseQuery } = await import('./search-query-parser');
   const result = parseQuery(template.query);
 
   return {
@@ -330,7 +330,7 @@ export function exportTemplate(template: SearchTemplate): string {
 /**
  * Import template from JSON format
  */
-export function importTemplate(json: string): SearchTemplate {
+export async function importTemplate(json: string): Promise<SearchTemplate> {
   try {
     const template = JSON.parse(json);
 
@@ -340,7 +340,7 @@ export function importTemplate(json: string): SearchTemplate {
     }
 
     // Validate the query
-    const validation = validateTemplate(template);
+    const validation = await validateTemplate(template);
     if (!validation.valid) {
       throw new Error(`Invalid template query: ${validation.errors.join(', ')}`);
     }

@@ -14,7 +14,7 @@ describe('Saved Search Integration Tests', () => {
   let testUserId: string;
   let testUser2Id: string;
   let testFeedId: string;
-  let cleanupIds: {
+  const cleanupIds: {
     searchIds: string[];
     articleIds: string[];
     matchIds: string[];

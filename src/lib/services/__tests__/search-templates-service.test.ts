@@ -252,21 +252,21 @@ describe('Search Templates Service', () => {
   });
 
   describe('validateTemplate', () => {
-    it('should validate template with valid query', () => {
+    it('should validate template with valid query', async () => {
       const template = getAllTemplates()[0];
-      const validation = validateTemplate(template);
+      const validation = await validateTemplate(template);
 
       expect(validation.valid).toBe(true);
       expect(validation.errors.length).toBe(0);
     });
 
-    it('should reject template with invalid query', () => {
+    it('should reject template with invalid query', async () => {
       const template = {
         ...getAllTemplates()[0],
         query: '((unbalanced',
       };
 
-      const validation = validateTemplate(template);
+      const validation = await validateTemplate(template);
 
       expect(validation.valid).toBe(false);
       expect(validation.errors.length).toBeGreaterThan(0);
@@ -295,27 +295,27 @@ describe('Search Templates Service', () => {
   });
 
   describe('importTemplate', () => {
-    it('should import valid template JSON', () => {
+    it('should import valid template JSON', async () => {
       const original = getAllTemplates()[0];
       const exported = exportTemplate(original);
-      const imported = importTemplate(exported);
+      const imported = await importTemplate(exported);
 
       expect(imported.id).toBe(original.id);
       expect(imported.name).toBe(original.name);
       expect(imported.query).toBe(original.query);
     });
 
-    it('should reject invalid JSON', () => {
-      expect(() => importTemplate('not valid json')).toThrow(/Failed to import/);
+    it('should reject invalid JSON', async () => {
+      await expect(() => importTemplate('not valid json')).rejects.toThrow(/Failed to import/);
     });
 
-    it('should reject JSON missing required fields', () => {
+    it('should reject JSON missing required fields', async () => {
       const invalid = JSON.stringify({ name: 'Test' });
 
-      expect(() => importTemplate(invalid)).toThrow(/missing required fields/);
+      await expect(() => importTemplate(invalid)).rejects.toThrow(/missing required fields/);
     });
 
-    it('should reject template with invalid query', () => {
+    it('should reject template with invalid query', async () => {
       const invalid = JSON.stringify({
         id: 'test',
         name: 'Test',
@@ -326,7 +326,7 @@ describe('Search Templates Service', () => {
         description: 'Test',
       });
 
-      expect(() => importTemplate(invalid)).toThrow(/Invalid template query/);
+      await expect(() => importTemplate(invalid)).rejects.toThrow(/Invalid template query/);
     });
   });
 

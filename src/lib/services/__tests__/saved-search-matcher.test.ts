@@ -13,7 +13,7 @@ import { nanoid } from 'nanoid';
 describe('Saved Search Matcher Service', () => {
   let testUserId: string;
   let testSearchId: string;
-  let testArticleIds: string[] = [];
+  const testArticleIds: string[] = [];
 
   beforeAll(async () => {
     // Create test user

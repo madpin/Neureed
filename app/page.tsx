@@ -353,7 +353,7 @@ export default function Home() {
       )}
     >
       <ReadingPanelLayout onArticleReadStatusChange={handleArticleReadStatusChange}>
-        {({ onArticleSelect, selectedArticleId }: { onArticleSelect?: (articleId: string) => void; selectedArticleId?: string | null }) => (
+        {({ onArticleSelect, selectedArticleId }: { onArticleSelect?: (articleId: string | null) => void; selectedArticleId?: string | null }) => (
           <div className="space-y-6">
             {/* Search Form - Show when search param is present */}
             {searchQuery && (
