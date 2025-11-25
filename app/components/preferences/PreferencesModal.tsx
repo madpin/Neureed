@@ -653,7 +653,7 @@ function AppearanceView({
           <h3 className="mb-3 text-base font-semibold">Section-Specific Font Sizes</h3>
           <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
             Customize text sizes for different sections relative to your main font size.
-            "Smaller" is -2px, "Same" is ±0, "Larger" is +2px.
+            &quot;Smaller&quot; is -2px, &quot;Same&quot; is ±0, &quot;Larger&quot; is +2px.
           </p>
 
           <div className="space-y-4">

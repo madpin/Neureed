@@ -284,7 +284,7 @@ export function SavedSearchEmptyState({ onStartTour }: SavedSearchEmptyStateProp
                 <li className="flex items-start gap-2">
                   <span className="text-primary mt-0.5">•</span>
                   <span>
-                    Exact phrases in quotes like <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">"machine learning"</code> reduce
+                    Exact phrases in quotes like <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">&quot;machine learning&quot;</code> reduce
                     false positives
                   </span>
                 </li>

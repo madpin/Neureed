@@ -36,6 +36,10 @@ export const GET = createHandler(
     const userId = session!.user.id;
     const { id } = params;
 
+    if (!id) {
+      return { error: "Saved search ID is required", status: 400 };
+    }
+
     const savedSearch = await savedSearchService.getSavedSearchById(id, userId);
 
     if (!savedSearch) {
@@ -63,6 +67,10 @@ export const PUT = createHandler(
   async ({ body, session, params }) => {
     const userId = session!.user.id;
     const { id } = params;
+
+    if (!id) {
+      return { error: "Saved search ID is required", status: 400 };
+    }
 
     // Check if query was updated
     const queryUpdated = body.query !== undefined;
@@ -106,6 +114,10 @@ export const DELETE = createHandler(
   async ({ session, params }) => {
     const userId = session!.user.id;
     const { id } = params;
+
+    if (!id) {
+      return { error: "Saved search ID is required", status: 400 };
+    }
 
     await savedSearchService.deleteSavedSearch(id, userId);
 

@@ -119,7 +119,7 @@ export const POST = createHandler(
  * GET /api/jobs/refresh-feeds
  * Get refresh job status
  */
-export const GET = createHandler(async () => {
+export const GET = createHandler(async ({}) => {
   // Return job status info
   return {
     status: "ready",

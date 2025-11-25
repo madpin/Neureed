@@ -16,6 +16,11 @@ const refreshArticlesSchema = z.object({
 export const POST = createHandler(
   async ({ params, body, session }) => {
     const { id: feedId } = params;
+
+    if (!feedId) {
+      return { error: "Feed ID is required", status: 400 };
+    }
+
     const { count } = body;
     const userId = session?.user?.id;
 

@@ -62,7 +62,7 @@ async function fetchFeedWithEncoding(url: string): Promise<string> {
   const encodingMatch = asciiText.match(/encoding=["']([^"']+)["']/i);
   
   let encoding = 'utf-8';
-  if (encodingMatch) {
+  if (encodingMatch && encodingMatch[1]) {
     encoding = encodingMatch[1].toLowerCase();
   }
   
@@ -234,13 +234,15 @@ function extractAuthor(item: RawFeedItem): string | undefined {
   // @rowanmanning/feed-parser provides authors as an array
   if (item.authors && item.authors.length > 0) {
     const firstAuthor = item.authors[0];
-    if (firstAuthor.name) {
-      return firstAuthor.name;
-    } else if (firstAuthor.email) {
-      return firstAuthor.email;
+    if (firstAuthor) {
+      if (firstAuthor.name) {
+        return firstAuthor.name;
+      } else if (firstAuthor.email) {
+        return firstAuthor.email;
+      }
     }
   }
-  
+
   return undefined;
 }
 
@@ -298,8 +300,9 @@ function extractArticleImage(item: RawFeedItem, content: string): string | undef
       }
     }
     // If no explicit image type, use first media with URL
-    if (item.media[0].url) {
-      return item.media[0].url;
+    const firstMedia = item.media[0];
+    if (firstMedia?.url) {
+      return firstMedia.url;
     }
   }
 
@@ -315,7 +318,7 @@ function extractArticleImage(item: RawFeedItem, content: string): string | undef
 export function extractImageFromContent(html: string): string | null {
   const imgRegex = /<img[^>]+src=["']([^"']+)["']/i;
   const match = html.match(imgRegex);
-  return match ? match[1] : null;
+  return (match && match[1]) ? match[1] : null;
 }
 
 /**
@@ -416,18 +419,21 @@ export function isSafeFeedUrl(url: string): boolean {
     // Block private IPv4 ranges
     const ipv4Regex = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
     const ipv4Match = hostname.match(ipv4Regex);
-    if (ipv4Match) {
-      const [, a, b, c, d] = ipv4Match.map(Number);
-      
+    if (ipv4Match && ipv4Match[1] && ipv4Match[2] && ipv4Match[3] && ipv4Match[4]) {
+      const a = Number(ipv4Match[1]);
+      const b = Number(ipv4Match[2]);
+      const c = Number(ipv4Match[3]);
+      const d = Number(ipv4Match[4]);
+
       // 10.0.0.0/8
       if (a === 10) return false;
-      
+
       // 172.16.0.0/12
       if (a === 172 && b >= 16 && b <= 31) return false;
-      
+
       // 192.168.0.0/16
       if (a === 192 && b === 168) return false;
-      
+
       // 169.254.0.0/16 (link-local)
       if (a === 169 && b === 254) return false;
     }

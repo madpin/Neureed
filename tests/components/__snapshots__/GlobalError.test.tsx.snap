@@ -1,0 +1,25 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`GlobalError > matches snapshot 1`] = `
+<div>
+  <div
+    style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; background-color: #ffffff;"
+  >
+    <h2
+      style="font-size: 24px; margin-bottom: 16px; color: #000000;"
+    >
+      Something went wrong!
+    </h2>
+    <p
+      style="margin-bottom: 24px; color: #666666;"
+    >
+      Snapshot error
+    </p>
+    <button
+      style="padding: 10px 20px; background-color: #0070f3; color: #ffffff; border: none none; border-radius: 5px; cursor: pointer; font-size: 14px;"
+    >
+      Try again
+    </button>
+  </div>
+</div>
+`;

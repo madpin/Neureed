@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
  * GET - Get user preference constraints
  */
 export const GET = createHandler(
-  async () => {
+  async ({}) => {
     const constraints = await getUserConstraints();
 
     return {

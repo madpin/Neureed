@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
  * POST /api/admin/database/reset
  * Reset database by clearing all feed, category, embedding, and article-related data
  */
-export const POST = createHandler(async () => {
+export const POST = createHandler(async ({}) => {
   logger.info("Starting database reset...");
 
   try {

@@ -86,9 +86,12 @@ async function runFeedRefresh(): Promise<JobResult> {
 
     // Check category settings (if feed is in a category)
     if (userFeed.user_feed_categories.length > 0) {
-      const categorySettings = userFeed.user_feed_categories[0].user_categories.settings as any;
-      if (categorySettings?.refreshInterval !== undefined && categorySettings?.refreshInterval !== null) {
-        refreshInterval = categorySettings.refreshInterval;
+      const firstCategory = userFeed.user_feed_categories[0];
+      if (firstCategory) {
+        const categorySettings = firstCategory.user_categories.settings as any;
+        if (categorySettings?.refreshInterval !== undefined && categorySettings?.refreshInterval !== null) {
+          refreshInterval = categorySettings.refreshInterval;
+        }
       }
     }
 

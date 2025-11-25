@@ -321,7 +321,7 @@ export async function getCacheStats(): Promise<{
 
     const info = await redis.info('memory');
     const memoryMatch = info.match(/used_memory_human:(.+)/);
-    const memoryUsage = memoryMatch ? memoryMatch[1].trim() : 'unknown';
+    const memoryUsage = (memoryMatch && memoryMatch[1]) ? memoryMatch[1].trim() : 'unknown';
 
     return {
       totalKeys: allKeys.length,

@@ -2,7 +2,7 @@
  * Test the article API to see if sorting now works correctly
  */
 
-async function test() {
+async function runTest() {
   console.log("\n🧪 Testing article API sorting fix...\n");
 
   // Simulate API call
@@ -33,5 +33,5 @@ async function test() {
   }
 }
 
-test().catch(console.error);
+runTest().catch(console.error);
 

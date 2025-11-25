@@ -524,6 +524,8 @@ async function main() {
 
   for (let i = 0; i < articles.length; i++) {
     const article = articles[i];
+    if (!article) continue;
+
     await prisma.read_articles.upsert({
       where: {
         userId_articleId: {

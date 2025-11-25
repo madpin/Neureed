@@ -39,7 +39,9 @@ export function SavedSearchList({
   // Check if user has seen onboarding
   useEffect(() => {
     const seen = localStorage.getItem('neureed_saved_search_onboarding_seen');
-    setHasSeenOnboarding(seen === 'true');
+    // Defer setState to avoid cascading renders
+    const timer = setTimeout(() => setHasSeenOnboarding(seen === 'true'), 0);
+    return () => clearTimeout(timer);
   }, []);
 
   // Queries

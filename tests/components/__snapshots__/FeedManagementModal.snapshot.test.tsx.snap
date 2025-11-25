@@ -1,0 +1,431 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`FeedManagementModal - Baseline Snapshot > matches snapshot - overview view 1`] = `
+<div>
+  <div
+    class="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4"
+  >
+    <div
+      class="flex h-[90vh] w-full max-w-6xl overflow-hidden rounded-lg bg-background shadow-xl"
+    >
+      <aside
+        class="hidden md:flex w-52 flex-shrink-0 border-r border-border bg-muted dark:bg-background"
+      >
+        <div
+          class="flex h-full flex-col"
+        >
+          <div
+            class="border-b border-border p-4"
+          >
+            <h2
+              class="text-lg font-semibold"
+            >
+              Feed Management
+            </h2>
+          </div>
+          <nav
+            class="flex-1 space-y-1 overflow-y-auto p-2 custom-scrollbar"
+          >
+            <button
+              class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors bg-primary/10 text-primary dark:bg-primary/20"
+            >
+              <svg
+                class="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                />
+              </svg>
+              <span>
+                Overview
+              </span>
+            </button>
+            <button
+              class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors cursor-not-allowed opacity-50"
+              disabled=""
+            >
+              <svg
+                class="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M6 5c7.18 0 13 5.82 13 13M6 11a7 7 0 017 7m-6 0a1 1 0 11-2 0 1 1 0 012 0z"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                />
+              </svg>
+              <span>
+                Feed Details
+              </span>
+            </button>
+            <button
+              class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors cursor-not-allowed opacity-50"
+              disabled=""
+            >
+              <svg
+                class="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                />
+              </svg>
+              <span>
+                Category
+              </span>
+            </button>
+          </nav>
+        </div>
+      </aside>
+      <main
+        class="flex-1 overflow-y-auto custom-scrollbar"
+      >
+        <div
+          class="md:hidden border-b border-border p-4 sticky top-0 bg-background z-10"
+        >
+          <div
+            class="relative"
+          >
+            <button
+              class="flex w-full items-center justify-between rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+            >
+              <span>
+                Overview
+              </span>
+              <svg
+                class="h-5 w-5 transition-transform "
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M19 9l-7 7-7-7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div
+          class="p-6"
+        >
+          <div
+            class="mb-6 flex items-center justify-between"
+          >
+            <h1
+              class="text-2xl font-bold"
+            >
+              Feed & Category Management
+            </h1>
+            <div
+              class="flex items-center gap-2"
+            >
+              <button
+                class="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
+              >
+                <svg
+                  class="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12 4v16m8-8H4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                  />
+                </svg>
+                Create Category
+              </button>
+            </div>
+          </div>
+          <div
+            class="mb-6 grid grid-cols-4 gap-4"
+          >
+            <div
+              class="rounded-lg border border-border bg-muted p-4 dark:bg-background"
+            >
+              <div
+                class="text-sm text-gray-600 dark:text-gray-400"
+              >
+                Total Categories
+              </div>
+              <div
+                class="text-2xl font-bold"
+              >
+                0
+              </div>
+            </div>
+            <div
+              class="rounded-lg border border-border bg-muted p-4 dark:bg-background"
+            >
+              <div
+                class="text-sm text-gray-600 dark:text-gray-400"
+              >
+                Total Feeds
+              </div>
+              <div
+                class="text-2xl font-bold"
+              >
+                0
+              </div>
+            </div>
+            <div
+              class="rounded-lg border border-border bg-muted p-4 dark:bg-background"
+            >
+              <div
+                class="text-sm text-gray-600 dark:text-gray-400"
+              >
+                Uncategorized
+              </div>
+              <div
+                class="text-2xl font-bold"
+              >
+                0
+              </div>
+            </div>
+            <div
+              class="rounded-lg border border-border bg-muted p-4 dark:bg-background"
+            >
+              <div
+                class="text-sm text-gray-600 dark:text-gray-400"
+              >
+                Total Articles
+              </div>
+              <div
+                class="text-2xl font-bold"
+              >
+                -
+              </div>
+            </div>
+          </div>
+          <div
+            class="mb-6 space-y-4"
+          >
+            <div
+              class="rounded-lg bg-primary/10 p-4 dark:bg-primary/20"
+            >
+              <h3
+                class="mb-2 font-semibold text-primary dark:text-primary"
+              >
+                OPML Import & Export
+              </h3>
+              <p
+                class="text-sm text-primary/80 dark:text-primary/90"
+              >
+                OPML (Outline Processor Markup Language) is a standard format for exchanging lists of RSS feeds. Use it to backup your feeds or transfer them between applications.
+              </p>
+            </div>
+            <div
+              class="grid grid-cols-2 gap-4"
+            >
+              <div
+                class="rounded-lg border border-border p-4"
+              >
+                <h3
+                  class="mb-2 text-base font-semibold"
+                >
+                  Export Feeds
+                </h3>
+                <p
+                  class="mb-4 text-sm text-gray-600 dark:text-gray-400"
+                >
+                  Download your feed subscriptions as an OPML file.
+                </p>
+                <button
+                  class="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                  disabled=""
+                >
+                  <svg
+                    class="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                    />
+                  </svg>
+                  Export OPML
+                </button>
+              </div>
+              <div
+                class="rounded-lg border border-border p-4"
+              >
+                <h3
+                  class="mb-2 text-base font-semibold"
+                >
+                  Import Feeds
+                </h3>
+                <p
+                  class="mb-4 text-sm text-gray-600 dark:text-gray-400"
+                >
+                  Import feeds from another reader using an OPML file.
+                </p>
+                <button
+                  class="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted"
+                >
+                  <svg
+                    class="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                    />
+                  </svg>
+                  Import OPML
+                </button>
+              </div>
+            </div>
+          </div>
+          <div
+            class="space-y-4 mb-8"
+          >
+            <div
+              class="flex items-center justify-between"
+            >
+              <div
+                class="flex items-center gap-3"
+              >
+                <h2
+                  class="text-lg font-semibold"
+                >
+                  Your Feeds
+                </h2>
+              </div>
+            </div>
+            <div
+              class="rounded-lg border border-border overflow-hidden bg-background"
+            >
+              <div
+                class="overflow-x-auto"
+              >
+                <table
+                  class="w-full"
+                >
+                  <thead
+                    class="bg-muted/50 border-b border-border"
+                  >
+                    <tr>
+                      <th
+                        class="px-4 py-3 text-left w-12"
+                      >
+                        <input
+                          class="h-4 w-4 rounded border-border cursor-pointer"
+                          title="Select all"
+                          type="checkbox"
+                        />
+                      </th>
+                      <th
+                        class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground/70"
+                      >
+                        Feed
+                      </th>
+                      <th
+                        class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground/70"
+                      >
+                        Last Updated
+                      </th>
+                      <th
+                        class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground/70"
+                      >
+                        Interval
+                      </th>
+                      <th
+                        class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground/70"
+                      >
+                        Extraction
+                      </th>
+                      <th
+                        class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-foreground/70"
+                      >
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    class="divide-y divide-border bg-background"
+                  >
+                    <tr>
+                      <td
+                        class="px-4 py-12 text-center"
+                        colspan="6"
+                      >
+                        <div
+                          class="flex flex-col items-center gap-2"
+                        >
+                          <svg
+                            class="h-12 w-12 text-foreground/30"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              d="M6 5c7.18 0 13 5.82 13 13M6 11a7 7 0 017 7m-6 0a1 1 0 11-2 0 1 1 0 012 0z"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                            />
+                          </svg>
+                          <p
+                            class="text-sm text-foreground/50"
+                          >
+                            No feeds found. Add your first feed to get started!
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div
+            class="space-y-4"
+          >
+            <h2
+              class="text-lg font-semibold"
+            >
+              Your Categories
+            </h2>
+            <div
+              class="space-y-2"
+            >
+              <div
+                class="text-center py-8 text-foreground/50"
+              >
+                No categories found. Create one to organize your feeds.
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+`;

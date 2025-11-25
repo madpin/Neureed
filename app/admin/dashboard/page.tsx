@@ -522,13 +522,13 @@ export default function AdminDashboardPage() {
                         </div>
                       </div>
                       <div className="mt-4">
-                        <div className="text-3xl font-bold text-foreground">{metrics?.users.total || 0}</div>
+                        <div className="text-3xl font-bold text-foreground">{metrics?.users?.total || 0}</div>
                         <p className="text-sm text-foreground/60">Total Registered Users</p>
                       </div>
                       <div className="mt-4 border-t border-border pt-4">
                         <div className="flex justify-between text-sm">
                           <span className="text-foreground/70">Active (30d)</span>
-                          <span className="font-medium text-foreground">{metrics?.users.active || 0}</span>
+                          <span className="font-medium text-foreground">{metrics?.users?.active || 0}</span>
                         </div>
                       </div>
                     </div>
@@ -1141,7 +1141,7 @@ function JobsTab({ jobs }: { jobs: JobWithHistory[] }) {
   
   // Track which jobs are expanded (default: first job expanded)
   const [expandedJobs, setExpandedJobs] = useState<Set<string>>(
-    new Set(jobs.length > 0 ? [jobs[0].name] : [])
+    new Set(jobs.length > 0 && jobs[0] ? [jobs[0].name] : [])
   );
   
   // Track which jobs have all runs visible (default: none, show only 3)
@@ -1149,7 +1149,7 @@ function JobsTab({ jobs }: { jobs: JobWithHistory[] }) {
   
   // Track which runs are expanded (default: first run of each job)
   const [expandedRuns, setExpandedRuns] = useState<Set<string>>(
-    new Set(jobs.length > 0 && jobs[0].recentRuns?.length > 0 ? [`${jobs[0].name}-${jobs[0].recentRuns[0].id}`] : [])
+    new Set(jobs.length > 0 && jobs[0] && jobs[0].recentRuns?.length && jobs[0].recentRuns[0] ? [`${jobs[0].name}-${jobs[0].recentRuns[0].id}`] : [])
   );
   
   // Track log filters per run

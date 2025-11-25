@@ -16,6 +16,10 @@ export const GET = createHandler(
   async ({ params, session }) => {
     const { categoryId } = params;
 
+    if (!categoryId) {
+      return { error: "Category ID is required", status: 400 };
+    }
+
     const category = await getUserCategory(session!.user!.id, categoryId);
 
     if (!category) {
@@ -45,6 +49,10 @@ export const PUT = createHandler(
   async ({ params, body, session }) => {
     const { categoryId } = params;
 
+    if (!categoryId) {
+      return { error: "Category ID is required", status: 400 };
+    }
+
     const category = await updateUserCategory(
       session!.user!.id,
       categoryId,
@@ -71,6 +79,10 @@ export const PUT = createHandler(
 export const DELETE = createHandler(
   async ({ params, session }) => {
     const { categoryId } = params;
+
+    if (!categoryId) {
+      return { error: "Category ID is required", status: 400 };
+    }
 
     await deleteUserCategory(session!.user!.id, categoryId);
 

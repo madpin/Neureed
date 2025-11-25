@@ -50,26 +50,31 @@ export function SavedSearchModal({
 
   // Initialize form when saved search changes
   useEffect(() => {
-    if (savedSearch) {
-      setName(savedSearch.name);
-      setQuery(savedSearch.query);
-      setIcon(savedSearch.icon || "🔍");
-      setThreshold(savedSearch.threshold);
-      setNotifyOnMatch(savedSearch.notifyOnMatch);
-      setNotifyThreshold(savedSearch.notifyThreshold);
-      setDailyDigest(savedSearch.dailyDigest);
-      setRecencyBias(savedSearch.recencyBias);
-    } else {
-      // Reset for create mode
-      setName("");
-      setQuery(initialQuery);
-      setIcon("🔍");
-      setThreshold(0.6);
-      setNotifyOnMatch(false);
-      setNotifyThreshold(0.85);
-      setDailyDigest(false);
-      setRecencyBias(0.0);
-    }
+    // Defer setState calls to avoid cascading renders
+    const timer = setTimeout(() => {
+      if (savedSearch) {
+        setName(savedSearch.name);
+        setQuery(savedSearch.query);
+        setIcon(savedSearch.icon || "🔍");
+        setThreshold(savedSearch.threshold);
+        setNotifyOnMatch(savedSearch.notifyOnMatch);
+        setNotifyThreshold(savedSearch.notifyThreshold);
+        setDailyDigest(savedSearch.dailyDigest);
+        setRecencyBias(savedSearch.recencyBias);
+      } else {
+        // Reset for create mode
+        setName("");
+        setQuery(initialQuery);
+        setIcon("🔍");
+        setThreshold(0.6);
+        setNotifyOnMatch(false);
+        setNotifyThreshold(0.85);
+        setDailyDigest(false);
+        setRecencyBias(0.0);
+      }
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, [savedSearch, initialQuery]);
 
   const handleSubmit = async (e: React.FormEvent) => {

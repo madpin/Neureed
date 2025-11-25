@@ -48,7 +48,7 @@ export const POST = createHandler(
  * Get cleanup statistics
  */
 export const GET = createHandler(
-  async () => {
+  async ({}) => {
     const stats = await getCleanupStats();
     return { stats };
   },

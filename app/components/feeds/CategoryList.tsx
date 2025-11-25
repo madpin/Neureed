@@ -195,6 +195,10 @@ export function CategoryList({
 
     // Calculate new order
     const [removed] = newOrder.splice(draggedIndex, 1);
+    if (!removed) {
+      setDraggedCategoryId(null);
+      return;
+    }
     newOrder.splice(targetIndex, 0, removed);
     
     reorderCategories.mutate(newOrder.map(c => c.id));

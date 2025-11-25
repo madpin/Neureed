@@ -11,8 +11,8 @@ import { sanitizeHtml } from "@/lib/feed-parser";
  * Falls back gracefully if Playwright is not available
  */
 export class PlaywrightExtractor extends BaseExtractor {
-  name = "playwright";
-  priority = 100; // Highest priority when enabled
+  override name = "playwright";
+  override priority = 100; // Highest priority when enabled
   private playwrightAvailable: boolean | null = null;
 
   /**

@@ -10,7 +10,11 @@ export const dynamic = "force-dynamic";
 export const POST = createHandler(
   async ({ params, session }) => {
     const { id: articleId } = params;
-    
+
+    if (!articleId) {
+      return { error: "Article ID is required", status: 400 };
+    }
+
     const readArticle = await markAsRead(session!.user!.id, articleId);
 
     return {
@@ -28,7 +32,11 @@ export const POST = createHandler(
 export const DELETE = createHandler(
   async ({ params, session }) => {
     const { id: articleId } = params;
-    
+
+    if (!articleId) {
+      return { error: "Article ID is required", status: 400 };
+    }
+
     await markAsUnread(session!.user!.id, articleId);
 
     return { message: "Article marked as unread" };

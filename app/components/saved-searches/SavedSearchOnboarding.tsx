@@ -76,7 +76,7 @@ export function SavedSearchOnboarding({
           </div>
           <div className="rounded bg-background p-3 mb-3">
             <code className="text-xs font-mono text-foreground">
-              (+AI, +"machine learning") +ethics
+              (+AI, +&quot;machine learning&quot;) +ethics
             </code>
           </div>
           <div className="flex items-center justify-between text-xs text-secondary">
@@ -113,7 +113,7 @@ export function SavedSearchOnboarding({
           </div>
           <div className="flex items-center gap-2 text-sm">
             <code className="rounded bg-purple-100 dark:bg-purple-900/30 px-2 py-1 font-mono text-purple-800 dark:text-purple-300">
-              "..."
+              &quot;...&quot;
             </code>
             <span className="text-foreground">Exact phrase</span>
           </div>
@@ -161,7 +161,7 @@ export function SavedSearchOnboarding({
             </div>
             <div className="flex-1">
               <div className="text-sm font-medium text-foreground mb-1">
-                New match for "AI Ethics News"
+                New match for &quot;AI Ethics News&quot;
               </div>
               <div className="text-xs text-secondary">
                 The Ethics of Artificial Intelligence in Healthcare
@@ -235,6 +235,8 @@ export function SavedSearchOnboarding({
   if (!isOpen) return null;
 
   const step = steps[currentStep];
+
+  if (!step) return null;
 
   return (
     <div

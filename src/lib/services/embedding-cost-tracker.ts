@@ -82,9 +82,12 @@ export function getCostStats(): {
     if (!byProvider[entry.provider]) {
       byProvider[entry.provider] = { tokens: 0, cost: 0, count: 0 };
     }
-    byProvider[entry.provider].tokens += entry.tokens;
-    byProvider[entry.provider].cost += entry.cost;
-    byProvider[entry.provider].count++;
+    const providerStats = byProvider[entry.provider];
+    if (providerStats) {
+      providerStats.tokens += entry.tokens;
+      providerStats.cost += entry.cost;
+      providerStats.count++;
+    }
   }
 
   // Calculate time-based stats
@@ -212,6 +215,8 @@ export function getCostReport(
 
   for (const entry of entries) {
     const dateKey = entry.timestamp.toISOString().split("T")[0];
+    if (!dateKey) continue;
+
     const existing = dailyMap.get(dateKey) || { tokens: 0, cost: 0, count: 0 };
     dailyMap.set(dateKey, {
       tokens: existing.tokens + entry.tokens,

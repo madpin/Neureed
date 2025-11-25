@@ -10,8 +10,8 @@ import { logger } from "@/lib/logger";
  * Uses Mozilla's Readability library to extract clean article content
  */
 export class ReadabilityExtractor extends BaseExtractor {
-  name = "readability";
-  priority = 75; // Higher priority than basic RSS
+  override name = "readability";
+  override priority = 75; // Higher priority than basic RSS
 
   /**
    * Can handle any HTML URL

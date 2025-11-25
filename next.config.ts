@@ -1,10 +1,15 @@
 import type { NextConfig } from "next";
+import bundleAnalyzer from "@next/bundle-analyzer";
+
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
 
 const nextConfig: NextConfig = {
   /* config options here */
   // Enable standalone output for Docker builds
   output: 'standalone',
-  
+
   // Disable static page generation for pages that use authentication
   experimental: {
     // Note: instrumentation.ts is enabled by default in Next.js 16
@@ -15,7 +20,7 @@ const nextConfig: NextConfig = {
     // Disable static generation for error pages
     staticGenerationRetryCount: 0,
   },
-  
+
   // Configure which pages should be statically generated
   // Pages using auth/context should be dynamic
   typescript: {
@@ -24,4 +29,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

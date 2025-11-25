@@ -17,6 +17,10 @@ export const dynamic = "force-dynamic";
 export const GET = createHandler(async ({ params }) => {
   const { id } = params;
 
+  if (!id) {
+    return { error: "Feed ID is required", status: 400 };
+  }
+
   const [feed, stats] = await Promise.all([
     getFeed(id),
     getFeedStats(id),
@@ -41,6 +45,10 @@ export const PATCH = createHandler(
     const { id } = params;
     const { categoryIds, ...updateData } = body;
 
+    if (!id) {
+      return { error: "Feed ID is required", status: 400 };
+    }
+
     // Update feed
     const feed = await updateFeed(id, updateData);
 
@@ -60,6 +68,10 @@ export const PATCH = createHandler(
  */
 export const DELETE = createHandler(async ({ params }) => {
   const { id } = params;
+
+  if (!id) {
+    return { error: "Feed ID is required", status: 400 };
+  }
 
   // Check if feed exists
   const feed = await getFeed(id);

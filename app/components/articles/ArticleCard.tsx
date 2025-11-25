@@ -461,7 +461,7 @@ export const ArticleCard = React.memo(({
       {/* Content */}
       <div className={`flex ${densityClasses.gap} ${hasImage && imageInOrder ? '' : 'flex-col'}`}>
         {/* Render image first if it's in the order and exists */}
-        {hasImage && imageInOrder && sections.image()}
+        {hasImage && imageInOrder && sections.image?.()}
 
         {/* Main content */}
         <div className="flex-1 min-w-0">

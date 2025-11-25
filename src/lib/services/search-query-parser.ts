@@ -52,6 +52,10 @@ function tokenize(query: string): Token[] {
 
   while (position < query.length) {
     const char = query[position];
+    if (!char) {
+      position++;
+      continue;
+    }
 
     // Skip whitespace
     if (/\s/.test(char)) {
@@ -68,6 +72,10 @@ function tokenize(query: string): Token[] {
 
       while (position < query.length) {
         const c = query[position];
+        if (!c) {
+          position++;
+          continue;
+        }
 
         if (escaped) {
           value += c;
@@ -121,8 +129,10 @@ function tokenize(query: string): Token[] {
     // Term (word)
     const start = position;
     let value = '';
-    while (position < query.length && !/[\s,+\-()"]/.test(query[position])) {
-      value += query[position];
+    while (position < query.length) {
+      const termChar = query[position];
+      if (!termChar || /[\s,+\-()"]/.test(termChar)) break;
+      value += termChar;
       position++;
     }
 
@@ -172,7 +182,7 @@ class Parser {
   }
 
   private currentToken(): Token {
-    return this.tokens[this.current] || this.tokens[this.tokens.length - 1];
+    return this.tokens[this.current] || this.tokens[this.tokens.length - 1] || { type: 'eof', value: '', position: 0 };
   }
 
   private advance(): Token {
@@ -184,7 +194,7 @@ class Parser {
   }
 
   private peek(): Token {
-    return this.tokens[this.current + 1] || this.tokens[this.tokens.length - 1];
+    return this.tokens[this.current + 1] || this.tokens[this.tokens.length - 1] || { type: 'eof', value: '', position: 0 };
   }
 
   /**
@@ -234,7 +244,7 @@ class Parser {
       return { type: 'term', value: '' };
     }
 
-    if (terms.length === 1) {
+    if (terms.length === 1 && terms[0]) {
       return terms[0];
     }
 
@@ -366,11 +376,15 @@ export function explainQuery(ast: QueryNode): string {
 
     case 'not':
       if (!ast.children || ast.children.length === 0) return '';
-      return `NOT ${explainQuery(ast.children[0])}`;
+      const notChild = ast.children[0];
+      if (!notChild) return '';
+      return `NOT ${explainQuery(notChild)}`;
 
     case 'group':
       if (!ast.children || ast.children.length === 0) return '';
-      return `(${explainQuery(ast.children[0])})`;
+      const groupChild = ast.children[0];
+      if (!groupChild) return '';
+      return `(${explainQuery(groupChild)})`;
 
     default:
       return '';

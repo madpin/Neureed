@@ -99,7 +99,7 @@ export const POST = createHandler(
  * Get embedding statistics for the user
  */
 export const GET = createHandler(
-  async () => {
+  async ({}) => {
     const stats = await getEmbeddingStats();
 
     return {

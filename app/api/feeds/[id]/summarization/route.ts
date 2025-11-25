@@ -30,6 +30,10 @@ export const GET = createHandler(
     const { id: feedId } = params;
     const userId = session!.user.id;
 
+    if (!feedId) {
+      return { error: "Feed ID is required", status: 400 };
+    }
+
     logger.info(`[API] Getting summarization settings for feed ${feedId}`, {
       userId,
     });
@@ -81,6 +85,10 @@ export const PUT = createHandler(
   async ({ params, body, session }) => {
     const { id: feedId } = params;
     const userId = session!.user.id;
+
+    if (!feedId) {
+      return { error: "Feed ID is required", status: 400 };
+    }
 
     logger.info(`[API] Updating summarization settings for feed ${feedId}`, {
       userId,
@@ -183,6 +191,10 @@ export const DELETE = createHandler(
   async ({ params, session }) => {
     const { id: feedId } = params;
     const userId = session!.user.id;
+
+    if (!feedId) {
+      return { error: "Feed ID is required", status: 400 };
+    }
 
     logger.info(`[API] Clearing summarization settings for feed ${feedId}`, {
       userId,

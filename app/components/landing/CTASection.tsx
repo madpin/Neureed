@@ -43,7 +43,7 @@ export function CTASection() {
                 {/* Signup CTA */}
                 <div className="text-center">
                   <p className="text-lg font-semibold text-foreground mb-1">
-                    Try It Now - It's Free!
+                    Try It Now - It&apos;s Free!
                   </p>
                   <p className="text-sm text-foreground/60">
                     Get started in seconds with Gmail or GitHub

@@ -101,7 +101,7 @@ export function createHandler<TBody = unknown, TQuery = unknown, TResult = unkno
 ) {
   return async (
     request: NextRequest,
-    context?: { params: Promise<Record<string, string>> | Record<string, string> }
+    context: { params: Promise<Record<string, string | string[] | undefined>> }
   ): Promise<NextResponse> => {
     try {
       // Get session
@@ -146,11 +146,18 @@ export function createHandler<TBody = unknown, TQuery = unknown, TResult = unkno
         }
       }
 
-      // Parse URL params (await if it's a Promise)
-      let params: Record<string, string> = {};
-      if (context?.params) {
-        params = context.params instanceof Promise ? await context.params : context.params;
-      }
+      // Parse URL params (always a Promise in Next.js 16)
+      const rawParams = await context.params;
+      // Convert params to Record<string, string> (taking first value for arrays)
+      const params = Object.entries(rawParams).reduce((acc, [key, value]) => {
+        if (value !== undefined) {
+          const stringValue = Array.isArray(value) ? value[0] : value;
+          if (stringValue !== undefined) {
+            acc[key] = stringValue;
+          }
+        }
+        return acc;
+      }, {} as Record<string, string>);
 
       // Parse and validate body for non-GET/DELETE methods
       let body: TBody | null = null;

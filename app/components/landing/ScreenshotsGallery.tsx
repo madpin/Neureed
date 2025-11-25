@@ -66,9 +66,13 @@ export function ScreenshotsGallery() {
 
   useEffect(() => {
     if (!emblaApi) return;
-    onSelect();
+
+    // Set initial selection after mount to avoid cascading renders
+    const timer = setTimeout(() => onSelect(), 0);
+
     emblaApi.on("select", onSelect);
     return () => {
+      clearTimeout(timer);
       emblaApi.off("select", onSelect);
     };
   }, [emblaApi, onSelect]);

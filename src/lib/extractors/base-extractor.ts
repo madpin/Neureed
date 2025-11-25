@@ -62,7 +62,7 @@ export abstract class BaseExtractor implements ContentExtractor {
       // Netscape format: domain flag path secure expiration name value
       if (trimmed.includes("\t")) {
         const parts = trimmed.split("\t");
-        if (parts.length >= 7) {
+        if (parts.length >= 7 && parts[0] && parts[2] && parts[3] && parts[4] && parts[5] && parts[6]) {
           cookies.push({
             name: parts[5],
             value: parts[6],
@@ -77,7 +77,7 @@ export abstract class BaseExtractor implements ContentExtractor {
 
       // Simple key=value format
       const match = trimmed.match(/^([^=]+)=(.*)$/);
-      if (match) {
+      if (match && match[1] && match[2]) {
         cookies.push({
           name: match[1].trim(),
           value: match[2].trim(),

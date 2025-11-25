@@ -82,7 +82,7 @@ const EMOJI_CATEGORIES = {
 export function IconPicker({ currentIcon, onSelect, onClose }: IconPickerProps) {
   const [activeTab, setActiveTab] = useState<"predefined" | "emoji">("predefined");
   const [selectedEmojiCategory, setSelectedEmojiCategory] = useState<string>(
-    Object.keys(EMOJI_CATEGORIES)[0]
+    Object.keys(EMOJI_CATEGORIES)[0] || "people"
   );
   const [customEmoji, setCustomEmoji] = useState("");
 

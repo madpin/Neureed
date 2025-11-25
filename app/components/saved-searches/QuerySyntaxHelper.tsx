@@ -206,7 +206,7 @@ export function QuerySyntaxHelper({ onInsertOperator }: QuerySyntaxHelperProps) 
         <div className="space-y-2">
           <div className="rounded bg-muted px-3 py-2">
             <code className="text-xs font-mono text-foreground">
-              (+AI, +"machine learning") +ethics -chatbot
+              (+AI, +&quot;machine learning&quot;) +ethics -chatbot
             </code>
             <p className="mt-1 text-xs text-secondary">
               Articles about AI or ML, must include ethics, but not chatbot
@@ -214,10 +214,10 @@ export function QuerySyntaxHelper({ onInsertOperator }: QuerySyntaxHelperProps) 
           </div>
           <div className="rounded bg-muted px-3 py-2">
             <code className="text-xs font-mono text-foreground">
-              "climate change" +(policy, regulation) -opinion
+              &quot;climate change&quot; +(policy, regulation) -opinion
             </code>
             <p className="mt-1 text-xs text-secondary">
-              Exact phrase "climate change" with policy or regulation, excluding
+              Exact phrase &quot;climate change&quot; with policy or regulation, excluding
               opinions
             </p>
           </div>
