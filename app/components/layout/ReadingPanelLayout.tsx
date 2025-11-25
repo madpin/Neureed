@@ -83,20 +83,37 @@ export function ReadingPanelLayout({ children, onArticleReadStatusChange }: Read
     [session, updatePreference]
   );
 
-  // Check if panel should be active
-  const isPanelActive = !isLoadingPreferences && 
-                        session?.user && 
-                        preferences && 
-                        preferences.readingPanelEnabled && 
+  // Get reading mode (default to side_panel for backward compatibility)
+  const readingMode = preferences?.readingMode || "side_panel";
+
+  // Check if panel should be active (side_panel mode only)
+  const isPanelActive = !isLoadingPreferences &&
+                        session?.user &&
+                        preferences &&
+                        readingMode === "side_panel" &&
+                        preferences.readingPanelEnabled &&
                         !isMobile;
+
+  // Check if inline mode is active
+  const isInlineMode = !isLoadingPreferences &&
+                       session?.user &&
+                       preferences &&
+                       readingMode === "inline";
+
+  // Check if standalone mode (full page navigation)
+  const isStandaloneMode = !isLoadingPreferences &&
+                          session?.user &&
+                          preferences &&
+                          readingMode === "standalone";
 
   // Render children with callback support
   const renderChildren = () => {
     if (typeof children === "function") {
-      // Only pass the callback if panel is active
+      // Pass callbacks for side_panel and inline modes
+      const shouldPassCallbacks = isPanelActive || isInlineMode;
       return children({
-        onArticleSelect: isPanelActive ? handleArticleSelect : undefined,
-        selectedArticleId: isPanelActive ? selectedArticleId : null
+        onArticleSelect: shouldPassCallbacks ? handleArticleSelect : undefined,
+        selectedArticleId: shouldPassCallbacks ? selectedArticleId : null
       });
     }
     return children;
@@ -107,7 +124,22 @@ export function ReadingPanelLayout({ children, onArticleReadStatusChange }: Read
     return <>{renderChildren()}</>;
   }
 
-  // If not logged in, no preferences, panel disabled, or mobile, show normal layout
+  // If not logged in or no preferences, show normal layout
+  if (!session?.user || !preferences) {
+    return <>{renderChildren()}</>;
+  }
+
+  // For inline mode, render without split pane (ArticleList will handle inline expansion)
+  if (isInlineMode) {
+    return <div className="h-full">{renderChildren()}</div>;
+  }
+
+  // For standalone mode, render without callbacks (forces full-page navigation)
+  if (isStandaloneMode) {
+    return <>{renderChildren()}</>;
+  }
+
+  // For side_panel mode: if panel disabled or mobile, show normal layout
   if (!isPanelActive) {
     return <>{renderChildren()}</>;
   }

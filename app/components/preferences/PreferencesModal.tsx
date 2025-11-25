@@ -76,6 +76,8 @@ export function PreferencesModal({
     llmApiKey: null,
     llmBaseUrl: null,
     embeddingsEnabled: false,
+    readingMode: "side_panel",
+    inlineAutoScroll: true,
     readingPanelEnabled: true,
     readingPanelPosition: "right",
     readingPanelSize: 50,
@@ -765,77 +767,136 @@ function ReadingView({
     <div>
       <h2 className="mb-6 text-2xl font-bold">Reading Preferences</h2>
       <div className="space-y-6">
-        {/* Reading Panel Section */}
+        {/* Reading Mode Section */}
         <div className="rounded-lg border border-border bg-muted p-6">
-          <h3 className="mb-4 text-lg font-semibold">Reading Panel</h3>
+          <h3 className="mb-4 text-lg font-semibold">Reading Mode</h3>
           <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-            Enable a split-pane reading panel to read articles without leaving the feed view.
-            When disabled, articles will open in their own dedicated page.
+            Choose how articles open when you click them in the feed.
           </p>
-          
+
           <div className="space-y-4">
-            <ToggleSwitch
-              label="Enable Reading Panel"
-              description="Show articles in a resizable side panel instead of a separate page"
-              checked={preferences.readingPanelEnabled || false}
-              onChange={(checked) => updatePreference("readingPanelEnabled", checked)}
-            />
+            {/* Reading Mode Selector */}
+            <div>
+              <label className="mb-2 block text-sm font-medium">Reading Mode</label>
+              <div className="grid grid-cols-1 gap-2">
+                {[
+                  {
+                    value: "side_panel",
+                    label: "Side Panel",
+                    description: "Split-view with resizable panel",
+                    icon: "⊞"
+                  },
+                  {
+                    value: "inline",
+                    label: "Inline",
+                    description: "Accordion-style expansion in list",
+                    icon: "⬍"
+                  },
+                  {
+                    value: "standalone",
+                    label: "Standalone",
+                    description: "Full-page dedicated view",
+                    icon: "□"
+                  },
+                ].map((mode) => (
+                  <button
+                    key={mode.value}
+                    onClick={() => updatePreference("readingMode", mode.value)}
+                    className={`flex items-start gap-3 rounded-lg border px-4 py-3 text-left text-sm font-medium transition-colors ${
+                      (preferences.readingMode || "side_panel") === mode.value
+                        ? "border-primary bg-primary/10 text-primary dark:bg-primary/20"
+                        : "border-border bg-background hover:bg-muted"
+                    }`}
+                  >
+                    <span className="text-xl">{mode.icon}</span>
+                    <div className="flex-1">
+                      <div className="font-semibold">{mode.label}</div>
+                      <div className="mt-0.5 text-xs opacity-80">{mode.description}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
 
-            {preferences.readingPanelEnabled && (
-              <>
-                {/* Panel Position */}
-                <div>
-                  <label className="mb-2 block text-sm font-medium">Panel Position</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { value: "right", label: "Right", icon: "→" },
-                      { value: "left", label: "Left", icon: "←" },
-                      { value: "top", label: "Top", icon: "↑" },
-                      { value: "bottom", label: "Bottom", icon: "↓" },
-                    ].map((pos) => (
-                      <button
-                        key={pos.value}
-                        onClick={() => updatePreference("readingPanelPosition", pos.value)}
-                        className={`flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-colors ${
-                          preferences.readingPanelPosition === pos.value
-                            ? "border-primary bg-primary/10 text-primary dark:bg-primary/20"
-                            : "border-border bg-background hover:bg-muted"
-                        }`}
-                      >
-                        <span className="text-lg">{pos.icon}</span>
-                        <span>{pos.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    Choose where the reading panel appears on your screen
-                  </p>
-                </div>
+            {/* Inline Mode Settings */}
+            {(preferences.readingMode || "side_panel") === "inline" && (
+              <div className="rounded-lg border border-border bg-background p-4">
+                <ToggleSwitch
+                  label="Auto-scroll to Article"
+                  description="Automatically scroll to the article when it expands"
+                  checked={preferences.inlineAutoScroll ?? true}
+                  onChange={(checked) => updatePreference("inlineAutoScroll", checked)}
+                />
+              </div>
+            )}
 
-                {/* Panel Size */}
-                <div>
-                  <label className="mb-2 block text-sm font-medium">
-                    Default Panel Size: {preferences.readingPanelSize}%
-                  </label>
-                  <input
-                    type="range"
-                    min="30"
-                    max="70"
-                    step="5"
-                    value={preferences.readingPanelSize || 50}
-                    onChange={(e) => updatePreference("readingPanelSize", parseInt(e.target.value))}
-                    className="w-full"
-                  />
-                  <div className="mt-1 flex justify-between text-xs text-gray-500">
-                    <span>30%</span>
-                    <span>50%</span>
-                    <span>70%</span>
-                  </div>
-                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    Adjust the default size of the reading panel (can be resized while reading)
-                  </p>
-                </div>
-              </>
+            {/* Side Panel Settings */}
+            {(preferences.readingMode || "side_panel") === "side_panel" && (
+              <div className="space-y-4 rounded-lg border border-border bg-background p-4">
+                <ToggleSwitch
+                  label="Enable Reading Panel"
+                  description="Show articles in a resizable side panel"
+                  checked={preferences.readingPanelEnabled || false}
+                  onChange={(checked) => updatePreference("readingPanelEnabled", checked)}
+                />
+
+                {preferences.readingPanelEnabled && (
+                  <>
+                    {/* Panel Position */}
+                    <div>
+                      <label className="mb-2 block text-sm font-medium">Panel Position</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { value: "right", label: "Right", icon: "→" },
+                          { value: "left", label: "Left", icon: "←" },
+                          { value: "top", label: "Top", icon: "↑" },
+                          { value: "bottom", label: "Bottom", icon: "↓" },
+                        ].map((pos) => (
+                          <button
+                            key={pos.value}
+                            onClick={() => updatePreference("readingPanelPosition", pos.value)}
+                            className={`flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-colors ${
+                              preferences.readingPanelPosition === pos.value
+                                ? "border-primary bg-primary/10 text-primary dark:bg-primary/20"
+                                : "border-border bg-background hover:bg-muted"
+                            }`}
+                          >
+                            <span className="text-lg">{pos.icon}</span>
+                            <span>{pos.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        Choose where the reading panel appears on your screen
+                      </p>
+                    </div>
+
+                    {/* Panel Size */}
+                    <div>
+                      <label className="mb-2 block text-sm font-medium">
+                        Default Panel Size: {preferences.readingPanelSize}%
+                      </label>
+                      <input
+                        type="range"
+                        min="30"
+                        max="70"
+                        step="5"
+                        value={preferences.readingPanelSize || 50}
+                        onChange={(e) => updatePreference("readingPanelSize", parseInt(e.target.value))}
+                        className="w-full"
+                      />
+                      <div className="mt-1 flex justify-between text-xs text-gray-500">
+                        <span>30%</span>
+                        <span>50%</span>
+                        <span>70%</span>
+                      </div>
+                      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        Adjust the default size of the reading panel (can be resized while reading)
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
             )}
           </div>
         </div>

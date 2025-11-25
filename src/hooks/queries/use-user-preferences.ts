@@ -67,6 +67,8 @@ export interface UserPreferences {
   articleCardBorderRadius?: "sharp" | "slight" | "normal" | "rounded";
   articleCardBorderContrast?: "subtle" | "medium" | "strong";
   articleCardSpacing?: "none" | "compact" | "normal" | "comfortable" | "spacious";
+  readingMode?: "side_panel" | "inline" | "standalone";
+  inlineAutoScroll?: boolean;
 }
 
 interface UserPreferencesResponse {

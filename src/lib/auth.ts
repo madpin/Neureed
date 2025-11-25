@@ -98,14 +98,16 @@ export const authConfig: NextAuthConfig = {
     },
     async signIn({ user }) {
       // Ensure madpin@gmail.com is always an admin
+      // Only update if user already exists (for returning users)
       if (user.email === "madpin@gmail.com" && user.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: user.id },
           select: { role: true },
         });
 
-        // Update role to ADMIN if not already
-        if (dbUser?.role !== "ADMIN") {
+        // Only update if user exists and is not already an admin
+        // For new users, role is set in the createUser event
+        if (dbUser && dbUser.role !== "ADMIN") {
           await prisma.user.update({
             where: { id: user.id },
             data: { role: "ADMIN" },
@@ -146,6 +148,9 @@ export const authConfig: NextAuthConfig = {
               showRelatedExcerpts: false,
               bounceThreshold: 0.25,
               showLowRelevanceArticles: true,
+              readingMode: "side_panel",
+              inlineAutoScroll: true,
+              categoryStates: {},
               // updatedAt is auto-managed by Prisma via @updatedAt directive
             },
           });

@@ -38,6 +38,7 @@ interface ArticlePanelProps {
   articleId: string;
   onClose: () => void;
   onReadStatusChange?: () => void;
+  variant?: "panel" | "inline" | "standalone";
 }
 
 function normalizeKeyPoints(value: unknown): string[] {
@@ -49,7 +50,7 @@ function normalizeKeyPoints(value: unknown): string[] {
   return [];
 }
 
-export function ArticlePanel({ articleId, onClose, onReadStatusChange }: ArticlePanelProps) {
+export function ArticlePanel({ articleId, onClose, onReadStatusChange, variant = "panel" }: ArticlePanelProps) {
   const summaryRef = useRef<ArticleSummaryRef>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -187,8 +188,13 @@ export function ArticlePanel({ articleId, onClose, onReadStatusChange }: Article
         }
       : null;
 
+  // Container classes based on variant
+  const containerClasses = variant === "inline"
+    ? "flex h-full flex-col bg-background"
+    : "flex h-full flex-col bg-background";
+
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div className={containerClasses}>
       {/* View Tracker */}
       <ArticleViewTracker articleId={article.id} estimatedTime={readingTime * 60} onReadStatusChange={onReadStatusChange} />
 

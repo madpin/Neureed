@@ -4,6 +4,7 @@
  */
 
 import { createHandler } from '@/lib/api-handler';
+import { apiError } from '@/lib/api-response';
 import { z } from 'zod';
 import {
   getAllTemplates,
@@ -32,9 +33,7 @@ export const GET = createHandler(
     if (id) {
       const template = getTemplateById(id);
       if (!template) {
-        return {
-          error: 'Template not found',
-        };
+        return apiError('Template not found', 404);
       }
       return { data: template };
     }

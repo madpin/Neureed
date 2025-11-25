@@ -475,6 +475,9 @@ async function main() {
       showReadArticles: true,
       autoMarkAsRead: false,
       showRelatedExcerpts: false,
+      readingMode: "side_panel",
+      inlineAutoScroll: true,
+      categoryStates: {},
     },
   });
 

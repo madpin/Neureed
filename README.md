@@ -304,9 +304,13 @@ NeuReed comes with a variety of beautiful themes to match your style and mood:
 - **Smart filtering**: Hide read articles, filter by feed or category
 
 ### Reading Experience
+- **Three reading modes**: Choose how you consume content
+  - **Side Panel**: Split-screen with resizable panel (classic view)
+  - **Inline**: Accordion-style expansion directly in the article list
+  - **Standalone**: Full-page dedicated reading experience
 - **Customizable fonts**: Size, family, line height, spacing - all yours
 - **Theme variety**: Light, dark, Nord, Solarized, and more fun themes
-- **Reading panel**: Split-screen or full-page reading modes
+- **Auto-scroll option**: Automatically scroll to expanded articles in inline mode
 - **Estimated reading time**: Know before you commit
 
 ### Feed Organization

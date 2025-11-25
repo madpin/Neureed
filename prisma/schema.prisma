@@ -301,6 +301,8 @@ model user_preferences {
   articleCardBorderRadius   String   @default("normal")
   articleCardBorderContrast String   @default("medium")
   articleCardSpacing        String   @default("normal")
+  readingMode               String   @default("side_panel")
+  inlineAutoScroll          Boolean  @default(true)
   users                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 

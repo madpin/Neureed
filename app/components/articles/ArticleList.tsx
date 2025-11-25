@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { ArticleCard, type ArticleDisplayPreferences } from "./ArticleCard";
+import { ArticlePanel } from "./ArticlePanel";
 import { LoadingSpinner, LoadingSkeleton } from "@/app/components/layout/LoadingSpinner";
 import { EmptyState } from "@/app/components/layout/EmptyState";
 import { useArticleScores, type ArticleScore, type Article } from "@/hooks/queries/use-articles";
 import { useUserPreferences } from "@/hooks/queries/use-user-preferences";
+import React from "react";
 
 interface ArticleListProps {
   articles: Article[];
@@ -38,6 +40,14 @@ export function ArticleList({
 }: ArticleListProps) {
   const { data: session } = useSession();
   const { data: preferences } = useUserPreferences();
+
+  // Ref for auto-scrolling to expanded article
+  const expandedArticleRef = useRef<HTMLDivElement>(null);
+
+  // Get reading mode settings
+  const readingMode = preferences?.readingMode || "side_panel";
+  const inlineAutoScroll = preferences?.inlineAutoScroll ?? true;
+  const isInlineMode = readingMode === "inline";
 
   // Extract article IDs and use React Query to fetch scores
   // Filter out any undefined/null articles
@@ -93,6 +103,21 @@ export function ArticleList({
     }
   }, [preferences?.articleCardSpacing]);
 
+  // Auto-scroll to expanded article in inline mode
+  useEffect(() => {
+    if (selectedArticleId && isInlineMode && inlineAutoScroll && expandedArticleRef.current) {
+      // Small delay to ensure rendering is complete
+      const timeoutId = setTimeout(() => {
+        expandedArticleRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [selectedArticleId, isInlineMode, inlineAutoScroll]);
+
   if (isLoading) {
     return <LoadingSkeleton count={5} />;
   }
@@ -130,20 +155,35 @@ export function ArticleList({
         const score = scores.get(article.id);
         const hasSimilarity = 'similarity' in article && article.similarity !== undefined;
         const similarity = hasSimilarity ? (article as any).similarity : undefined;
+        const isExpanded = selectedArticleId === article.id;
 
         return (
-          <ArticleCard
-            key={article.id}
-            article={article}
-            displayPreferences={displayPreferences}
-            variant={variant}
-            onArticleClick={onArticleSelect}
-            isSelected={selectedArticleId === article.id}
-            onReadStatusChange={onReadStatusChange}
-            showRelevanceScore={!!score}
-            relevanceScore={score}
-            similarity={similarity}
-          />
+          <React.Fragment key={article.id}>
+            <ArticleCard
+              article={article}
+              displayPreferences={displayPreferences}
+              variant={variant}
+              onArticleClick={onArticleSelect}
+              isSelected={isExpanded}
+              onReadStatusChange={onReadStatusChange}
+              showRelevanceScore={!!score}
+              relevanceScore={score}
+              similarity={similarity}
+            />
+            {isExpanded && isInlineMode && onArticleSelect && (
+              <div
+                ref={expandedArticleRef}
+                className="inline-article-container"
+              >
+                <ArticlePanel
+                  articleId={article.id}
+                  variant="inline"
+                  onClose={() => onArticleSelect(null)}
+                  onReadStatusChange={onReadStatusChange}
+                />
+              </div>
+            )}
+          </React.Fragment>
         );
       })}
 
