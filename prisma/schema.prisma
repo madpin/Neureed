@@ -266,7 +266,7 @@ model user_preferences {
   llmApiKey                 String?
   llmBaseUrl                String?
   llmProvider               String?
-  readingPanelEnabled       Boolean  @default(false)
+  readingPanelEnabled       Boolean  @default(true)
   readingPanelPosition      String   @default("right")
   readingPanelSize          Int      @default(50)
   categoryStates            Json?

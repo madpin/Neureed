@@ -76,7 +76,7 @@ export function PreferencesModal({
     llmApiKey: null,
     llmBaseUrl: null,
     embeddingsEnabled: false,
-    readingPanelEnabled: false,
+    readingPanelEnabled: true,
     readingPanelPosition: "right",
     readingPanelSize: 50,
     readingFontFamily: "Georgia",

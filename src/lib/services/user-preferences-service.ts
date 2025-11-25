@@ -198,7 +198,7 @@ export async function getDefaultPreferences(): Promise<
     llmEmbeddingModel: null,
     llmDigestModel: null,
     embeddingsEnabled: adminDefaults.embeddingsEnabled, // Inherit from admin
-    readingPanelEnabled: false,
+    readingPanelEnabled: true,
     readingPanelPosition: "right",
     readingPanelSize: 50,
     sidebarCollapsed: false,
