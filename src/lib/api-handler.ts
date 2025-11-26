@@ -149,7 +149,8 @@ export function createHandler<TBody = unknown, TQuery = unknown, TResult = unkno
       // Parse URL params (always a Promise in Next.js 16)
       const rawParams = await context.params;
       // Convert params to Record<string, string> (taking first value for arrays)
-      const params = Object.entries(rawParams).reduce((acc, [key, value]) => {
+      // Handle null/undefined params for routes without URL parameters
+      const params = Object.entries(rawParams || {}).reduce((acc, [key, value]) => {
         if (value !== undefined) {
           const stringValue = Array.isArray(value) ? value[0] : value;
           if (stringValue !== undefined) {
@@ -173,7 +174,7 @@ export function createHandler<TBody = unknown, TQuery = unknown, TResult = unkno
               return apiError(
                 "Validation error",
                 400,
-                result.error.errors
+                result.error.issues
               );
             }
             body = result.data;
@@ -197,7 +198,7 @@ export function createHandler<TBody = unknown, TQuery = unknown, TResult = unkno
           return apiError(
             "Invalid query parameters",
             400,
-            error.errors
+            error.issues
           );
         }
         throw error;

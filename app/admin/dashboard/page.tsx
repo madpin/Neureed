@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { formatLocalizedDate } from "@/lib/date-utils";
-import { Tooltip } from "@/app/components/admin/Tooltip";
+import { Tooltip, Card, CardBody } from "@/app/components/ui";
 import { useIsAdmin } from "@/hooks/use-auth";
 import {
   useAdminMetrics,
@@ -453,8 +453,9 @@ export default function AdminDashboardPage() {
             {/* Content Area */}
             <div className="flex-1 space-y-6">
               {/* Quick Actions Bar (Always visible) */}
-              <div className="rounded-lg border border-border bg-background p-4 shadow-sm">
-                <h2 className="text-sm font-semibold uppercase text-foreground/50 tracking-wider mb-3">Quick Actions</h2>
+              <Card className="bg-background shadow-sm">
+                <CardBody>
+                  <h2 className="text-sm font-semibold uppercase text-foreground/50 tracking-wider mb-3">Quick Actions</h2>
                 <div className="flex flex-wrap gap-2">
                 <button
                   onClick={handleRefreshFeeds}
@@ -505,14 +506,16 @@ export default function AdminDashboardPage() {
                   Clear Cache
                 </button>
                 </div>
-              </div>
+                </CardBody>
+              </Card>
 
               {activeTab === "overview" && (
                 <div className="grid gap-6">
                   {/* Metrics Grid */}
                   <div className="grid gap-6 md:grid-cols-3">
                     {/* Users Card */}
-                    <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
+                    <Card className="bg-background shadow-sm">
+                      <CardBody>
                       <div className="flex items-center justify-between">
                         <h3 className="text-lg font-medium text-foreground">Users</h3>
                         <div className="rounded-full bg-blue-100 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
@@ -531,10 +534,12 @@ export default function AdminDashboardPage() {
                           <span className="font-medium text-foreground">{metrics?.users?.active || 0}</span>
                         </div>
                       </div>
-                    </div>
+                      </CardBody>
+                    </Card>
 
                     {/* Feeds Card */}
-                    <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
+                    <Card className="bg-background shadow-sm">
+                      <CardBody>
                       <div className="flex items-center justify-between">
                         <h3 className="text-lg font-medium text-foreground">Feeds</h3>
                         <div className="rounded-full bg-green-100 p-2 text-green-600 dark:bg-green-900/30 dark:text-green-400">
@@ -555,10 +560,12 @@ export default function AdminDashboardPage() {
                           </span>
                         </div>
                       </div>
-                    </div>
+                      </CardBody>
+                    </Card>
 
                     {/* Articles Card */}
-                    <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
+                    <Card className="bg-background shadow-sm">
+                      <CardBody>
                       <div className="flex items-center justify-between">
                         <h3 className="text-lg font-medium text-foreground">Articles</h3>
                         <div className="rounded-full bg-purple-100 p-2 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
@@ -577,14 +584,16 @@ export default function AdminDashboardPage() {
                           <span className="font-medium text-foreground">{metrics?.articles.withEmbeddings || 0}</span>
                         </div>
                       </div>
-                    </div>
+                      </CardBody>
+                    </Card>
                   </div>
 
                   {/* Storage & System Status */}
                   <div className="grid gap-6 md:grid-cols-2">
                     {/* Storage Stats */}
-                    <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
-                      <h3 className="mb-4 text-lg font-medium text-foreground">Storage Usage</h3>
+                    <Card className="bg-background shadow-sm">
+                      <CardBody>
+                        <h3 className="mb-4 text-lg font-medium text-foreground">Storage Usage</h3>
                       <div className="space-y-4">
                         <div>
                           <div className="mb-1 flex justify-between text-sm">
@@ -607,10 +616,12 @@ export default function AdminDashboardPage() {
                           <p className="mt-1 text-xs text-foreground/50">{metrics?.storage.redis.keys || 0} keys</p>
                         </div>
                       </div>
-                    </div>
+                      </CardBody>
+                    </Card>
 
                     {/* Cache Status */}
-                    <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
+                    <Card className="bg-background shadow-sm">
+                      <CardBody>
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-medium text-foreground">Cache Performance</h3>
                         <div className={`rounded-full px-3 py-1 text-xs font-medium ${
@@ -638,7 +649,8 @@ export default function AdminDashboardPage() {
                           <div className="text-xs text-foreground/60">Cached Keys</div>
                         </div>
                       </div>
-                    </div>
+                      </CardBody>
+                    </Card>
                   </div>
                 </div>
               )}
@@ -706,8 +718,9 @@ function SearchTab({
     <div className="space-y-6">
       {/* Search Stats */}
       <div className="grid gap-6 md:grid-cols-3">
-        <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
-          <h3 className="text-lg font-medium text-foreground mb-2">Embeddings Coverage</h3>
+        <Card className="bg-background shadow-sm">
+          <CardBody>
+            <h3 className="text-lg font-medium text-foreground mb-2">Embeddings Coverage</h3>
           <div className="flex items-end gap-2">
             <div className="text-3xl font-bold text-foreground">{(embeddingStats?.percentage || 0).toFixed(1)}%</div>
             <div className="mb-1 text-sm text-foreground/60">of articles</div>
@@ -718,10 +731,12 @@ function SearchTab({
               style={{ width: `${embeddingStats?.percentage || 0}%` }}
             ></div>
           </div>
-        </div>
+          </CardBody>
+        </Card>
 
-        <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
-          <h3 className="text-lg font-medium text-foreground mb-2">Vector Status</h3>
+        <Card className="bg-background shadow-sm">
+          <CardBody>
+            <h3 className="text-lg font-medium text-foreground mb-2">Vector Status</h3>
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-foreground/70">With Embeddings</span>
@@ -736,10 +751,12 @@ function SearchTab({
               <span className="font-medium text-foreground">{embeddingStats?.total || 0}</span>
             </div>
           </div>
-        </div>
+          </CardBody>
+        </Card>
 
-        <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
-          <h3 className="text-lg font-medium text-foreground mb-2">Configuration</h3>
+        <Card className="bg-background shadow-sm">
+          <CardBody>
+            <h3 className="text-lg font-medium text-foreground mb-2">Configuration</h3>
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-foreground/70">Provider</span>
@@ -762,7 +779,8 @@ function SearchTab({
               </span>
             </div>
           </div>
-        </div>
+          </CardBody>
+        </Card>
       </div>
     </div>
   );
@@ -849,18 +867,24 @@ function UsersTab() {
     <div className="space-y-6">
       {/* User Stats */}
       <div className="grid gap-6 md:grid-cols-3">
-        <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
-          <h3 className="text-lg font-medium text-foreground mb-2">Total Users</h3>
-          <div className="text-3xl font-bold text-foreground">{stats?.totalUsers || 0}</div>
-        </div>
-        <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
-          <h3 className="text-lg font-medium text-foreground mb-2">Active Users (30d)</h3>
-          <div className="text-3xl font-bold text-foreground">{stats?.activeUsers || 0}</div>
-        </div>
-        <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
-          <h3 className="text-lg font-medium text-foreground mb-2">Providing Feedback</h3>
-          <div className="text-3xl font-bold text-foreground">{stats?.usersWithFeedback || 0}</div>
-        </div>
+        <Card className="bg-background shadow-sm">
+          <CardBody>
+            <h3 className="text-lg font-medium text-foreground mb-2">Total Users</h3>
+            <div className="text-3xl font-bold text-foreground">{stats?.totalUsers || 0}</div>
+          </CardBody>
+        </Card>
+        <Card className="bg-background shadow-sm">
+          <CardBody>
+            <h3 className="text-lg font-medium text-foreground mb-2">Active Users (30d)</h3>
+            <div className="text-3xl font-bold text-foreground">{stats?.activeUsers || 0}</div>
+          </CardBody>
+        </Card>
+        <Card className="bg-background shadow-sm">
+          <CardBody>
+            <h3 className="text-lg font-medium text-foreground mb-2">Providing Feedback</h3>
+            <div className="text-3xl font-bold text-foreground">{stats?.usersWithFeedback || 0}</div>
+          </CardBody>
+        </Card>
       </div>
 
       {/* Search and Sort Controls */}
@@ -1577,8 +1601,9 @@ function StorageTab({
   return (
     <div className="space-y-8">
       <div className="grid gap-6 md:grid-cols-2">
-        <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
-          <h3 className="text-lg font-medium text-foreground mb-4">PostgreSQL Database</h3>
+        <Card className="bg-background shadow-sm">
+          <CardBody>
+            <h3 className="text-lg font-medium text-foreground mb-4">PostgreSQL Database</h3>
           <div className="space-y-4">
             <div className="flex justify-between p-3 rounded bg-muted/50">
               <span className="text-foreground/70">Total Size</span>
@@ -1625,10 +1650,12 @@ function StorageTab({
               </button>
             )}
           </div>
-        </div>
+          </CardBody>
+        </Card>
 
-        <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
-          <h3 className="text-lg font-medium text-foreground mb-4">Redis Cache</h3>
+        <Card className="bg-background shadow-sm">
+          <CardBody>
+            <h3 className="text-lg font-medium text-foreground mb-4">Redis Cache</h3>
           <div className="space-y-4">
             <div className="flex justify-between p-3 rounded bg-muted/50">
               <span className="text-foreground/70">Status</span>
@@ -1664,7 +1691,8 @@ function StorageTab({
               )}
             </div>
           </div>
-        </div>
+          </CardBody>
+        </Card>
       </div>
 
       <div className="rounded-lg border border-red-200 bg-red-50 p-6 dark:border-red-900/50 dark:bg-red-900/10">
@@ -1714,8 +1742,9 @@ function ConfigTab({ settings }: { settings: AdminSettings | undefined }) {
     <div className="space-y-6">
       {/* Server Info */}
       {configData?.server && (
-        <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
-          <h3 className="text-lg font-medium text-foreground mb-4">Server Information</h3>
+        <Card className="bg-background shadow-sm">
+          <CardBody>
+            <h3 className="text-lg font-medium text-foreground mb-4">Server Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Object.entries(configData.server).map(([key, value]) => (
               <div key={key} className="p-3 rounded bg-muted/20 border border-border">
@@ -1726,13 +1755,15 @@ function ConfigTab({ settings }: { settings: AdminSettings | undefined }) {
               </div>
             ))}
           </div>
-        </div>
+          </CardBody>
+        </Card>
       )}
-      
+
       {/* Database */}
       {configData?.database && (
-        <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
-          <h3 className="text-lg font-medium text-foreground mb-4">Database</h3>
+        <Card className="bg-background shadow-sm">
+          <CardBody>
+            <h3 className="text-lg font-medium text-foreground mb-4">Database</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {Object.entries(configData.database).map(([key, value]) => (
               <div key={key} className="p-3 rounded bg-muted/20 border border-border">
@@ -1743,13 +1774,15 @@ function ConfigTab({ settings }: { settings: AdminSettings | undefined }) {
               </div>
             ))}
           </div>
-        </div>
+          </CardBody>
+        </Card>
       )}
-      
+
       {/* LLM & Embeddings */}
       {(configData?.llm || configData?.embeddings) && (
-        <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
-          <h3 className="text-lg font-medium text-foreground mb-4">LLM & Embeddings Configuration</h3>
+        <Card className="bg-background shadow-sm">
+          <CardBody>
+            <h3 className="text-lg font-medium text-foreground mb-4">LLM & Embeddings Configuration</h3>
           <div className="space-y-4">
             {configData?.llm && (
               <div>
@@ -1782,13 +1815,15 @@ function ConfigTab({ settings }: { settings: AdminSettings | undefined }) {
               </div>
             )}
           </div>
-        </div>
+          </CardBody>
+        </Card>
       )}
-      
+
       {/* Cache & Redis */}
       {configData?.cache && (
-        <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
-          <h3 className="text-lg font-medium text-foreground mb-4">Cache & Storage</h3>
+        <Card className="bg-background shadow-sm">
+          <CardBody>
+            <h3 className="text-lg font-medium text-foreground mb-4">Cache & Storage</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Object.entries(configData.cache).map(([key, value]) => (
               <div key={key} className="p-3 rounded bg-muted/20 border border-border">
@@ -1799,13 +1834,15 @@ function ConfigTab({ settings }: { settings: AdminSettings | undefined }) {
               </div>
             ))}
           </div>
-        </div>
+          </CardBody>
+        </Card>
       )}
-      
+
       {/* Cron Jobs */}
       {configData?.cronJobs && (
-        <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
-          <h3 className="text-lg font-medium text-foreground mb-4">Cron Jobs</h3>
+        <Card className="bg-background shadow-sm">
+          <CardBody>
+            <h3 className="text-lg font-medium text-foreground mb-4">Cron Jobs</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {Object.entries(configData.cronJobs).map(([key, value]) => (
               <div key={key} className="p-3 rounded bg-muted/20 border border-border">
@@ -1816,13 +1853,15 @@ function ConfigTab({ settings }: { settings: AdminSettings | undefined }) {
               </div>
             ))}
           </div>
-        </div>
+          </CardBody>
+        </Card>
       )}
-      
+
       {/* Content Extraction */}
       {configData?.contentExtraction && (
-        <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
-          <h3 className="text-lg font-medium text-foreground mb-4">Content Extraction</h3>
+        <Card className="bg-background shadow-sm">
+          <CardBody>
+            <h3 className="text-lg font-medium text-foreground mb-4">Content Extraction</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {Object.entries(configData.contentExtraction).map(([key, value]) => (
               <div key={key} className="p-3 rounded bg-muted/20 border border-border">
@@ -1833,13 +1872,15 @@ function ConfigTab({ settings }: { settings: AdminSettings | undefined }) {
               </div>
             ))}
           </div>
-        </div>
+          </CardBody>
+        </Card>
       )}
-      
+
       {/* Authentication */}
       {configData?.auth && (
-        <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
-          <h3 className="text-lg font-medium text-foreground mb-4">Authentication</h3>
+        <Card className="bg-background shadow-sm">
+          <CardBody>
+            <h3 className="text-lg font-medium text-foreground mb-4">Authentication</h3>
           <div className="space-y-3">
             {Object.entries(configData.auth).map(([provider, config]) => (
               <div key={provider} className="p-3 rounded bg-muted/20 border border-border">
@@ -1859,12 +1900,14 @@ function ConfigTab({ settings }: { settings: AdminSettings | undefined }) {
               </div>
             ))}
           </div>
-        </div>
+          </CardBody>
+        </Card>
       )}
 
       {/* Default User Preferences */}
-      <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
-        <h3 className="text-lg font-medium text-foreground mb-4">Default User Preferences</h3>
+      <Card className="bg-background shadow-sm">
+        <CardBody>
+          <h3 className="text-lg font-medium text-foreground mb-4">Default User Preferences</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Object.entries(settings.defaults || {}).map(([key, value]) => (
             <div key={key} className="p-3 rounded bg-muted/20 border border-border">
@@ -1875,7 +1918,8 @@ function ConfigTab({ settings }: { settings: AdminSettings | undefined }) {
             </div>
           ))}
         </div>
-      </div>
+        </CardBody>
+      </Card>
     </div>
   );
 }
@@ -2120,8 +2164,9 @@ function LLMConfigTab() {
       </div>
 
       {/* Article Summarization Configuration */}
-      <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
+      <Card className="bg-background shadow-sm">
+        <CardBody>
+          <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-medium text-foreground">Article Summarization</h3>
             <p className="text-sm text-foreground/60 mt-1">
@@ -2193,10 +2238,12 @@ function LLMConfigTab() {
             </div>
           )}
         </div>
-      </div>
+        </CardBody>
+      </Card>
 
-      <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
-        <h3 className="mb-4 text-lg font-semibold text-foreground">LLM Provider</h3>
+      <Card className="bg-background shadow-sm">
+        <CardBody>
+          <h3 className="mb-4 text-lg font-semibold text-foreground">LLM Provider</h3>
         
         <div className="space-y-6">
           {/* Provider Selection */}
@@ -2413,8 +2460,9 @@ function LLMConfigTab() {
 
           {/* Test Results Display */}
           {testResults && (
-            <div className="rounded-lg border border-border bg-background p-6 shadow-sm">
-              <h4 className="font-medium text-foreground mb-4 flex items-center gap-2">
+            <Card className="bg-background shadow-sm">
+              <CardBody>
+                <h4 className="font-medium text-foreground mb-4 flex items-center gap-2">
                 <span>Test Results</span>
                 {testResults.success ? (
                   <span className="text-green-600 dark:text-green-400">✓ Passed</span>
@@ -2512,10 +2560,12 @@ function LLMConfigTab() {
                   {testConfig.isPending ? "Testing..." : "Retry Test"}
                 </button>
               </div>
-            </div>
+              </CardBody>
+            </Card>
           )}
         </div>
-      </div>
+        </CardBody>
+      </Card>
 
       {/* Information Panel */}
       <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-900/20">

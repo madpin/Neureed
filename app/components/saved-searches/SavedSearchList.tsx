@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
   useSavedSearches,
@@ -33,8 +33,17 @@ export function SavedSearchList({
   onOpenOnboarding,
 }: SavedSearchListProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [expandedSearchId, setExpandedSearchId] = useState<string | null>(null);
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
+
+  // Track expected params to avoid navigation loops in React Strict Mode
+  const expectedParamsRef = useRef<URLSearchParams | null>(null);
+
+  // Initialize and sync ref with searchParams
+  useEffect(() => {
+    expectedParamsRef.current = new URLSearchParams(searchParams.toString());
+  }, [searchParams]);
 
   // Check if user has seen onboarding
   useEffect(() => {
@@ -51,15 +60,35 @@ export function SavedSearchList({
   const deleteMutation = useDeleteSavedSearch();
   const rematchMutation = useRematchSavedSearch();
 
+  const pushWithPreservedParams = useCallback((updates: Record<string, string | null>) => {
+    // Use ref instead of searchParams directly to avoid dependency that causes navigation loops
+    if (!expectedParamsRef.current) {
+      expectedParamsRef.current = new URLSearchParams(searchParams.toString());
+    }
+
+    const currentParams = new URLSearchParams(expectedParamsRef.current.toString());
+
+    // Apply updates (null means delete the param)
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null) {
+        currentParams.delete(key);
+      } else {
+        currentParams.set(key, value);
+      }
+    });
+
+    const paramsString = currentParams.toString();
+    router.push(paramsString ? `/?${paramsString}` : '/');
+
+    // Update ref with new expected params
+    expectedParamsRef.current = currentParams;
+  }, [router, searchParams]);
+
   const handleSelectSearch = (searchId: string | null) => {
     if (onSelectSearch) {
       onSelectSearch(searchId);
     } else {
-      if (searchId) {
-        router.push(`/?savedSearch=${searchId}`);
-      } else {
-        router.push("/");
-      }
+      pushWithPreservedParams({ savedSearch: searchId });
     }
     onCloseMobileMenu?.();
   };

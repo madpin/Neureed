@@ -31,10 +31,12 @@ import {
 } from "@/hooks/queries/use-feeds";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/query-keys";
+import { Modal, ModalBody, Card, CardHeader, CardBody, StatCard } from "@/app/components/ui";
 
 type ViewType = 'feed' | 'category' | 'overview';
 
 interface FeedManagementModalProps {
+  isOpen: boolean;
   onClose: () => void;
   initialView?: ViewType;
   feedId?: string;
@@ -92,6 +94,7 @@ interface Statistics {
 }
 
 export function FeedManagementModal({
+  isOpen,
   onClose,
   initialView = 'overview',
   feedId: initialFeedId,
@@ -104,7 +107,6 @@ export function FeedManagementModal({
   const [feedId, setFeedId] = useState<string | undefined>(initialFeedId);
   const [categoryId, setCategoryId] = useState<string | undefined>(initialCategoryId);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const modalRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Navigate to a different view
@@ -163,12 +165,9 @@ export function FeedManagementModal({
     onClose();
   };
 
-  // Handle click outside modal
+  // Handle click outside mobile dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        handleClose();
-      }
       // Close mobile dropdown when clicking outside
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsMobileMenuOpen(false);
@@ -222,8 +221,8 @@ export function FeedManagementModal({
   ];
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4">
-      <div ref={modalRef} className="flex h-[90vh] w-full max-w-6xl overflow-hidden rounded-lg bg-background shadow-xl">
+    <Modal isOpen={isOpen} onClose={handleClose} size="xl">
+      <ModalBody padding={false} className="flex h-[70vh] overflow-hidden">
         {/* Sidebar Navigation - Desktop Only */}
         <aside className="hidden md:flex w-52 flex-shrink-0 border-r border-border bg-muted dark:bg-background">
           <div className="flex h-full flex-col">
@@ -322,8 +321,8 @@ export function FeedManagementModal({
               />
             )}
         </main>
-      </div>
-    </div>
+      </ModalBody>
+    </Modal>
   );
 }
 
@@ -647,73 +646,87 @@ function ManagementOverview({
       </div>
 
       {/* Statistics Panel */}
-        <div className="mb-6 grid grid-cols-4 gap-4">
-        <div className="rounded-lg border border-border bg-muted p-4 dark:bg-background">
-          <div className="text-sm text-gray-600 dark:text-gray-400">Total Categories</div>
-          <div className="text-2xl font-bold">{statistics.totalCategories}</div>
-        </div>
-        <div className="rounded-lg border border-border bg-muted p-4 dark:bg-background">
-          <div className="text-sm text-gray-600 dark:text-gray-400">Total Feeds</div>
-          <div className="text-2xl font-bold">{statistics.totalFeeds}</div>
-        </div>
-        <div className="rounded-lg border border-border bg-muted p-4 dark:bg-background">
-          <div className="text-sm text-gray-600 dark:text-gray-400">Uncategorized</div>
-          <div className="text-2xl font-bold">{statistics.uncategorizedFeeds}</div>
-        </div>
-        <div className="rounded-lg border border-border bg-muted p-4 dark:bg-background">
-          <div className="text-sm text-gray-600 dark:text-gray-400">Total Articles</div>
-          <div className="text-2xl font-bold">-</div>
-        </div>
+      <div className="mb-6 grid grid-cols-4 gap-4">
+        <StatCard
+          title="Total Categories"
+          value={statistics.totalCategories}
+          label="Categories"
+          iconColor="blue"
+        />
+        <StatCard
+          title="Total Feeds"
+          value={statistics.totalFeeds}
+          label="Feeds"
+          iconColor="green"
+        />
+        <StatCard
+          title="Uncategorized"
+          value={statistics.uncategorizedFeeds}
+          label="Feeds"
+          iconColor="yellow"
+        />
+        <StatCard
+          title="Total Articles"
+          value="-"
+          label="Articles"
+          iconColor="purple"
+        />
       </div>
 
       {/* OPML Import/Export Section */}
       <div className="mb-6 space-y-4">
         {/* Info Section */}
-        <div className="rounded-lg bg-primary/10 p-4 dark:bg-primary/20">
-          <h3 className="mb-2 font-semibold text-primary dark:text-primary">
-            OPML Import & Export
-          </h3>
-          <p className="text-sm text-primary/80 dark:text-primary/90">
-            OPML (Outline Processor Markup Language) is a standard format for exchanging lists of RSS feeds.
-            Use it to backup your feeds or transfer them between applications.
-          </p>
-        </div>
+        <Card className="bg-primary/10 dark:bg-primary/20">
+          <CardBody>
+            <h3 className="mb-2 font-semibold text-primary dark:text-primary">
+              OPML Import & Export
+            </h3>
+            <p className="text-sm text-primary/80 dark:text-primary/90">
+              OPML (Outline Processor Markup Language) is a standard format for exchanging lists of RSS feeds.
+              Use it to backup your feeds or transfer them between applications.
+            </p>
+          </CardBody>
+        </Card>
 
         <div className="grid grid-cols-2 gap-4">
           {/* Export Section */}
-          <div className="rounded-lg border border-border p-4">
-            <h3 className="mb-2 text-base font-semibold">Export Feeds</h3>
-            <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-              Download your feed subscriptions as an OPML file.
-            </p>
-            <button
-              onClick={() => setShowExportModal(true)}
-              disabled={statistics.totalFeeds === 0}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-              </svg>
-              Export OPML
-            </button>
-          </div>
+          <Card>
+            <CardBody>
+              <h3 className="mb-2 text-base font-semibold">Export Feeds</h3>
+              <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                Download your feed subscriptions as an OPML file.
+              </p>
+              <button
+                onClick={() => setShowExportModal(true)}
+                disabled={statistics.totalFeeds === 0}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                </svg>
+                Export OPML
+              </button>
+            </CardBody>
+          </Card>
 
           {/* Import Section */}
-          <div className="rounded-lg border border-border p-4">
-            <h3 className="mb-2 text-base font-semibold">Import Feeds</h3>
-            <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-              Import feeds from another reader using an OPML file.
-            </p>
-            <button
-              onClick={() => setShowImportModal(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-              Import OPML
-            </button>
-          </div>
+          <Card>
+            <CardBody>
+              <h3 className="mb-2 text-base font-semibold">Import Feeds</h3>
+              <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                Import feeds from another reader using an OPML file.
+              </p>
+              <button
+                onClick={() => setShowImportModal(true)}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                Import OPML
+              </button>
+            </CardBody>
+          </Card>
         </div>
       </div>
 
@@ -867,23 +880,24 @@ function ManagementOverview({
         </div>
       </div>
 
-      {showExportModal && (
-        <OpmlExportModal onClose={() => setShowExportModal(false)} />
-      )}
+      <OpmlExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+      />
 
-      {showImportModal && (
-        <OpmlImportModal onClose={() => setShowImportModal(false)} onSuccess={handleImportSuccess} />
-      )}
-
+      <OpmlImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onSuccess={handleImportSuccess}
+      />
 
       {/* Bulk Edit Modal */}
-      {showBulkModal && (
-        <BulkFeedSettingsModal
-          selectedFeeds={selectedFeeds}
-          onClose={() => setShowBulkModal(false)}
-          onApply={handleBulkApply}
-        />
-      )}
+      <BulkFeedSettingsModal
+        isOpen={showBulkModal}
+        selectedFeeds={selectedFeeds}
+        onClose={() => setShowBulkModal(false)}
+        onApply={handleBulkApply}
+      />
     </div>
   );
 }
@@ -1011,109 +1025,115 @@ function CategorySettingsView({
       {/* Settings Form */}
       <div className="space-y-6">
         {/* Refresh Interval */}
-        <div className="rounded-lg border border-border bg-background p-5">
-          <label className="mb-2 block text-sm font-medium">
-            Refresh Interval (minutes)
-          </label>
-          <p className="mb-3 text-xs text-foreground/60">
-            How often feeds in this category should be checked for new articles
-          </p>
-          <div className="flex items-center gap-3">
-            <input
-              type="number"
-              value={refreshInterval ?? ""}
-              onChange={(e) => setRefreshInterval(e.target.value ? Number(e.target.value) : null)}
-              placeholder="Default: 60"
-              min={15}
-              max={1440}
-              className="w-40 rounded-lg border border-border px-3 py-2 text-sm"
-            />
-            <span className="text-sm text-foreground/60">
-              {refreshInterval ? `${refreshInterval} minutes` : "Using default"}
-            </span>
-            {refreshInterval && (
-              <button
-                onClick={() => setRefreshInterval(null)}
-                className="text-xs text-primary hover:text-primary/80"
-              >
-                Reset to default
-              </button>
-            )}
-          </div>
-          <p className="mt-2 text-xs text-foreground/50">
-            Valid range: 15-1440 minutes
-          </p>
-        </div>
+        <Card className="bg-background">
+          <CardBody>
+            <label className="mb-2 block text-sm font-medium">
+              Refresh Interval (minutes)
+            </label>
+            <p className="mb-3 text-xs text-foreground/60">
+              How often feeds in this category should be checked for new articles
+            </p>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                value={refreshInterval ?? ""}
+                onChange={(e) => setRefreshInterval(e.target.value ? Number(e.target.value) : null)}
+                placeholder="Default: 60"
+                min={15}
+                max={1440}
+                className="w-40 rounded-lg border border-border px-3 py-2 text-sm"
+              />
+              <span className="text-sm text-foreground/60">
+                {refreshInterval ? `${refreshInterval} minutes` : "Using default"}
+              </span>
+              {refreshInterval && (
+                <button
+                  onClick={() => setRefreshInterval(null)}
+                  className="text-xs text-primary hover:text-primary/80"
+                >
+                  Reset to default
+                </button>
+              )}
+            </div>
+            <p className="mt-2 text-xs text-foreground/50">
+              Valid range: 15-1440 minutes
+            </p>
+          </CardBody>
+        </Card>
 
         {/* Max Articles Per Feed */}
-        <div className="rounded-lg border border-border bg-background p-5">
-          <label className="mb-2 block text-sm font-medium">
-            Max Articles Per Feed
-          </label>
-          <p className="mb-3 text-xs text-foreground/60">
-            Maximum number of articles to keep for each feed in this category
-          </p>
-          <div className="flex items-center gap-3">
-            <input
-              type="number"
-              value={maxArticlesPerFeed ?? ""}
-              onChange={(e) => setMaxArticlesPerFeed(e.target.value ? Number(e.target.value) : null)}
-              placeholder="Default: 1000"
-              min={50}
-              max={5000}
-              className="w-40 rounded-lg border border-border px-3 py-2 text-sm"
-            />
-            <span className="text-sm text-foreground/60">
-              {maxArticlesPerFeed ? `${maxArticlesPerFeed} articles` : "Using default"}
-            </span>
-            {maxArticlesPerFeed && (
-              <button
-                onClick={() => setMaxArticlesPerFeed(null)}
-                className="text-xs text-primary hover:text-primary/80"
-              >
-                Reset to default
-              </button>
-            )}
-          </div>
-          <p className="mt-2 text-xs text-foreground/50">
-            Valid range: 50-5000 articles
-          </p>
-        </div>
+        <Card className="bg-background">
+          <CardBody>
+            <label className="mb-2 block text-sm font-medium">
+              Max Articles Per Feed
+            </label>
+            <p className="mb-3 text-xs text-foreground/60">
+              Maximum number of articles to keep for each feed in this category
+            </p>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                value={maxArticlesPerFeed ?? ""}
+                onChange={(e) => setMaxArticlesPerFeed(e.target.value ? Number(e.target.value) : null)}
+                placeholder="Default: 1000"
+                min={50}
+                max={5000}
+                className="w-40 rounded-lg border border-border px-3 py-2 text-sm"
+              />
+              <span className="text-sm text-foreground/60">
+                {maxArticlesPerFeed ? `${maxArticlesPerFeed} articles` : "Using default"}
+              </span>
+              {maxArticlesPerFeed && (
+                <button
+                  onClick={() => setMaxArticlesPerFeed(null)}
+                  className="text-xs text-primary hover:text-primary/80"
+                >
+                  Reset to default
+                </button>
+              )}
+            </div>
+            <p className="mt-2 text-xs text-foreground/50">
+              Valid range: 50-5000 articles
+            </p>
+          </CardBody>
+        </Card>
 
         {/* Max Article Age */}
-        <div className="rounded-lg border border-border bg-background p-5">
-          <label className="mb-2 block text-sm font-medium">
-            Max Article Age (days)
-          </label>
-          <p className="mb-3 text-xs text-foreground/60">
-            How long to keep articles before automatically deleting them
-          </p>
-          <div className="flex items-center gap-3">
-            <input
-              type="number"
-              value={maxArticleAge ?? ""}
-              onChange={(e) => setMaxArticleAge(e.target.value ? Number(e.target.value) : null)}
-              placeholder="Default: 90"
-              min={1}
-              max={365}
-              className="w-40 rounded-lg border border-border px-3 py-2 text-sm"
-            />
-            <span className="text-sm text-foreground/60">
-              {maxArticleAge ? `${maxArticleAge} days` : "Using default"}
-            </span>
-            {maxArticleAge && (
-              <button
-                onClick={() => setMaxArticleAge(null)}
-                className="text-xs text-primary hover:text-primary/80"
-              >
-                Reset to default
+        <Card className="bg-background">
+          <CardBody>
+            <label className="mb-2 block text-sm font-medium">
+              Max Article Age (days)
+            </label>
+            <p className="mb-3 text-xs text-foreground/60">
+              How long to keep articles before automatically deleting them
+            </p>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                value={maxArticleAge ?? ""}
+                onChange={(e) => setMaxArticleAge(e.target.value ? Number(e.target.value) : null)}
+                placeholder="Default: 90"
+                min={1}
+                max={365}
+                className="w-40 rounded-lg border border-border px-3 py-2 text-sm"
+              />
+              <span className="text-sm text-foreground/60">
+                {maxArticleAge ? `${maxArticleAge} days` : "Using default"}
+              </span>
+              {maxArticleAge && (
+                <button
+                  onClick={() => setMaxArticleAge(null)}
+                  className="text-xs text-primary hover:text-primary/80"
+                >
+                  Reset to default
               </button>
             )}
           </div>
           <p className="mt-2 text-xs text-foreground/50">
             Valid range: 1-365 days
           </p>
-        </div>
+          </CardBody>
+        </Card>
 
         {/* Save/Reset Actions */}
         <div className="flex items-center gap-3 pt-4 border-t border-border">
@@ -1623,7 +1643,8 @@ function FeedSettingsView({
       <div className="mb-6 space-y-4">
         <h3 className="text-base font-semibold">Advanced Settings</h3>
 
-        <div className="space-y-4 rounded-lg border border-border bg-background p-4">
+        <Card className="bg-background">
+          <CardBody className="space-y-4">
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -1668,7 +1689,8 @@ function FeedSettingsView({
               How to combine extracted content with RSS content
             </p>
           </div>
-        </div>
+          </CardBody>
+        </Card>
       </div>
 
       {/* Re-extract Articles Section */}
@@ -1676,8 +1698,9 @@ function FeedSettingsView({
         <div className="mb-6 space-y-4">
           <h3 className="text-base font-semibold">Re-extract Existing Articles</h3>
 
-          <div className="space-y-4 rounded-lg border border-border bg-background p-4">
-            <div className="rounded-lg bg-primary/10 p-3 dark:bg-primary/20">
+          <Card className="bg-background">
+            <CardBody className="space-y-4">
+              <div className="rounded-lg bg-primary/10 p-3 dark:bg-primary/20">
               <p className="text-xs text-primary/80 dark:text-primary/90">
                 <strong>When to use:</strong> If you changed the extraction method or merge strategy above,
                 you can re-extract recent articles to apply the new settings. This is especially useful when
@@ -1709,7 +1732,8 @@ function FeedSettingsView({
             >
               {isRefreshingArticles ? "Re-extracting..." : `Re-extract Last ${articlesToRefresh} Articles`}
             </button>
-          </div>
+            </CardBody>
+          </Card>
         </div>
       )}
 
@@ -1735,8 +1759,9 @@ function FeedSettingsView({
             </p>
           </div>
         ) : (
-          <div className="space-y-4 rounded-lg border border-border bg-background p-4">
-            {/* Enable Toggle */}
+          <Card className="bg-background">
+            <CardBody className="space-y-4">
+              {/* Enable Toggle */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <input
@@ -1820,7 +1845,8 @@ function FeedSettingsView({
                 </div>
               </>
             )}
-          </div>
+            </CardBody>
+          </Card>
         )}
       </div>
 

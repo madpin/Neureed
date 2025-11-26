@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useState, useRef, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { UserMenu } from "@/app/components/auth/UserMenu";
 import { ArticleSortDropdown } from "@/app/components/articles/ArticleSortDropdown";
 import { NotificationBell } from "@/app/components/notifications/NotificationBell";
@@ -35,11 +35,15 @@ export function MainLayout({
   isLoadingArticles
 }: MainLayoutProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: preferences } = useUserPreferences();
   const updatePreference = useUpdatePreference();
 
   const isSidebarCollapsed = preferences?.sidebarCollapsed ?? false;
   const storedSidebarWidth = preferences?.sidebarWidth ?? 20;
+
+  // Track expected params to avoid navigation loops in React Strict Mode
+  const expectedParamsRef = useRef<URLSearchParams | null>(null);
 
   // Local state for resizing
   const [currentSidebarWidth, setCurrentSidebarWidth] = useState(storedSidebarWidth);
@@ -149,11 +153,40 @@ export function MainLayout({
     setIsSaveSearchModalOpen(true);
   }, []);
 
+  // Initialize and sync ref with searchParams
+  useEffect(() => {
+    expectedParamsRef.current = new URLSearchParams(searchParams.toString());
+  }, [searchParams]);
+
+  const pushWithPreservedParams = useCallback((updates: Record<string, string | null>) => {
+    // Use ref instead of searchParams directly to avoid dependency that causes navigation loops
+    if (!expectedParamsRef.current) {
+      expectedParamsRef.current = new URLSearchParams(searchParams.toString());
+    }
+
+    const currentParams = new URLSearchParams(expectedParamsRef.current.toString());
+
+    // Apply updates (null means delete the param)
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null) {
+        currentParams.delete(key);
+      } else {
+        currentParams.set(key, value);
+      }
+    });
+
+    const paramsString = currentParams.toString();
+    router.push(paramsString ? `/?${paramsString}` : '/');
+
+    // Update ref with new expected params
+    expectedParamsRef.current = currentParams;
+  }, [router, searchParams]);
+
   // Search handlers
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim().length >= 2) {
-      router.push(`/?search=${encodeURIComponent(searchQuery.trim())}`);
+      pushWithPreservedParams({ search: searchQuery.trim() });
       setSearchQuery("");
       setIsSearchOpen(false);
     }

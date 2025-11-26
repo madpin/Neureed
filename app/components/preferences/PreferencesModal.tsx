@@ -8,15 +8,18 @@ import { DraggableOrderEditor } from "./DraggableOrderEditor";
 import { ArticleCard, type ArticleDisplayPreferences } from "@/app/components/articles/ArticleCard";
 import { useUserPreferences, useUpdateUserPreferences, useResetPatterns, type UserPreferences } from "@/hooks/queries/use-user-preferences";
 import { applyFontSizeVariables } from "@/lib/typography-utils";
+import { ToggleSwitch, Modal, ModalBody, ModalFooter, Button, Card, CardHeader, CardBody } from "@/app/components/ui";
 
 type ViewType = 'profile' | 'appearance' | 'articleDisplay' | 'reading' | 'learning' | 'llm' | 'feeds';
 
 interface PreferencesModalProps {
+  isOpen: boolean;
   onClose: () => void;
   initialView?: ViewType;
 }
 
 export function PreferencesModal({
+  isOpen,
   onClose,
   initialView = 'profile',
 }: PreferencesModalProps) {
@@ -31,7 +34,6 @@ export function PreferencesModal({
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const modalRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isShowingUnsavedDialog = useRef(false);
 
@@ -398,12 +400,9 @@ export function PreferencesModal({
     };
   }, [initialView]);
 
-  // Handle click outside modal
+  // Handle click outside mobile dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        handleCloseWithHistory();
-      }
       // Close mobile dropdown when clicking outside
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsMobileMenuOpen(false);
@@ -412,15 +411,15 @@ export function PreferencesModal({
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [localPreferences, originalPreferences]);
+  }, []);
 
   if (isLoading && !localPreferences) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-        <div className="flex h-[90vh] w-full max-w-6xl items-center justify-center rounded-lg bg-background shadow-xl">
+      <Modal isOpen={isOpen} onClose={onClose} size="xl">
+        <ModalBody className="flex h-[70vh] items-center justify-center">
           <div className="text-gray-500">Loading...</div>
-        </div>
-      </div>
+        </ModalBody>
+      </Modal>
     );
   }
 
@@ -429,8 +428,8 @@ export function PreferencesModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 md:p-6">
-      <div ref={modalRef} className="flex h-full md:h-[90vh] w-full max-w-6xl overflow-hidden rounded-lg bg-background shadow-xl">
+    <Modal isOpen={isOpen} onClose={handleCloseWithHistory} size="xl">
+      <ModalBody padding={false} className="flex h-[70vh] overflow-hidden">
         {/* Sidebar Navigation - Desktop Only */}
         <aside className="hidden md:flex w-52 flex-shrink-0 border-r border-border bg-muted">
           <div className="flex h-full flex-col">
@@ -453,17 +452,6 @@ export function PreferencesModal({
                 </button>
               ))}
             </nav>
-            <div className="border-t border-border p-2">
-              <button
-                onClick={handleCloseWithHistory}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-muted"
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                <span>Close</span>
-              </button>
-            </div>
           </div>
         </aside>
 
@@ -541,28 +529,25 @@ export function PreferencesModal({
               <LLMView preferences={localPreferences} updatePreference={updatePreference} />
             )}
           </div>
-
-          {/* Save Button Footer */}
-          <div className="border-t border-border bg-background p-4 flex-shrink-0">
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={handleClose}
-                className="btn btn-outline"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="btn btn-primary"
-              >
-                {isSaving ? "Saving..." : "Save Preferences"}
-              </button>
-            </div>
-          </div>
         </main>
-      </div>
-    </div>
+      </ModalBody>
+      <ModalFooter>
+        <Button
+          variant="outline"
+          onClick={handleClose}
+        >
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          onClick={handleSave}
+          disabled={isSaving}
+          loading={isSaving}
+        >
+          Save Preferences
+        </Button>
+      </ModalFooter>
+    </Modal>
   );
 }
 
@@ -649,12 +634,13 @@ function AppearanceView({
         </div>
 
         {/* Section-Specific Font Sizes */}
-        <div className="rounded-lg border border-border bg-muted/50 p-4">
-          <h3 className="mb-3 text-base font-semibold">Section-Specific Font Sizes</h3>
-          <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-            Customize text sizes for different sections relative to your main font size.
-            &quot;Smaller&quot; is -2px, &quot;Same&quot; is ±0, &quot;Larger&quot; is +2px.
-          </p>
+        <Card className="bg-muted/50">
+          <CardHeader title="Section-Specific Font Sizes" />
+          <CardBody>
+            <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+              Customize text sizes for different sections relative to your main font size.
+              &quot;Smaller&quot; is -2px, &quot;Same&quot; is ±0, &quot;Larger&quot; is +2px.
+            </p>
 
           <div className="space-y-4">
             {/* Sidebar Font Size */}
@@ -736,7 +722,8 @@ function AppearanceView({
               </div>
             </div>
           </div>
-        </div>
+          </CardBody>
+        </Card>
 
         {/* Default View */}
         <div>
@@ -768,11 +755,12 @@ function ReadingView({
       <h2 className="mb-6 text-2xl font-bold">Reading Preferences</h2>
       <div className="space-y-6">
         {/* Reading Mode Section */}
-        <div className="rounded-lg border border-border bg-muted p-6">
-          <h3 className="mb-4 text-lg font-semibold">Reading Mode</h3>
-          <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-            Choose how articles open when you click them in the feed.
-          </p>
+        <Card className="bg-muted">
+          <CardHeader title="Reading Mode" />
+          <CardBody>
+            <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+              Choose how articles open when you click them in the feed.
+            </p>
 
           <div className="space-y-4">
             {/* Reading Mode Selector */}
@@ -899,7 +887,8 @@ function ReadingView({
               </div>
             )}
           </div>
-        </div>
+          </CardBody>
+        </Card>
 
         {/* Articles Per Page */}
         <div>
@@ -1036,13 +1025,15 @@ function LearningView({
         </div>
 
         {/* Reset Button */}
-        <div className="rounded-lg border border-border bg-muted p-4">
-          <h3 className="mb-2 text-sm font-semibold">Learned Patterns</h3>
-          <p className="mb-3 text-xs text-gray-600 dark:text-gray-400">
-            The system learns from your feedback to personalize article recommendations
-          </p>
-          <ResetPatternsButton />
-        </div>
+        <Card className="bg-muted">
+          <CardHeader title="Learned Patterns" />
+          <CardBody>
+            <p className="mb-3 text-xs text-gray-600 dark:text-gray-400">
+              The system learns from your feedback to personalize article recommendations
+            </p>
+            <ResetPatternsButton />
+          </CardBody>
+        </Card>
       </div>
     </div>
   );
@@ -1061,12 +1052,14 @@ function LLMView({
   return (
     <div>
       <h2 className="mb-6 text-2xl font-bold">LLM Settings</h2>
-      <div className="mb-4 rounded-lg border border-primary/20 bg-primary/10 p-4 dark:border-primary/30 dark:bg-primary/20">
-        <p className="text-sm text-primary dark:text-primary">
-          Configure your personal LLM settings for article summarization and key points extraction.
-          Leave blank to use system defaults.
-        </p>
-      </div>
+      <Card className="mb-4 border-primary/20 bg-primary/10 dark:border-primary/30 dark:bg-primary/20">
+        <CardBody>
+          <p className="text-sm text-primary dark:text-primary">
+            Configure your personal LLM settings for article summarization and key points extraction.
+            Leave blank to use system defaults.
+          </p>
+        </CardBody>
+      </Card>
       <div className="space-y-6">
         {/* LLM Provider */}
         <div>
@@ -1315,31 +1308,33 @@ function ArticleDisplayView({
       
       <div className="space-y-8">
         {/* Live Preview - Sticky */}
-        <div className="sticky top-0 z-10 rounded-lg border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-6 shadow-lg backdrop-blur-sm">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-foreground">Live Preview</h3>
-              <p className="text-sm text-foreground/70">
-                Changes apply instantly as you customize
-              </p>
+        <Card className="sticky top-0 z-10 border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent shadow-lg backdrop-blur-sm">
+          <CardBody>
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">Live Preview</h3>
+                <p className="text-sm text-foreground/70">
+                  Changes apply instantly as you customize
+                </p>
+              </div>
+              <div className="rounded-full bg-green-500/20 px-3 py-1 text-xs font-medium text-green-600 dark:text-green-400">
+                ● Real-time
+              </div>
             </div>
-            <div className="rounded-full bg-green-500/20 px-3 py-1 text-xs font-medium text-green-600 dark:text-green-400">
-              ● Real-time
+
+            <div className="rounded-lg border border-border bg-background p-4">
+              <div className={previewSpacingClass}>
+                {sampleArticles.map((article) => (
+                  <ArticleCard
+                    key={article.id}
+                    article={article as any}
+                    displayPreferences={displayPreferences}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
-          
-          <div className="rounded-lg border border-border bg-background p-4">
-            <div className={previewSpacingClass}>
-              {sampleArticles.map((article) => (
-                <ArticleCard 
-                  key={article.id}
-                  article={article as any}
-                  displayPreferences={displayPreferences}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
+          </CardBody>
+        </Card>
 
         {/* Density Presets */}
         <div>
@@ -1375,58 +1370,61 @@ function ArticleDisplayView({
         </div>
 
         {/* Component Visibility Toggles */}
-        <div className="rounded-lg border border-border bg-muted p-6">
-          <h3 className="mb-4 text-lg font-semibold">Show/Hide Components</h3>
-          <p className="mb-4 text-sm text-foreground/70">
-            Choose which elements to display in article cards
-          </p>
-          
-          <div className="space-y-4">
-            <ToggleSwitch
-              label="Show Feed Information"
-              description="Display feed icon and name"
-              checked={preferences.showArticleFeedInfo ?? true}
-              onChange={(checked) => updatePreference("showArticleFeedInfo", checked)}
-            />
-            
-            <ToggleSwitch
-              label="Show Article Images"
-              description="Display featured images when available"
-              checked={preferences.showArticleImage ?? true}
-              onChange={(checked) => updatePreference("showArticleImage", checked)}
-            />
-            
-            <ToggleSwitch
-              label="Show Excerpts"
-              description="Display article summaries/descriptions"
-              checked={preferences.showArticleExcerpt ?? true}
-              onChange={(checked) => updatePreference("showArticleExcerpt", checked)}
-            />
-            
-            <ToggleSwitch
-              label="Show Author Names"
-              description="Display article author when available"
-              checked={preferences.showArticleAuthor ?? true}
-              onChange={(checked) => updatePreference("showArticleAuthor", checked)}
-            />
-            
-            <ToggleSwitch
-              label="Show Publication Dates"
-              description="Display when articles were published"
-              checked={preferences.showArticleDate ?? true}
-              onChange={(checked) => updatePreference("showArticleDate", checked)}
-            />
-          </div>
-        </div>
+        <Card className="bg-muted">
+          <CardBody>
+            <h3 className="mb-4 text-lg font-semibold">Show/Hide Components</h3>
+            <p className="mb-4 text-sm text-foreground/70">
+              Choose which elements to display in article cards
+            </p>
+
+            <div className="space-y-4">
+              <ToggleSwitch
+                label="Show Feed Information"
+                description="Display feed icon and name"
+                checked={preferences.showArticleFeedInfo ?? true}
+                onChange={(checked) => updatePreference("showArticleFeedInfo", checked)}
+              />
+
+              <ToggleSwitch
+                label="Show Article Images"
+                description="Display featured images when available"
+                checked={preferences.showArticleImage ?? true}
+                onChange={(checked) => updatePreference("showArticleImage", checked)}
+              />
+
+              <ToggleSwitch
+                label="Show Excerpts"
+                description="Display article summaries/descriptions"
+                checked={preferences.showArticleExcerpt ?? true}
+                onChange={(checked) => updatePreference("showArticleExcerpt", checked)}
+              />
+
+              <ToggleSwitch
+                label="Show Author Names"
+                description="Display article author when available"
+                checked={preferences.showArticleAuthor ?? true}
+                onChange={(checked) => updatePreference("showArticleAuthor", checked)}
+              />
+
+              <ToggleSwitch
+                label="Show Publication Dates"
+                description="Display when articles were published"
+                checked={preferences.showArticleDate ?? true}
+                onChange={(checked) => updatePreference("showArticleDate", checked)}
+              />
+            </div>
+          </CardBody>
+        </Card>
 
         {/* Border Appearance */}
-        <div className="rounded-lg border border-border bg-muted p-6">
-          <h3 className="mb-4 text-lg font-semibold">Border Appearance</h3>
-          <p className="mb-6 text-sm text-foreground/70">
-            Customize borders to create a card-like or table-like appearance
-          </p>
-          
-          <div className="space-y-6">
+        <Card className="bg-muted">
+          <CardBody>
+            <h3 className="mb-4 text-lg font-semibold">Border Appearance</h3>
+            <p className="mb-6 text-sm text-foreground/70">
+              Customize borders to create a card-like or table-like appearance
+            </p>
+
+            <div className="space-y-6">
             {/* Border Width */}
             <div>
               <label className="mb-3 block text-sm font-medium">Border Width</label>
@@ -1585,24 +1583,29 @@ function ArticleDisplayView({
                 ))}
               </div>
             </div>
-          </div>
-        </div>
+            </div>
+          </CardBody>
+        </Card>
 
         {/* Section Order Customization */}
-        <div className="rounded-lg border border-border bg-muted p-6">
-          <DraggableOrderEditor
-            sections={(preferences.articleCardSectionOrder as string[]) || ["feedInfo", "title", "excerpt", "actions"]}
-            onReorder={(newOrder) => updatePreference("articleCardSectionOrder", newOrder)}
-          />
-        </div>
+        <Card className="bg-muted">
+          <CardBody>
+            <DraggableOrderEditor
+              sections={(preferences.articleCardSectionOrder as string[]) || ["feedInfo", "title", "excerpt", "actions"]}
+              onReorder={(newOrder) => updatePreference("articleCardSectionOrder", newOrder)}
+            />
+          </CardBody>
+        </Card>
 
         {/* Info Box */}
-        <div className="rounded-lg border border-primary/20 bg-primary/10 p-4 dark:border-primary/30 dark:bg-primary/20">
-          <p className="text-sm text-primary dark:text-primary">
-            💡 <strong>Tip:</strong> Watch the live preview above update instantly as you make changes. 
-            All adjustments apply immediately to your feeds. You can reset to defaults anytime by selecting a density preset.
-          </p>
-        </div>
+        <Card className="border-primary/20 bg-primary/10 dark:border-primary/30 dark:bg-primary/20">
+          <CardBody padding={false} className="p-4">
+            <p className="text-sm text-primary dark:text-primary">
+              💡 <strong>Tip:</strong> Watch the live preview above update instantly as you make changes.
+              All adjustments apply immediately to your feeds. You can reset to defaults anytime by selecting a density preset.
+            </p>
+          </CardBody>
+        </Card>
       </div>
     </div>
   );
@@ -1636,35 +1639,3 @@ function ResetPatternsButton() {
 }
 
 // Toggle Switch Component
-function ToggleSwitch({
-  label,
-  description,
-  checked,
-  onChange,
-}: {
-  label: string;
-  description: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}) {
-  return (
-    <div className="flex items-center justify-between">
-      <div>
-        <label className="text-sm font-medium">{label}</label>
-        <p className="text-xs text-gray-600 dark:text-gray-400">{description}</p>
-      </div>
-      <button
-        onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-          checked ? "bg-blue-600" : "bg-muted"
-        }`}
-      >
-        <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-            checked ? "translate-x-6" : "translate-x-1"
-          }`}
-        />
-      </button>
-    </div>
-  );
-}

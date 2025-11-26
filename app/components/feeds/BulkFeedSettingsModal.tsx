@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import type { UserFeed } from "@/hooks/queries/use-feeds";
+import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from "@/app/components/ui";
 
 interface BulkFeedSettingsModalProps {
+  isOpen: boolean;
   selectedFeeds: UserFeed[];
   onClose: () => void;
   onApply: (settings: BulkSettings) => Promise<void>;
@@ -26,6 +28,7 @@ const DEFAULTS = {
 };
 
 export function BulkFeedSettingsModal({
+  isOpen,
   selectedFeeds,
   onClose,
   onApply,
@@ -113,18 +116,16 @@ export function BulkFeedSettingsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-2xl rounded-lg bg-background border border-border shadow-xl">
-        {/* Header */}
-        <div className="border-b border-border p-6">
+    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+      <ModalHeader onClose={onClose}>
+        <div>
           <h2 className="text-xl font-semibold">Bulk Edit Feed Settings</h2>
           <p className="mt-1 text-sm text-foreground/60">
             Apply settings to {selectedFeeds.length} selected feed{selectedFeeds.length > 1 ? 's' : ''}
           </p>
         </div>
-
-        {/* Content */}
-        <div className="max-h-[60vh] overflow-y-auto p-6 space-y-5 custom-scrollbar">
+      </ModalHeader>
+      <ModalBody className="space-y-5">
           {/* Selected Feeds Preview */}
           <div>
             <h3 className="text-sm font-medium mb-2 text-foreground/70">Selected Feeds</h3>
@@ -336,41 +337,39 @@ export function BulkFeedSettingsModal({
               </div>
             </div>
           </div>
+      </ModalBody>
+      <ModalFooter align="between">
+        <div className="text-sm text-foreground/60">
+          {modifiedFields.size > 0 ? (
+            <span className="flex items-center gap-1.5">
+              <svg className="h-4 w-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {modifiedFields.size} setting{modifiedFields.size > 1 ? 's' : ''} will be updated
+            </span>
+          ) : (
+            <span>No changes made</span>
+          )}
         </div>
-
-        {/* Footer */}
-        <div className="border-t border-border p-4 flex items-center justify-between">
-          <div className="text-sm text-foreground/60">
-            {modifiedFields.size > 0 ? (
-              <span className="flex items-center gap-1.5">
-                <svg className="h-4 w-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {modifiedFields.size} setting{modifiedFields.size > 1 ? 's' : ''} will be updated
-              </span>
-            ) : (
-              <span>No changes made</span>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              disabled={isApplying}
-              className="btn btn-outline"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleApply}
-              disabled={isApplying || modifiedFields.size === 0}
-              className="btn btn-primary"
-            >
-              {isApplying ? "Applying..." : "Apply to Selected"}
-            </button>
-          </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={isApplying}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleApply}
+            disabled={isApplying || modifiedFields.size === 0}
+            loading={isApplying}
+          >
+            Apply to Selected
+          </Button>
         </div>
-      </div>
-    </div>
+      </ModalFooter>
+    </Modal>
   );
 }
 

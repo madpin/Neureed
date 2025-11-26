@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useImportOpml } from "@/hooks/queries/use-opml";
+import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from "@/app/components/ui";
 
 interface ImportSummary {
   totalFeeds: number;
@@ -18,11 +19,12 @@ interface ImportError {
 }
 
 interface OpmlImportModalProps {
+  isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
 }
 
-export function OpmlImportModal({ onClose, onSuccess }: OpmlImportModalProps) {
+export function OpmlImportModal({ isOpen, onClose, onSuccess }: OpmlImportModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,23 +32,10 @@ export function OpmlImportModal({ onClose, onSuccess }: OpmlImportModalProps) {
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [importErrors, setImportErrors] = useState<ImportError[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const modalRef = useRef<HTMLDivElement>(null);
 
   // Use React Query mutation
   const importMutation = useImportOpml();
   const importing = importMutation.isPending;
-
-  // Handle click outside modal
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        onClose();
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [onClose]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -142,25 +131,9 @@ export function OpmlImportModal({ onClose, onSuccess }: OpmlImportModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div ref={modalRef} className="w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-lg border border-border bg-background shadow-xl border-border bg-background">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-6 py-4 border-border">
-          <h2 className="text-xl font-semibold text-foreground">
-            Import Feeds (OPML)
-          </h2>
-          <button
-            onClick={handleClose}
-            className="rounded-lg p-2 hover:bg-muted"
-          >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="overflow-y-auto p-6" style={{ maxHeight: "calc(90vh - 180px)" }}>
+    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+      <ModalHeader title="Import Feeds (OPML)" onClose={handleClose} />
+      <ModalBody>
           {success && summary ? (
             /* Success View */
             <div className="space-y-4">
@@ -325,39 +298,27 @@ export function OpmlImportModal({ onClose, onSuccess }: OpmlImportModalProps) {
               </div>
             </div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4 border-border">
-          <button
-            onClick={handleClose}
-            disabled={importing}
-            className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50 border-border"
+      </ModalBody>
+      <ModalFooter>
+        <Button
+          variant="outline"
+          onClick={handleClose}
+          disabled={importing}
+        >
+          {success ? "Done" : "Cancel"}
+        </Button>
+        {!success && (
+          <Button
+            variant="primary"
+            onClick={handleImport}
+            disabled={!file || importing}
+            loading={importing}
           >
-            {success ? "Done" : "Cancel"}
-          </button>
-          {!success && (
-            <button
-              onClick={handleImport}
-              disabled={!file || importing}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            >
-              {importing ? (
-                <span className="flex items-center gap-2">
-                  <svg className="h-4 w-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Importing...
-                </span>
-              ) : (
-                "Import OPML"
-              )}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+            Import OPML
+          </Button>
+        )}
+      </ModalFooter>
+    </Modal>
   );
 }
 

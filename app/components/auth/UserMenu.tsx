@@ -258,12 +258,11 @@ export function UserMenu() {
       )}
 
       {/* Preferences Modal */}
-      {preferencesModalOpen && (
-        <PreferencesModal
-          initialView={preferencesView}
-          onClose={() => setPreferencesModalOpen(false)}
-        />
-      )}
+      <PreferencesModal
+        isOpen={preferencesModalOpen}
+        initialView={preferencesView}
+        onClose={() => setPreferencesModalOpen(false)}
+      />
     </div>
   );
 }

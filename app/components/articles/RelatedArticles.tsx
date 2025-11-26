@@ -5,6 +5,7 @@ import Link from "next/link";
 import { formatLocalizedDate } from "@/lib/date-utils";
 import { useUserPreferences } from "@/hooks/queries/use-user-preferences";
 import { useRelatedArticles } from "@/hooks/queries/use-articles";
+import { Card, CardHeader, CardBody } from "@/app/components/ui";
 
 interface RelatedArticle {
   id: string;
@@ -49,19 +50,19 @@ export function RelatedArticles({
 
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-border bg-background p-6">
-        <h3 className="mb-4 text-lg font-semibold text-foreground">
-          Related Articles
-        </h3>
-        <div className="space-y-4">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="animate-pulse">
-              <div className="h-4 w-3/4 rounded bg-muted"></div>
-              <div className="mt-2 h-3 w-full rounded bg-muted"></div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <Card>
+        <CardHeader title="Related Articles" />
+        <CardBody>
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="h-4 w-3/4 rounded bg-muted"></div>
+                <div className="mt-2 h-3 w-full rounded bg-muted"></div>
+              </div>
+            ))}
+          </div>
+        </CardBody>
+      </Card>
     );
   }
 
@@ -99,24 +100,22 @@ export function RelatedArticles({
 
   if (articles.length === 0) {
     return (
-      <div className="rounded-lg border border-border bg-background p-6">
-        <h3 className="mb-4 text-lg font-semibold text-foreground">
-          Related Articles
-        </h3>
-        <p className="text-sm text-foreground/70">
-          No related articles found
-        </p>
-      </div>
+      <Card>
+        <CardHeader title="Related Articles" />
+        <CardBody>
+          <p className="text-sm text-foreground/70">
+            No related articles found
+          </p>
+        </CardBody>
+      </Card>
     );
   }
 
   return (
-    <div className="rounded-lg border border-border bg-background p-6">
-      <h3 className="mb-4 text-lg font-semibold text-foreground">
-        Related Articles
-      </h3>
-
-      <div className="space-y-4">
+    <Card>
+      <CardHeader title="Related Articles" />
+      <CardBody>
+        <div className="space-y-4">
         {articles.map((article) => (
           <Link
             key={article.id}
@@ -177,8 +176,9 @@ export function RelatedArticles({
             </div>
           </Link>
         ))}
-      </div>
-    </div>
+        </div>
+      </CardBody>
+    </Card>
   );
 }
 

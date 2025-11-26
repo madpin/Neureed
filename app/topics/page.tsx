@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { EmptyState } from "@/app/components/layout/EmptyState";
+import { EmptyState } from "@/app/components/ui/EmptyState";
+import { Card, CardHeader, CardBody } from "@/app/components/ui";
 import { useTopicsWithCounts } from "@/hooks/queries/use-articles";
 
 export default function TopicsPage() {
@@ -71,20 +72,22 @@ export default function TopicsPage() {
           </div>
         ) : filteredTopics.length === 0 ? (
           <EmptyState
-            icon={
-              <svg
-                className="h-16 w-16"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-                />
-              </svg>
+            illustration={
+              <div className="mb-4 flex justify-center">
+                <svg
+                  className="h-16 w-16 text-foreground/50"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                  />
+                </svg>
+              </div>
             }
             title="No topics found"
             description={
@@ -96,52 +99,50 @@ export default function TopicsPage() {
         ) : (
           <>
             {/* Topic Cloud */}
-            <div className="mb-8 rounded-lg border border-border bg-background p-8 shadow-sm">
-              <h2 className="mb-6 text-xl font-bold text-foreground">
-                Visual Cloud
-              </h2>
-              <div className="flex flex-wrap items-center justify-center gap-4">
-                {filteredTopics.slice(0, 50).map((topic) => (
-                  <Link
-                    key={topic.topic}
-                    href={`/topics/${encodeURIComponent(topic.topic)}`}
-                    className={`font-semibold transition-colors hover:underline ${getColor(
-                      topic.count
-                    )}`}
-                    style={{ fontSize: `${getFontSize(topic.count)}px` }}
-                  >
-                    {topic.topic}
-                  </Link>
-                ))}
-              </div>
-            </div>
+            <Card className="mb-8" padding>
+              <CardHeader title="Visual Cloud" />
+              <CardBody>
+                <div className="flex flex-wrap items-center justify-center gap-4">
+                  {filteredTopics.slice(0, 50).map((topic) => (
+                    <Link
+                      key={topic.topic}
+                      href={`/topics/${encodeURIComponent(topic.topic)}`}
+                      className={`font-semibold transition-colors hover:underline ${getColor(
+                        topic.count
+                      )}`}
+                      style={{ fontSize: `${getFontSize(topic.count)}px` }}
+                    >
+                      {topic.topic}
+                    </Link>
+                  ))}
+                </div>
+              </CardBody>
+            </Card>
 
             {/* Topic List */}
-            <div className="rounded-lg border border-border bg-background shadow-sm">
-              <div className="border-b border-border p-4">
-                <h2 className="text-xl font-bold text-foreground">
-                  All Topics ({filteredTopics.length})
-                </h2>
-              </div>
-              <div className="divide-y divide-border">
-                {filteredTopics.map((topic) => (
-                  <Link
-                  key={topic.topic}
-                  href={`/topics/${encodeURIComponent(topic.topic)}`}
-                  className="block p-4 transition-colors hover:bg-muted"
-                >
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-foreground">
-                        {topic.topic}
-                      </span>
-                      <span className="rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                        {topic.count} article{topic.count !== 1 ? "s" : ""}
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
+            <Card>
+              <CardHeader title={`All Topics (${filteredTopics.length})`} />
+              <CardBody padding={false}>
+                <div className="divide-y divide-border">
+                  {filteredTopics.map((topic) => (
+                    <Link
+                    key={topic.topic}
+                    href={`/topics/${encodeURIComponent(topic.topic)}`}
+                    className="block p-4 transition-colors hover:bg-muted"
+                  >
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-foreground">
+                          {topic.topic}
+                        </span>
+                        <span className="rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                          {topic.count} article{topic.count !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </CardBody>
+            </Card>
           </>
         )}
       </div>

@@ -100,7 +100,7 @@ export class ReadabilityExtractor extends BaseExtractor {
       }
 
       // Clean and sanitize content
-      const cleanContent = sanitizeHtml(article.content);
+      const cleanContent = sanitizeHtml(article.content || "");
 
       // Extract metadata
       const metadata = this.extractMetadata(document);
@@ -121,7 +121,7 @@ export class ReadabilityExtractor extends BaseExtractor {
         `[Readability] Successfully extracted: ${article.title} (${cleanContent.length} chars)`
       );
 
-      return this.createSuccessResult(article.title, cleanContent, {
+      return this.createSuccessResult(article.title || "Untitled", cleanContent, {
         excerpt,
         author: article.byline || metadata.author,
         publishedAt,

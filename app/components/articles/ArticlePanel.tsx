@@ -6,7 +6,7 @@ import { ArticleToolbar, ViewMode } from "./ArticleToolbar";
 import { ArticleSummary, ArticleSummaryRef } from "./ArticleSummary";
 import { ArticleFeedbackSection } from "./ArticleFeedbackSection";
 import { RelatedArticles } from "./RelatedArticles";
-import { LoadingSpinner } from "@/app/components/layout/LoadingSpinner";
+import { LoadingSpinner } from "@/app/components/ui/LoadingSpinner";
 import { processArticleContent, estimateReadingTime } from "@/lib/content-processor";
 import { formatLocalizedDateTime, toISOString as formatISOString } from "@/lib/date-utils";
 import { useArticle } from "@/hooks/queries/use-articles";
@@ -141,7 +141,7 @@ export function ArticlePanel({ articleId, onClose, onReadStatusChange, variant =
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center bg-background">
-        <LoadingSpinner size="lg" text="Loading article..." />
+        <LoadingSpinner size="lg" label="Loading article..." />
       </div>
     );
   }

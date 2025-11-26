@@ -37,7 +37,7 @@ export const GET = createHandler(
 const updateCategorySchema = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().max(500).optional().nullable().transform(val => val ?? undefined),
-  settings: z.record(z.any()).optional().nullable().transform(val => val ?? undefined),
+  settings: z.record(z.string(), z.any()).optional().nullable().transform(val => val ?? undefined),
   icon: z.string().optional(),
 });
 

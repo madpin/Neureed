@@ -12,8 +12,8 @@ import { AddFeedForm } from "./components/feeds/AddFeedForm";
 import { FeedBrowser } from "./components/feeds/FeedBrowser";
 import { IconPicker } from "./components/feeds/IconPicker";
 import { ArticleList } from "./components/articles/ArticleList";
-import { Tooltip } from "./components/layout/Tooltip";
-import { LoadingSpinner } from "./components/layout/LoadingSpinner";
+import { Tooltip } from "./components/ui";
+import { LoadingSpinner } from "@/app/components/ui/LoadingSpinner";
 import { LandingPage } from "./components/landing/LandingPage";
 import type { ArticleSortOrder, ArticleSortDirection } from "@/lib/validations/article-validation";
 import { useUserPreferences, useUpdatePreference } from "@/hooks/queries/use-user-preferences";
@@ -145,17 +145,34 @@ export default function Home() {
     }
   }, [searchQuery, isLoadingArticles, articles.length, missingEmbeddingsCount]);
 
+  // Helper to preserve query params when navigating
+  const pushWithPreservedParams = useCallback((updates: Record<string, string | null>) => {
+    const currentParams = new URLSearchParams(window.location.search);
+
+    // Apply updates (null means delete the param)
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null) {
+        currentParams.delete(key);
+      } else {
+        currentParams.set(key, value);
+      }
+    });
+
+    const paramsString = currentParams.toString();
+    router.push(paramsString ? `/?${paramsString}` : '/');
+  }, [router]);
+
   // Handlers
   const handleSelectFeed = (feedId: string | null) => {
     if (feedId) {
-      router.push(`/?feed=${feedId}`);
+      pushWithPreservedParams({ feed: feedId, categoryId: null });
     } else {
-      router.push("/");
+      pushWithPreservedParams({ feed: null, categoryId: null });
     }
   };
 
   const handleSelectCategory = (categoryId: string) => {
-    router.push(`/?categoryId=${categoryId}`);
+    pushWithPreservedParams({ categoryId, feed: null });
   };
 
   const handleOpenRenameCategory = (categoryId: string, currentName: string) => {
@@ -202,13 +219,13 @@ export default function Home() {
   const onSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (localSearchQuery && localSearchQuery.length >= 2) {
-      router.push(`/?search=${encodeURIComponent(localSearchQuery)}`);
+      pushWithPreservedParams({ search: localSearchQuery });
     }
   };
 
   const handleClearSearch = () => {
     setLocalSearchQuery("");
-    router.push("/");
+    pushWithPreservedParams({ search: null });
   };
 
   const handleSortChange = (newSortOrder: ArticleSortOrder, newSortDirection: ArticleSortDirection) => {
@@ -246,7 +263,7 @@ export default function Home() {
   if (status === "loading") {
     return (
       <div className="flex h-screen items-center justify-center bg-background text-foreground">
-        <LoadingSpinner size="lg" text="Loading..." />
+        <LoadingSpinner size="lg" label="Loading..." />
       </div>
     );
   }
@@ -566,26 +583,25 @@ export default function Home() {
         }} />
       )}
 
-      {managementModalState.isOpen && (
-        <FeedManagementModal
-          onClose={() => setManagementModalState({ isOpen: false })}
-          initialView={managementModalState.view}
-          feedId={managementModalState.feedId}
-          categoryId={managementModalState.categoryId}
-          onRefreshData={() => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.feeds.all });
-            queryClient.invalidateQueries({ queryKey: queryKeys.categories.all });
-          }}
-          onAddFeed={() => {
-            setManagementModalState({ isOpen: false });
-            setIsAddFeedOpen(true);
-          }}
-          onBrowseFeeds={() => {
-            setManagementModalState({ isOpen: false });
-            setIsFeedBrowserOpen(true);
-          }}
-        />
-      )}
+      <FeedManagementModal
+        isOpen={managementModalState.isOpen}
+        onClose={() => setManagementModalState({ isOpen: false })}
+        initialView={managementModalState.view}
+        feedId={managementModalState.feedId}
+        categoryId={managementModalState.categoryId}
+        onRefreshData={() => {
+          queryClient.invalidateQueries({ queryKey: queryKeys.feeds.all });
+          queryClient.invalidateQueries({ queryKey: queryKeys.categories.all });
+        }}
+        onAddFeed={() => {
+          setManagementModalState({ isOpen: false });
+          setIsAddFeedOpen(true);
+        }}
+        onBrowseFeeds={() => {
+          setManagementModalState({ isOpen: false });
+          setIsFeedBrowserOpen(true);
+        }}
+      />
 
       {/* Rename Category Modal */}
       {renameCategoryState.isOpen && renameCategoryState.categoryId && (

@@ -174,7 +174,7 @@ export class PlaywrightExtractor extends BaseExtractor {
         }
 
         // Clean content
-        const cleanContent = sanitizeHtml(article.content);
+        const cleanContent = sanitizeHtml(article.content || "");
 
         // Extract metadata
         const metadata = this.extractMetadata(document);
@@ -195,7 +195,7 @@ export class PlaywrightExtractor extends BaseExtractor {
           `[Playwright] Successfully extracted: ${article.title} (${cleanContent.length} chars)`
         );
 
-        return this.createSuccessResult(article.title, cleanContent, {
+        return this.createSuccessResult(article.title || "Untitled", cleanContent, {
           excerpt,
           author: article.byline || metadata.author,
           publishedAt,

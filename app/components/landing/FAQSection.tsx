@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { Card } from "@/app/components/ui";
 
 const faqs = [
   {
@@ -48,26 +49,27 @@ function FAQItem({ faq, index }: { faq: typeof faqs[0]; index: number }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.3, delay: index * 0.05 }}
-      className="rounded-lg border border-border bg-background overflow-hidden"
     >
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-6 py-4 text-left flex items-center justify-between gap-4 hover:bg-muted/50 transition-colors"
-      >
-        <span className="font-semibold text-foreground">{faq.question}</span>
-        <ChevronDown
-          className={`h-5 w-5 flex-shrink-0 text-foreground/70 transition-transform ${
-            isOpen ? "rotate-180" : ""
+      <Card className="overflow-hidden">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full px-6 py-4 text-left flex items-center justify-between gap-4 hover:bg-muted/50 transition-colors"
+        >
+          <span className="font-semibold text-foreground">{faq.question}</span>
+          <ChevronDown
+            className={`h-5 w-5 flex-shrink-0 text-foreground/70 transition-transform ${
+              isOpen ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+        <div
+          className={`overflow-hidden transition-all ${
+            isOpen ? "max-h-96" : "max-h-0"
           }`}
-        />
-      </button>
-      <div
-        className={`overflow-hidden transition-all ${
-          isOpen ? "max-h-96" : "max-h-0"
-        }`}
-      >
-        <div className="px-6 pb-4 text-foreground/70">{faq.answer}</div>
-      </div>
+        >
+          <div className="px-6 pb-4 text-foreground/70">{faq.answer}</div>
+        </div>
+      </Card>
     </motion.div>
   );
 }
