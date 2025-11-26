@@ -101,7 +101,7 @@ export function QuickActionsBar({
             onClick={onRefreshFeeds}
             disabled={loading.refreshFeeds}
             loading={loading.refreshFeeds}
-            iconLeft={<RefreshIcon />}
+            icon={<RefreshIcon />}
             variant="primary"
             size="sm"
             className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-initial"
@@ -114,7 +114,7 @@ export function QuickActionsBar({
             onClick={onGenerateEmbeddings}
             disabled={loading.embeddings}
             loading={loading.embeddings}
-            iconLeft={<LightningIcon />}
+            icon={<LightningIcon />}
             variant="primary"
             size="sm"
             className="bg-purple-600 hover:bg-purple-700 flex-1 sm:flex-initial"

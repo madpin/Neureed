@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { QuickActionsBar } from "./QuickActionsBar";
-import { fn } from "@storybook/test";
 
 const meta: Meta<typeof QuickActionsBar> = {
   title: "Admin/QuickActionsBar",
@@ -10,10 +9,10 @@ const meta: Meta<typeof QuickActionsBar> = {
   },
   tags: ["autodocs"],
   args: {
-    onRefreshFeeds: fn(),
-    onGenerateEmbeddings: fn(),
-    onCleanup: fn(),
-    onClearCache: fn(),
+    onRefreshFeeds: () => console.log("Refresh feeds"),
+    onGenerateEmbeddings: () => console.log("Generate embeddings"),
+    onCleanup: () => console.log("Cleanup"),
+    onClearCache: () => console.log("Clear cache"),
   },
 };
 

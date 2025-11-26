@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { Pagination } from "./Pagination";
-import { fn } from "@storybook/test";
 import { useState } from "react";
 
 const meta: Meta<typeof Pagination> = {
@@ -11,7 +10,7 @@ const meta: Meta<typeof Pagination> = {
   },
   tags: ["autodocs"],
   args: {
-    onPageChange: fn(),
+    onPageChange: (page: number) => console.log("Page changed to:", page),
   },
 };
 

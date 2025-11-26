@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { ConfirmButton } from "./ConfirmButton";
-import { fn } from "@storybook/test";
 
 // Sample icon
 const TrashIcon = () => (
@@ -35,7 +34,7 @@ const meta: Meta<typeof ConfirmButton> = {
     },
   },
   args: {
-    onConfirm: fn(),
+    onConfirm: () => console.log("Action confirmed"),
   },
 };
 

@@ -116,7 +116,7 @@ export function ConfirmButton({
       size={size}
       disabled={disabled || executing}
       loading={executing || loading}
-      iconLeft={icon}
+      icon={icon}
       className={className}
     >
       {children}
