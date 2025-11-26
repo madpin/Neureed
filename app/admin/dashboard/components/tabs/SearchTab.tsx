@@ -1,11 +1,13 @@
 import { Card, CardBody } from "@/app/components/ui";
-import type { EmbeddingStats, EmbeddingConfig } from "@/hooks/queries/use-admin";
+import type { EmbeddingStats, EmbeddingConfig, AdminSettings } from "@/hooks/queries/use-admin";
 
 export interface SearchTabProps {
   /** Embedding statistics */
   embeddingStats: EmbeddingStats | undefined;
   /** Embedding configuration */
   embeddingConfig: EmbeddingConfig | undefined;
+  /** Admin settings (optional) */
+  adminSettings?: AdminSettings;
 }
 
 /**
@@ -20,7 +22,8 @@ export interface SearchTabProps {
  * />
  * ```
  */
-export function SearchTab({ embeddingStats, embeddingConfig }: SearchTabProps) {
+export function SearchTab({ embeddingStats, embeddingConfig, adminSettings }: SearchTabProps) {
+  // adminSettings is available if needed for future functionality
   return (
     <div className="space-y-6">
       {/* Search Stats */}

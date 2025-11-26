@@ -18,10 +18,14 @@ export interface TabNavigationProps {
   onTabChange: (tabId: TabId) => void;
   /** Callback when favorite is toggled */
   onToggleFavorite: (tabId: TabId) => void;
+  /** Function to check if a tab is favorited */
+  isFavorite: (tabId: TabId) => boolean;
   /** Mobile menu open state */
   mobileMenuOpen: boolean;
   /** Callback to toggle mobile menu */
   onToggleMobileMenu: () => void;
+  /** Callback to close mobile menu */
+  onCloseMobileMenu: () => void;
 }
 
 /**
@@ -47,8 +51,10 @@ export function TabNavigation({
   favoriteTabs,
   onTabChange,
   onToggleFavorite,
+  isFavorite,
   mobileMenuOpen,
   onToggleMobileMenu,
+  onCloseMobileMenu,
 }: TabNavigationProps) {
   return (
     <>
