@@ -48,7 +48,7 @@ export default function AdminDashboardPage() {
   const [pendingDatabaseReset, setPendingDatabaseReset] = useState(false);
 
   // Data fetching: consolidates all React Query hooks
-  const { data, loading, errors, isReady } = useDashboardData(30000); // 30s polling
+  const { data } = useDashboardData(30000); // 30s polling
 
   // Action handlers: consolidates all mutations
   const {

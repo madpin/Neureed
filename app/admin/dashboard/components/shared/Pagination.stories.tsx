@@ -123,32 +123,35 @@ export const LargeDataset: Story = {
   },
 };
 
-// Interactive demo
-export const Interactive: Story = {
-  render: () => {
-    const [page, setPage] = useState(1);
+// Interactive demo component
+function InteractivePaginationDemo() {
+  const [page, setPage] = useState(1);
 
-    return (
-      <div className="space-y-4">
-        <div className="text-sm text-foreground/60">
-          Click the page buttons to navigate
-        </div>
-        <Pagination
-          currentPage={page}
-          totalPages={10}
-          totalItems={247}
-          itemsPerPage={25}
-          onPageChange={setPage}
-          itemLabel="users"
-        />
-        <div className="rounded-lg border border-border bg-background p-4">
-          <div className="text-sm text-foreground">
-            Current page: <span className="font-bold">{page}</span>
-          </div>
+  return (
+    <div className="space-y-4">
+      <div className="text-sm text-foreground/60">
+        Click the page buttons to navigate
+      </div>
+      <Pagination
+        currentPage={page}
+        totalPages={10}
+        totalItems={247}
+        itemsPerPage={25}
+        onPageChange={setPage}
+        itemLabel="users"
+      />
+      <div className="rounded-lg border border-border bg-background p-4">
+        <div className="text-sm text-foreground">
+          Current page: <span className="font-bold">{page}</span>
         </div>
       </div>
-    );
-  },
+    </div>
+  );
+}
+
+// Interactive demo
+export const Interactive: Story = {
+  render: () => <InteractivePaginationDemo />,
   parameters: {
     docs: {
       description: {

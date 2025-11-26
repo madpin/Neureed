@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Card, CardBody } from "@/app/components/ui";
 import { MetricCard } from "../shared/MetricCard";
 import { Pagination } from "../shared/Pagination";
 import { formatLocalizedDate } from "@/lib/date-utils";
@@ -11,7 +10,6 @@ import {
   useUpdateUserRole,
   useDeleteUser,
   useResetUserFeeds,
-  type AdminUser,
 } from "@/hooks/queries/use-admin";
 
 const UsersIcon = () => (

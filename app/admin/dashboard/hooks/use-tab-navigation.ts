@@ -50,6 +50,7 @@ export function useTabNavigation() {
       try {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setFavoriteTabs(parsed);
         }
       } catch (e) {
@@ -65,6 +66,7 @@ export function useTabNavigation() {
   useEffect(() => {
     const tabFromUrl = searchParams.get("tab") as TabId;
     if (tabFromUrl && tabFromUrl !== activeTab) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTab(tabFromUrl);
     }
   }, [searchParams, activeTab]);

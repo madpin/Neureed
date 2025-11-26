@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Card, CardBody } from "@/app/components/ui";
 import {
   useLLMConfig,
   useEmbeddingConfig,
