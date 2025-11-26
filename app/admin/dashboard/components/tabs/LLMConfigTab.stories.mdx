@@ -1,0 +1,110 @@
+import { Meta } from '@storybook/blocks';
+
+<Meta title="Admin/Tabs/LLMConfigTab" />
+
+# LLMConfigTab
+
+The LLMConfigTab component provides advanced LLM (Large Language Model) configuration management.
+
+## Features
+
+### Provider Configuration
+- **Provider Selection**: OpenAI or Ollama
+- **API Key Management**: Secure input with masking
+- **Base URL**: Custom endpoint configuration
+- **Model Selection**: Summary, Embedding, and Digest models
+
+### Configuration Sources
+Each setting shows its source:
+- **Environment**: From environment variables
+- **Database**: User-configured overrides
+- **None**: Not configured
+
+### Embedding Provider
+- **Provider Toggle**: Switch between OpenAI and Local
+- **Visual Feedback**: Color-coded status badges
+- **Impact Warning**: Shows which settings are affected
+
+### Auto-Generation Settings
+- **Summarization Toggle**: Enable/disable automatic summarization
+- **Status Display**: Shows current enabled/disabled state
+
+### Dangerous Actions
+- **Delete All Embeddings**: Permanently removes all vector embeddings
+- **Confirmation Pattern**: Two-click confirmation with warning
+- **Impact Display**: Shows count of affected embeddings
+
+### Testing & Validation
+- **Test Configuration**: Validate settings before saving
+- **Response Display**: Shows test results (success/failure)
+- **Model Availability**: Lists available models for selected provider
+
+## Implementation Notes
+
+This is one of the most complex components with extensive state management:
+
+### State Management (15+ state variables)
+- Form fields (provider, apiKey, baseUrl, summaryModel, etc.)
+- UI state (saveMessage, testResults, pendingDelete, etc.)
+- Source tracking for cascade display
+- Masked API key for security
+
+### React Query Hooks
+- `useLLMConfig()` - Fetch current configuration
+- `useEmbeddingConfig()` - Fetch embedding settings
+- `useSummarizationConfig()` - Fetch summarization settings
+- `useUpdateLLMConfig()` - Update configuration
+- `useTestLLMConfig()` - Test configuration
+- `useDeleteAllEmbeddings()` - Delete all embeddings
+- `useUpdateSummarizationConfig()` - Update summarization
+
+### Complex Logic
+- Cascade resolution (environment → database)
+- Source badge display with color coding
+- API key masking for security
+- Test result parsing and display
+- Confirmation flows for dangerous actions
+
+## Usage
+
+```tsx
+import { LLMConfigTab } from '@/app/admin/dashboard/components/tabs/LLMConfigTab';
+
+function AdminDashboard() {
+  return (
+    <div>
+      <LLMConfigTab />
+    </div>
+  );
+}
+```
+
+## Key Interactions
+
+1. **Change Provider**: Select OpenAI or Ollama from dropdown
+2. **Update API Key**: Enter masked key (shown as dots)
+3. **Configure Models**: Select or enter model names
+4. **Test Configuration**: Click "Test" to validate settings
+5. **Save Changes**: Click "Save" to persist configuration
+6. **Toggle Embedding Provider**: Switch between OpenAI/Local
+7. **Delete Embeddings**: Two-click confirmation for deletion
+8. **Toggle Summarization**: Enable/disable auto-generation
+
+## Security Considerations
+- API keys are masked in the UI (shown as `••••••••`)
+- Keys are only sent when explicitly changed
+- Sensitive data is never logged
+- Source cascade prevents accidental overrides
+
+## Performance Notes
+- Configuration loaded once on mount
+- Updates trigger targeted query invalidations
+- Test runs are separate from save operations
+- Embedding deletion is batched for efficiency
+
+## Future Enhancements
+- Model auto-detection for providers
+- Batch configuration import/export
+- Configuration history/rollback
+- Multi-provider support
+- Cost estimation for model selection
