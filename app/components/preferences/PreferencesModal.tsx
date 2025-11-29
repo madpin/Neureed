@@ -4,10 +4,9 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useUserPreferences, useUpdateUserPreferences, type UserPreferences } from "@/hooks/queries/use-user-preferences";
 import { applyFontSizeVariables } from "@/lib/typography-utils";
-import { Modal, ModalBody, ModalFooter, Button } from "@/app/components/ui";
-import { getDefaultPreferences, validatePreferences, getViewLabel, NAVIGATION_ITEMS, type ViewType } from "@/app/lib/preferences";
+import { Modal, ModalHeader, ModalBody, ModalFooter, Button, ModalSidebarNavigation } from "@/app/components/ui";
+import { getDefaultPreferences, validatePreferences, NAVIGATION_ITEMS, type ViewType } from "@/app/lib/preferences";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
-import { useMobileMenu } from "@/hooks/use-mobile-menu";
 import { useViewNavigation } from "@/hooks/use-view-navigation";
 import {
   ProfileView,
@@ -38,14 +37,11 @@ export function PreferencesModal({
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Custom hooks for common patterns
-  const { isOpen: isMobileMenuOpen, dropdownRef, close: closeMobileMenu, toggle: toggleMobileMenu } = useMobileMenu();
-
+  // View navigation hook
   const { currentView, navigateToView } = useViewNavigation<ViewType>({
     modalName: 'preferences',
     defaultView: initialView,
     isOpen: isOpen,
-    onNavigate: () => closeMobileMenu(),
     onClose: (skipHistoryPush) => handleClose(skipHistoryPush),
   });
 
@@ -197,116 +193,18 @@ export function PreferencesModal({
 
   return (
     <Modal isOpen={isOpen} onClose={() => handleClose(true)} size="xl">
-      <ModalBody padding={false} className="flex h-[70vh] overflow-hidden">
-        {/* Sidebar Navigation - Desktop Only */}
-        <aside className="hidden md:flex w-52 flex-shrink-0 border-r border-border bg-muted">
-          <div className="flex h-full flex-col">
-            <div className="border-b border-border p-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Preferences</h2>
-              <button
-                onClick={() => handleClose(true)}
-                className="rounded-lg p-1.5 hover:bg-background transition-colors"
-                aria-label="Close modal"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-            <nav className="flex-1 space-y-1 overflow-y-auto p-2">
-              {NAVIGATION_ITEMS.map((item) => (
-                <button
-                  key={item.view}
-                  onClick={() => navigateToView(item.view)}
-                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                    currentView === item.view
-                      ? "bg-primary/10 text-primary dark:bg-primary/20"
-                      : "hover:bg-muted"
-                  }`}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </button>
-              ))}
-            </nav>
-          </div>
-        </aside>
-
-        {/* Content Area */}
-        <main className="flex flex-1 flex-col overflow-hidden">
-          {/* Mobile Navigation Dropdown */}
-          <div className="md:hidden border-b border-border p-4 flex-shrink-0">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold">Preferences</h2>
-              <button
-                onClick={() => handleClose(true)}
-                className="rounded-lg p-1.5 hover:bg-muted transition-colors"
-                aria-label="Close modal"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={toggleMobileMenu}
-                className="flex w-full items-center justify-between rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
-              >
-                <span>{getViewLabel(currentView)}</span>
-                <svg
-                  className={`h-5 w-5 transition-transform ${isMobileMenuOpen ? 'rotate-180' : ''}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              {/* Dropdown Menu */}
-              {isMobileMenuOpen && (
-                <div className="absolute top-full left-0 right-0 mt-2 rounded-lg border border-border bg-background shadow-lg z-10 max-h-80 overflow-y-auto">
-                  {NAVIGATION_ITEMS.map((item) => (
-                    <button
-                      key={item.view}
-                      onClick={() => navigateToView(item.view)}
-                      className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition-colors border-b border-border last:border-b-0 ${
-                        currentView === item.view
-                          ? "bg-primary/10 text-primary dark:bg-primary/20"
-                          : "hover:bg-muted"
-                      }`}
-                    >
-                      {item.icon}
-                      <span>{item.label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex-1 p-6 overflow-y-auto">
+      <ModalHeader title="Preferences" onClose={() => handleClose(true)} />
+      <ModalBody padding={false} className="flex overflow-hidden">
+        <ModalSidebarNavigation
+          items={NAVIGATION_ITEMS.map(item => ({
+            id: item.view,
+            label: item.label,
+            icon: item.icon
+          }))}
+          currentItem={currentView}
+          onNavigate={navigateToView}
+        />
+        <main className="flex-1 p-6 overflow-y-auto">
             {saveMessage && (
               <div
                 className={`mb-6 rounded-lg p-4 ${
@@ -337,7 +235,6 @@ export function PreferencesModal({
             {currentView === 'llm' && (
               <LLMView preferences={localPreferences} updatePreference={updatePreference} />
             )}
-          </div>
         </main>
       </ModalBody>
       <ModalFooter>

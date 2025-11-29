@@ -50,6 +50,7 @@ export {
   ModalHeader,
   ModalBody,
   ModalFooter,
+  ModalSidebarNavigation,
   useModal,
   useModalLevel,
   ModalLevelProvider,
@@ -59,6 +60,8 @@ export type {
   ModalHeaderProps,
   ModalBodyProps,
   ModalFooterProps,
+  ModalSidebarNavigationProps,
+  ModalSidebarNavigationItem,
   UseModalReturn,
   ModalLevelProviderProps,
 } from "./Modal";

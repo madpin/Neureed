@@ -30,7 +30,7 @@ export interface ModalProps {
   /**
    * Size variant
    */
-  size?: "sm" | "md" | "lg" | "xl" | "full";
+  size?: "sm" | "md" | "lg" | "xl" | "2xl" | "full";
 
   /**
    * Whether clicking outside closes the modal
@@ -61,11 +61,12 @@ export interface ModalProps {
   zIndex?: number;
 }
 
-const sizeClasses = {
+const sizeClasses: Record<"sm" | "md" | "lg" | "xl" | "2xl" | "full", string> = {
   sm: "max-w-md",
   md: "max-w-xl",
   lg: "max-w-2xl",
   xl: "max-w-4xl",
+  "2xl": "max-w-7xl",
   full: "max-w-[95vw]",
 };
 

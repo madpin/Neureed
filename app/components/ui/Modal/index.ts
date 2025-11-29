@@ -22,3 +22,6 @@ export type { UseModalReturn } from "./useModal";
 
 export { useModalLevel, ModalLevelProvider } from "./useModalLevel";
 export type { ModalLevelProviderProps } from "./useModalLevel";
+
+export { ModalSidebarNavigation } from "./ModalSidebarNavigation";
+export type { ModalSidebarNavigationProps, ModalSidebarNavigationItem } from "./ModalSidebarNavigation";

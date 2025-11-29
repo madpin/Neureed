@@ -10,7 +10,6 @@ import { SavedSearchList } from "./components/saved-searches/SavedSearchList";
 import { AddFeedForm } from "./components/feeds/AddFeedForm";
 import { FeedBrowser } from "./components/feeds/FeedBrowser";
 import { IconPicker } from "./components/feeds/IconPicker";
-import { FeedManagementModal } from "./components/feeds/FeedManagementModal";
 import { ArticleList } from "./components/articles/ArticleList";
 import { Tooltip } from "./components/ui";
 import { LoadingSpinner } from "@/app/components/ui/LoadingSpinner";
@@ -25,6 +24,7 @@ import { useInfiniteMatchingArticles } from "@/hooks/queries/use-saved-searches"
 import { useUpdateCategory } from "@/hooks/queries/use-categories";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/query-keys";
+import { FeedManagementModal } from "./feeds-management/components/FeedManagementModal";
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -41,10 +41,6 @@ export default function Home() {
   // Local State
   const [isAddFeedOpen, setIsAddFeedOpen] = useState(false);
   const [isFeedBrowserOpen, setIsFeedBrowserOpen] = useState(false);
-  const [feedManagementState, setFeedManagementState] = useState<{
-    isOpen: boolean;
-    feedId?: string;
-  }>({ isOpen: false });
   const [renameCategoryState, setRenameCategoryState] = useState<{
     isOpen: boolean;
     categoryId?: string;
@@ -284,7 +280,7 @@ export default function Home() {
               <button
                 onClick={() => {
                   closeMobileMenu();
-                  router.push('/feeds-overview');
+                  pushWithPreservedParams({ feedsModal: 'open' });
                 }}
                 className="btn btn-primary w-full"
               >
@@ -312,7 +308,7 @@ export default function Home() {
                 <button
                   onClick={() => {
                     closeMobileMenu();
-                    router.push('/feeds-overview');
+                    pushWithPreservedParams({ feedsModal: 'open' });
                   }}
                   className="flex items-center justify-center rounded-lg bg-primary p-3 text-primary-foreground hover:bg-primary/90"
                   title="Manage Feeds"
@@ -341,8 +337,8 @@ export default function Home() {
             onSelectFeed={handleSelectFeed}
             onSelectCategory={handleSelectCategory}
             isCollapsed={isCollapsed}
-            onOpenFeedSettings={(feedId) => setFeedManagementState({ isOpen: true, feedId })}
-            onOpenCategorySettings={(categoryId) => router.push(`/categories/${categoryId}`)}
+            onOpenFeedSettings={(feedId) => pushWithPreservedParams({ feedsModal: 'open', view: 'feed', id: feedId })}
+            onOpenCategorySettings={(categoryId) => pushWithPreservedParams({ feedsModal: 'open', view: 'category', id: categoryId })}
             onOpenRenameCategory={handleOpenRenameCategory}
             onOpenIconPicker={handleOpenIconPicker}
             onCloseMobileMenu={closeMobileMenu}
@@ -650,18 +646,7 @@ export default function Home() {
       )}
 
       {/* Feed Management Modal */}
-      {feedManagementState.isOpen && feedManagementState.feedId && (
-        <FeedManagementModal
-          isOpen={feedManagementState.isOpen}
-          onClose={() => setFeedManagementState({ isOpen: false })}
-          initialView="feed"
-          feedId={feedManagementState.feedId}
-          onRefreshData={() => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.feeds.all });
-            queryClient.invalidateQueries({ queryKey: queryKeys.categories.all });
-          }}
-        />
-      )}
+      <FeedManagementModal />
     </MainLayout>
   );
 }
