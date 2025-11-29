@@ -440,10 +440,10 @@ export const ArticleCard = React.memo(({
   const imageInOrder = preferences.sectionOrder.includes("image");
 
   // Get border styling classes
-  const borderWidthClass = isSelected ? "border-4" : getBorderWidthClasses(preferences.borderWidth);
+  const borderWidthClass = getBorderWidthClasses(preferences.borderWidth);
   const borderRadiusClass = getBorderRadiusClasses(preferences.borderRadius);
   const borderContrastClass = isSelected
-    ? "border-primary ring-4 ring-primary/30 shadow-lg"
+    ? "border-primary ring-2 ring-primary/30 shadow-lg"
     : getBorderContrastClasses(preferences.borderContrast, isRead);
 
   return (
