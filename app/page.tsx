@@ -7,10 +7,10 @@ import { MainLayout } from "./components/layout/MainLayout";
 import { ReadingPanelLayout } from "./components/layout/ReadingPanelLayout";
 import { CategoryList } from "./components/feeds/CategoryList";
 import { SavedSearchList } from "./components/saved-searches/SavedSearchList";
-import { FeedManagementModal } from "./components/feeds/FeedManagementModal";
 import { AddFeedForm } from "./components/feeds/AddFeedForm";
 import { FeedBrowser } from "./components/feeds/FeedBrowser";
 import { IconPicker } from "./components/feeds/IconPicker";
+import { FeedManagementModal } from "./components/feeds/FeedManagementModal";
 import { ArticleList } from "./components/articles/ArticleList";
 import { Tooltip } from "./components/ui";
 import { LoadingSpinner } from "@/app/components/ui/LoadingSpinner";
@@ -41,11 +41,9 @@ export default function Home() {
   // Local State
   const [isAddFeedOpen, setIsAddFeedOpen] = useState(false);
   const [isFeedBrowserOpen, setIsFeedBrowserOpen] = useState(false);
-  const [managementModalState, setManagementModalState] = useState<{
+  const [feedManagementState, setFeedManagementState] = useState<{
     isOpen: boolean;
-    view?: 'feed' | 'category' | 'overview';
     feedId?: string;
-    categoryId?: string;
   }>({ isOpen: false });
   const [renameCategoryState, setRenameCategoryState] = useState<{
     isOpen: boolean;
@@ -286,7 +284,7 @@ export default function Home() {
               <button
                 onClick={() => {
                   closeMobileMenu();
-                  setManagementModalState({ isOpen: true, view: 'overview' });
+                  router.push('/feeds-overview');
                 }}
                 className="btn btn-primary w-full"
               >
@@ -314,7 +312,7 @@ export default function Home() {
                 <button
                   onClick={() => {
                     closeMobileMenu();
-                    setManagementModalState({ isOpen: true, view: 'overview' });
+                    router.push('/feeds-overview');
                   }}
                   className="flex items-center justify-center rounded-lg bg-primary p-3 text-primary-foreground hover:bg-primary/90"
                   title="Manage Feeds"
@@ -343,8 +341,8 @@ export default function Home() {
             onSelectFeed={handleSelectFeed}
             onSelectCategory={handleSelectCategory}
             isCollapsed={isCollapsed}
-            onOpenFeedSettings={(feedId) => setManagementModalState({ isOpen: true, view: 'feed', feedId })}
-            onOpenCategorySettings={(categoryId) => setManagementModalState({ isOpen: true, view: 'category', categoryId })}
+            onOpenFeedSettings={(feedId) => setFeedManagementState({ isOpen: true, feedId })}
+            onOpenCategorySettings={(categoryId) => router.push(`/categories/${categoryId}`)}
             onOpenRenameCategory={handleOpenRenameCategory}
             onOpenIconPicker={handleOpenIconPicker}
             onCloseMobileMenu={closeMobileMenu}
@@ -583,26 +581,6 @@ export default function Home() {
         }} />
       )}
 
-      <FeedManagementModal
-        isOpen={managementModalState.isOpen}
-        onClose={() => setManagementModalState({ isOpen: false })}
-        initialView={managementModalState.view}
-        feedId={managementModalState.feedId}
-        categoryId={managementModalState.categoryId}
-        onRefreshData={() => {
-          queryClient.invalidateQueries({ queryKey: queryKeys.feeds.all });
-          queryClient.invalidateQueries({ queryKey: queryKeys.categories.all });
-        }}
-        onAddFeed={() => {
-          setManagementModalState({ isOpen: false });
-          setIsAddFeedOpen(true);
-        }}
-        onBrowseFeeds={() => {
-          setManagementModalState({ isOpen: false });
-          setIsFeedBrowserOpen(true);
-        }}
-      />
-
       {/* Rename Category Modal */}
       {renameCategoryState.isOpen && renameCategoryState.categoryId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -668,6 +646,20 @@ export default function Home() {
             setIconPickerState({ isOpen: false });
           }}
           onClose={() => setIconPickerState({ isOpen: false })}
+        />
+      )}
+
+      {/* Feed Management Modal */}
+      {feedManagementState.isOpen && feedManagementState.feedId && (
+        <FeedManagementModal
+          isOpen={feedManagementState.isOpen}
+          onClose={() => setFeedManagementState({ isOpen: false })}
+          initialView="feed"
+          feedId={feedManagementState.feedId}
+          onRefreshData={() => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.feeds.all });
+            queryClient.invalidateQueries({ queryKey: queryKeys.categories.all });
+          }}
         />
       )}
     </MainLayout>

@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, ReactNode } from "react";
 import { toast } from "sonner";
 import type { UserFeed } from "@/hooks/queries/use-feeds";
 import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from "@/app/components/ui";
+import { NumberSettingField, SelectSettingField } from "@/app/components/feeds/management/shared";
+import { useFormChanges } from "@/hooks/use-form-changes";
 
 interface BulkFeedSettingsModalProps {
   isOpen: boolean;
@@ -27,84 +29,77 @@ const DEFAULTS = {
   extractionMethod: "readability" as const,
 };
 
+// Bulk field wrapper component (inline helper)
+function BulkFieldWrapper({
+  children,
+  isModified,
+  onReset,
+}: {
+  children: ReactNode;
+  isModified: boolean;
+  onReset: () => void;
+}) {
+  return (
+    <div className={`rounded-lg border p-3.5 space-y-2 transition-colors ${
+      isModified ? "border-primary bg-primary/5" : "border-border bg-background"
+    }`}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          {isModified && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Will update
+            </span>
+          )}
+        </div>
+        {isModified && (
+          <button
+            onClick={onReset}
+            className="text-xs text-foreground/60 hover:text-foreground transition-colors"
+            title="Reset to default"
+            type="button"
+          >
+            Reset
+          </button>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 export function BulkFeedSettingsModal({
   isOpen,
   selectedFeeds,
   onClose,
   onApply,
 }: BulkFeedSettingsModalProps) {
-  // Settings values
-  const [refreshInterval, setRefreshInterval] = useState<number>(DEFAULTS.refreshInterval);
-  const [maxArticlesPerFeed, setMaxArticlesPerFeed] = useState<number>(DEFAULTS.maxArticlesPerFeed);
-  const [maxArticleAge, setMaxArticleAge] = useState<number>(DEFAULTS.maxArticleAge);
-  const [extractionMethod, setExtractionMethod] = useState<"rss" | "readability" | "playwright">(DEFAULTS.extractionMethod);
-
-  // Track which fields have been modified
-  const [modifiedFields, setModifiedFields] = useState<Set<string>>(new Set());
-
   const [isApplying, setIsApplying] = useState(false);
 
-  // Helper to mark a field as modified
-  const markModified = (field: string) => {
-    setModifiedFields(prev => new Set(prev).add(field));
-  };
-
-  // Helper to reset a field
-  const resetField = (field: keyof typeof DEFAULTS) => {
-    switch (field) {
-      case "refreshInterval":
-        setRefreshInterval(DEFAULTS.refreshInterval);
-        break;
-      case "maxArticlesPerFeed":
-        setMaxArticlesPerFeed(DEFAULTS.maxArticlesPerFeed);
-        break;
-      case "maxArticleAge":
-        setMaxArticleAge(DEFAULTS.maxArticleAge);
-        break;
-      case "extractionMethod":
-        setExtractionMethod(DEFAULTS.extractionMethod);
-        break;
-    }
-    setModifiedFields(prev => {
-      const next = new Set(prev);
-      next.delete(field);
-      return next;
-    });
-  };
+  // Use custom hook to track form changes
+  const { values, modifiedFields, updateField, resetField, hasChanges, getChangedValues } = useFormChanges(DEFAULTS);
 
   const handleApply = async () => {
     // Validate at least one field has been modified
-    if (modifiedFields.size === 0) {
+    if (!hasChanges) {
       toast.error("Please modify at least one setting");
       return;
     }
 
-    // Only include modified fields
-    const settings: BulkSettings = {};
-
-    if (modifiedFields.has("refreshInterval")) {
-      settings.refreshInterval = refreshInterval;
-    }
-    if (modifiedFields.has("maxArticlesPerFeed")) {
-      settings.maxArticlesPerFeed = maxArticlesPerFeed;
-    }
-    if (modifiedFields.has("maxArticleAge")) {
-      settings.maxArticleAge = maxArticleAge;
-    }
-    if (modifiedFields.has("extractionMethod")) {
-      settings.extractionMethod = extractionMethod;
-    }
+    // Get only the modified fields
+    const settings = getChangedValues() as BulkSettings;
 
     try {
       setIsApplying(true);
       await onApply(settings);
-      
+
       // Success message with details
-      const _changedSettings = Array.from(modifiedFields).join(", ");
       toast.success(
         `Successfully updated ${modifiedFields.size} setting${modifiedFields.size > 1 ? 's' : ''} for ${selectedFeeds.length} feed${selectedFeeds.length > 1 ? 's' : ''}`
       );
-      
+
       onClose();
     } catch (error) {
       console.error("Failed to apply settings:", error);
@@ -159,183 +154,94 @@ export function BulkFeedSettingsModal({
           {/* Settings Form */}
           <div className="space-y-3">
             {/* Fetch Interval */}
-            <div className={`rounded-lg border p-3.5 space-y-2.5 transition-colors ${
-              modifiedFields.has("refreshInterval") 
-                ? "border-primary bg-primary/5" 
-                : "border-border bg-background"
-            }`}>
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  Fetch Interval
-                  {modifiedFields.has("refreshInterval") && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                      <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      Will update
-                    </span>
-                  )}
-                </label>
-                {modifiedFields.has("refreshInterval") && (
-                  <button
-                    onClick={() => resetField("refreshInterval")}
-                    className="text-xs text-foreground/60 hover:text-foreground transition-colors"
-                    title="Reset to default"
-                  >
-                    Reset
-                  </button>
-                )}
-              </div>
-              <input
-                type="number"
-                min="15"
-                max="1440"
-                value={refreshInterval}
-                onChange={(e) => {
-                  setRefreshInterval(parseInt(e.target.value, 10));
-                  markModified("refreshInterval");
+            <BulkFieldWrapper
+              isModified={modifiedFields.has("refreshInterval")}
+              onReset={() => resetField("refreshInterval")}
+            >
+              <NumberSettingField
+                label="Fetch Interval"
+                value={values.refreshInterval}
+                onChange={(val) => {
+                  if (val !== null) {
+                    updateField("refreshInterval", val);
+                  }
                 }}
-                className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                min={15}
+                max={1440}
+                unit="minutes"
+                showReset={false}
+                helperText="Minutes between fetches (15-1440)"
               />
-              <p className="text-xs text-foreground/50">
-                Minutes between fetches (15-1440)
-              </p>
-            </div>
+            </BulkFieldWrapper>
 
             {/* Max Articles Per Feed */}
-            <div className={`rounded-lg border p-3.5 space-y-2.5 transition-colors ${
-              modifiedFields.has("maxArticlesPerFeed") 
-                ? "border-primary bg-primary/5" 
-                : "border-border bg-background"
-            }`}>
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  Max Articles Per Feed
-                  {modifiedFields.has("maxArticlesPerFeed") && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                      <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      Will update
-                    </span>
-                  )}
-                </label>
-                {modifiedFields.has("maxArticlesPerFeed") && (
-                  <button
-                    onClick={() => resetField("maxArticlesPerFeed")}
-                    className="text-xs text-foreground/60 hover:text-foreground transition-colors"
-                    title="Reset to default"
-                  >
-                    Reset
-                  </button>
-                )}
-              </div>
-              <input
-                type="number"
-                min="50"
-                max="5000"
-                value={maxArticlesPerFeed}
-                onChange={(e) => {
-                  setMaxArticlesPerFeed(parseInt(e.target.value, 10));
-                  markModified("maxArticlesPerFeed");
+            <BulkFieldWrapper
+              isModified={modifiedFields.has("maxArticlesPerFeed")}
+              onReset={() => resetField("maxArticlesPerFeed")}
+            >
+              <NumberSettingField
+                label="Max Articles Per Feed"
+                value={values.maxArticlesPerFeed}
+                onChange={(val) => {
+                  if (val !== null) {
+                    updateField("maxArticlesPerFeed", val);
+                  }
                 }}
-                className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                min={50}
+                max={5000}
+                unit="articles"
+                showReset={false}
+                helperText="Maximum number of articles to keep (50-5000)"
               />
-              <p className="text-xs text-foreground/50">
-                Maximum number of articles to keep (50-5000)
-              </p>
-            </div>
+            </BulkFieldWrapper>
 
             {/* Max Article Age */}
-            <div className={`rounded-lg border p-3.5 space-y-2.5 transition-colors ${
-              modifiedFields.has("maxArticleAge") 
-                ? "border-primary bg-primary/5" 
-                : "border-border bg-background"
-            }`}>
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  Max Article Age
-                  {modifiedFields.has("maxArticleAge") && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                      <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      Will update
-                    </span>
-                  )}
-                </label>
-                {modifiedFields.has("maxArticleAge") && (
-                  <button
-                    onClick={() => resetField("maxArticleAge")}
-                    className="text-xs text-foreground/60 hover:text-foreground transition-colors"
-                    title="Reset to default"
-                  >
-                    Reset
-                  </button>
-                )}
-              </div>
-              <input
-                type="number"
-                min="1"
-                max="365"
-                value={maxArticleAge}
-                onChange={(e) => {
-                  setMaxArticleAge(parseInt(e.target.value, 10));
-                  markModified("maxArticleAge");
+            <BulkFieldWrapper
+              isModified={modifiedFields.has("maxArticleAge")}
+              onReset={() => resetField("maxArticleAge")}
+            >
+              <NumberSettingField
+                label="Max Article Age"
+                value={values.maxArticleAge}
+                onChange={(val) => {
+                  if (val !== null) {
+                    updateField("maxArticleAge", val);
+                  }
                 }}
-                className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                min={1}
+                max={365}
+                unit="days"
+                showReset={false}
+                helperText="Days to keep articles (1-365)"
               />
-              <p className="text-xs text-foreground/50">
-                Days to keep articles (1-365)
-              </p>
-            </div>
+            </BulkFieldWrapper>
 
             {/* Content Extraction Method */}
-            <div className={`rounded-lg border p-3.5 space-y-2.5 transition-colors ${
-              modifiedFields.has("extractionMethod") 
-                ? "border-primary bg-primary/5" 
-                : "border-border bg-background"
-            }`}>
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  Content Extraction Method
-                  {modifiedFields.has("extractionMethod") && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                      <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      Will update
-                    </span>
-                  )}
-                </label>
-                {modifiedFields.has("extractionMethod") && (
-                  <button
-                    onClick={() => resetField("extractionMethod")}
-                    className="text-xs text-foreground/60 hover:text-foreground transition-colors"
-                    title="Reset to default"
-                  >
-                    Reset
-                  </button>
-                )}
-              </div>
-              <select
-                value={extractionMethod}
-                onChange={(e) => {
-                  setExtractionMethod(e.target.value as any);
-                  markModified("extractionMethod");
+            <BulkFieldWrapper
+              isModified={modifiedFields.has("extractionMethod")}
+              onReset={() => resetField("extractionMethod")}
+            >
+              <SelectSettingField
+                label="Content Extraction Method"
+                value={values.extractionMethod}
+                onChange={(val) => {
+                  if (val !== null) {
+                    updateField("extractionMethod", val as any);
+                  }
                 }}
-                className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              >
-                <option value="rss">RSS Only (Default)</option>
-                <option value="readability">Readability (Clean extraction)</option>
-                <option value="playwright">Playwright (JS-rendered content)</option>
-              </select>
-              <div className="rounded bg-muted/50 px-2 py-1.5">
+                options={[
+                  { value: 'rss', label: 'RSS Only (Default)' },
+                  { value: 'readability', label: 'Readability (Clean extraction)' },
+                  { value: 'playwright', label: 'Playwright (JS-rendered content)' }
+                ]}
+                showReset={false}
+              />
+              <div className="rounded bg-muted/50 px-2 py-1.5 mt-2">
                 <p className="text-xs text-foreground/60">
                   ⚠️ This applies system-wide to all users of these feeds
                 </p>
               </div>
-            </div>
+            </BulkFieldWrapper>
           </div>
       </ModalBody>
       <ModalFooter align="between">
@@ -372,4 +278,3 @@ export function BulkFeedSettingsModal({
     </Modal>
   );
 }
-

@@ -78,5 +78,26 @@ export type { EmptyStateProps } from "./EmptyState";
 // Error Boundaries
 export { ErrorBoundary } from "./ErrorBoundary";
 
+// Tabs
+export { Tabs, TabList, Tab, TabPanels, TabPanel, useTabsContext } from "./Tabs";
+export type { TabsProps, TabListProps, TabProps, TabPanelsProps, TabPanelProps, TabValue, Orientation } from "./Tabs";
+
+// Skeletons
+export {
+  Skeleton,
+  ArticleCardSkeleton,
+  ArticleListSkeleton,
+  FeedCardSkeleton,
+  FeedListSkeleton,
+  CategoryListSkeleton,
+  SidebarSkeleton,
+  TableSkeleton,
+  CardGridSkeleton,
+  DashboardStatsSkeleton,
+  ProfileHeaderSkeleton,
+  FormSkeleton,
+} from "./Skeleton";
+export type { SkeletonProps } from "./Skeleton";
+
 // Icons (lucide-react)
 export * from "./icons";

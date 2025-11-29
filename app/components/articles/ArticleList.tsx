@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { ArticleCard, type ArticleDisplayPreferences } from "./ArticleCard";
 import { ArticlePanel } from "./ArticlePanel";
 import { LoadingSpinner } from "@/app/components/ui/LoadingSpinner";
-import { Skeleton } from "@/app/components/ui/Skeleton";
+import { ArticleListSkeleton } from "@/app/components/ui/Skeleton";
 import { EmptyState } from "@/app/components/ui/EmptyState";
 import { useArticleScores, type ArticleScore, type Article } from "@/hooks/queries/use-articles";
 import { useUserPreferences } from "@/hooks/queries/use-user-preferences";
@@ -120,7 +120,7 @@ export function ArticleList({
   }, [selectedArticleId, isInlineMode, inlineAutoScroll]);
 
   if (isLoading) {
-    return <Skeleton count={5} />;
+    return <ArticleListSkeleton count={5} />;
   }
 
   if (articles.length === 0) {

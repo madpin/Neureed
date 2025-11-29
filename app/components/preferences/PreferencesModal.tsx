@@ -1,16 +1,22 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { toast } from "sonner";
-import { ThemePalette } from "./ThemePalette";
-import { DraggableOrderEditor } from "./DraggableOrderEditor";
-import { ArticleCard, type ArticleDisplayPreferences } from "@/app/components/articles/ArticleCard";
-import { useUserPreferences, useUpdateUserPreferences, useResetPatterns, type UserPreferences } from "@/hooks/queries/use-user-preferences";
+import { useUserPreferences, useUpdateUserPreferences, type UserPreferences } from "@/hooks/queries/use-user-preferences";
 import { applyFontSizeVariables } from "@/lib/typography-utils";
-import { ToggleSwitch, Modal, ModalBody, ModalFooter, Button, Card, CardHeader, CardBody } from "@/app/components/ui";
-
-type ViewType = 'profile' | 'appearance' | 'articleDisplay' | 'reading' | 'learning' | 'llm' | 'feeds';
+import { Modal, ModalBody, ModalFooter, Button } from "@/app/components/ui";
+import { getDefaultPreferences, validatePreferences, getViewLabel, NAVIGATION_ITEMS, type ViewType } from "@/app/lib/preferences";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import { useMobileMenu } from "@/hooks/use-mobile-menu";
+import { useViewNavigation } from "@/hooks/use-view-navigation";
+import {
+  ProfileView,
+  AppearanceView,
+  ReadingView,
+  LearningView,
+  LLMView,
+  ArticleDisplayView
+} from "./views";
 
 interface PreferencesModalProps {
   isOpen: boolean;
@@ -26,16 +32,45 @@ export function PreferencesModal({
   const { data: session, status: sessionStatus } = useSession();
   const { data: cachedPreferences, isLoading, error } = useUserPreferences();
   const updatePreferencesMutation = useUpdateUserPreferences();
-  
-  const [currentView, setCurrentView] = useState<ViewType>(initialView);
-  
+
   const [localPreferences, setLocalPreferences] = useState<UserPreferences | null>(null);
   const [originalPreferences, setOriginalPreferences] = useState<UserPreferences | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const isShowingUnsavedDialog = useRef(false);
+
+  // Custom hooks for common patterns
+  const { isOpen: isMobileMenuOpen, dropdownRef, close: closeMobileMenu, toggle: toggleMobileMenu } = useMobileMenu();
+
+  const { currentView, navigateToView } = useViewNavigation<ViewType>({
+    modalName: 'preferences',
+    defaultView: initialView,
+    isOpen: isOpen,
+    onNavigate: () => closeMobileMenu(),
+    onClose: (skipHistoryPush) => handleClose(skipHistoryPush),
+  });
+
+  const { confirmClose } = useUnsavedChanges(
+    localPreferences,
+    originalPreferences,
+    {
+      onRevert: (original) => {
+        // Revert theme and fontSize if they were changed in the UI but not saved
+        if (localPreferences?.theme !== original.theme) {
+          window.dispatchEvent(new CustomEvent("preferencesUpdated", {
+            detail: { theme: original.theme }
+          }));
+        }
+
+        if (localPreferences?.fontSize !== original.fontSize) {
+          window.dispatchEvent(new CustomEvent("preferencesUpdated", {
+            detail: { fontSize: original.fontSize }
+          }));
+        }
+
+        setLocalPreferences(original);
+      },
+    }
+  );
 
   // Initialize local state from cached data
   useEffect(() => {
@@ -58,154 +93,13 @@ export function PreferencesModal({
     }
   }, [cachedPreferences, isLoading, localPreferences, error]);
 
-  const getDefaultPreferences = (): UserPreferences => ({
-    theme: "system",
-    fontSize: "medium",
-    articlesPerPage: 20,
-    defaultView: "expanded",
-    showReadArticles: true,
-    autoMarkAsRead: false,
-    showRelatedExcerpts: false,
-    bounceThreshold: 0.25,
-    searchRecencyWeight: 0.3,
-    searchRecencyDecayDays: 30,
-    showLowRelevanceArticles: true,
-    infiniteScrollMode: "both",
-    llmProvider: null,
-    llmSummaryModel: null,
-    llmEmbeddingModel: null,
-    llmDigestModel: null,
-    llmApiKey: null,
-    llmBaseUrl: null,
-    embeddingsEnabled: false,
-    readingMode: "side_panel",
-    inlineAutoScroll: true,
-    readingPanelEnabled: true,
-    readingPanelPosition: "right",
-    readingPanelSize: 50,
-    readingFontFamily: "Georgia",
-    readingFontSize: 18,
-    readingLineHeight: 1.7,
-    readingParagraphSpacing: 1.5,
-    breakLineSpacing: 0.75,
-    showReadingTime: true,
-    // Article Display Customization
-    articleCardDensity: "normal",
-    showArticleImage: true,
-    showArticleExcerpt: true,
-    showArticleAuthor: true,
-    showArticleFeedInfo: true,
-    showArticleDate: true,
-    articleCardSectionOrder: ["feedInfo", "title", "excerpt", "actions"],
-    articleCardBorderWidth: "normal",
-    articleCardBorderRadius: "normal",
-    articleCardBorderContrast: "medium",
-    articleCardSpacing: "normal",
-  });
-
-  const hasUnsavedChanges = () => {
-    if (!localPreferences || !originalPreferences) return false;
-    return JSON.stringify(localPreferences) !== JSON.stringify(originalPreferences);
-  };
-
-  const revertChanges = () => {
-    if (!originalPreferences) return;
-    
-    // Revert theme and fontSize if they were changed in the UI but not saved
-    if (localPreferences?.theme !== originalPreferences.theme) {
-      window.dispatchEvent(new CustomEvent("preferencesUpdated", { 
-        detail: { theme: originalPreferences.theme } 
-      }));
-    }
-    
-    if (localPreferences?.fontSize !== originalPreferences.fontSize) {
-      window.dispatchEvent(new CustomEvent("preferencesUpdated", { 
-        detail: { fontSize: originalPreferences.fontSize } 
-      }));
-    }
-    
-    setLocalPreferences(originalPreferences);
-  };
-
-  const handleCloseWithHistory = () => {
-    if (hasUnsavedChanges()) {
-      // Prevent showing multiple dialogs
-      if (isShowingUnsavedDialog.current) {
-        return;
+  const handleClose = (skipHistoryPush = false) => {
+    confirmClose(() => {
+      if (skipHistoryPush && window.history.state?.modal === 'preferences') {
+        window.history.back();
       }
-      
-      isShowingUnsavedDialog.current = true;
-      
-      toast.warning("You have unsaved changes", {
-        description: "Are you sure you want to close without saving?",
-        action: {
-          label: "Close anyway",
-          onClick: () => {
-            isShowingUnsavedDialog.current = false;
-            revertChanges();
-            if (window.history.state?.modal === 'preferences') {
-              window.history.back();
-            }
-            onClose();
-          },
-        },
-        cancel: {
-          label: "Keep editing",
-          onClick: () => {
-            isShowingUnsavedDialog.current = false;
-          },
-        },
-        onDismiss: () => {
-          isShowingUnsavedDialog.current = false;
-        },
-        onAutoClose: () => {
-          isShowingUnsavedDialog.current = false;
-        },
-      });
-      return;
-    }
-    
-    if (window.history.state?.modal === 'preferences') {
-      window.history.back();
-    }
-    onClose();
-  };
-
-  const handleClose = () => {
-    if (hasUnsavedChanges()) {
-      // Prevent showing multiple dialogs
-      if (isShowingUnsavedDialog.current) {
-        return;
-      }
-      
-      isShowingUnsavedDialog.current = true;
-      
-      toast.warning("You have unsaved changes", {
-        description: "Are you sure you want to close without saving?",
-        action: {
-          label: "Close anyway",
-          onClick: () => {
-            isShowingUnsavedDialog.current = false;
-            revertChanges();
-            onClose();
-          },
-        },
-        cancel: {
-          label: "Keep editing",
-          onClick: () => {
-            isShowingUnsavedDialog.current = false;
-          },
-        },
-        onDismiss: () => {
-          isShowingUnsavedDialog.current = false;
-        },
-        onAutoClose: () => {
-          isShowingUnsavedDialog.current = false;
-        },
-      });
-      return;
-    }
-    onClose();
+      onClose();
+    });
   };
 
   const handleSave = async () => {
@@ -214,27 +108,13 @@ export function PreferencesModal({
     setIsSaving(true);
     setSaveMessage(null);
 
-    // Client-side validation for common issues
-    const validationIssues = [];
-    
-    if (localPreferences.articleCardBorderWidth && !["none", "thin", "normal", "thick"].includes(localPreferences.articleCardBorderWidth)) {
-      validationIssues.push(`Invalid borderWidth: ${localPreferences.articleCardBorderWidth}`);
-    }
-    if (localPreferences.articleCardBorderRadius && !["sharp", "slight", "normal", "rounded"].includes(localPreferences.articleCardBorderRadius)) {
-      validationIssues.push(`Invalid borderRadius: ${localPreferences.articleCardBorderRadius}`);
-    }
-    if (localPreferences.articleCardBorderContrast && !["subtle", "medium", "strong"].includes(localPreferences.articleCardBorderContrast)) {
-      validationIssues.push(`Invalid borderContrast: ${localPreferences.articleCardBorderContrast}`);
-    }
-    if (localPreferences.articleCardSpacing && !["none", "compact", "normal", "comfortable", "spacious"].includes(localPreferences.articleCardSpacing)) {
-      validationIssues.push(`Invalid spacing: ${localPreferences.articleCardSpacing}`);
-    }
-    
-    if (validationIssues.length > 0) {
-      console.error("Client-side validation failed:", validationIssues);
+    // Client-side validation
+    const validation = validatePreferences(localPreferences);
+    if (!validation.isValid) {
+      console.error("Client-side validation failed:", validation.errors);
       setSaveMessage({
         type: "error",
-        text: `Invalid values: ${validationIssues.join(", ")}`
+        text: `Invalid values: ${validation.errors.join(", ")}`
       });
       setIsSaving(false);
       return;
@@ -301,118 +181,6 @@ export function PreferencesModal({
     localPreferences?.uiFontSize
   ]);
 
-  // Get label for current view
-  const getViewLabel = (view: ViewType) => {
-    const labels: Record<ViewType, string> = {
-      profile: 'Profile',
-      appearance: 'Appearance',
-      articleDisplay: 'Article Display',
-      reading: 'Reading',
-      learning: 'Learning',
-      llm: 'LLM Settings',
-      feeds: 'Feeds'
-    };
-    return labels[view];
-  };
-
-  // Navigation menu items
-  const navigationItems: Array<{ view: ViewType; label: string; icon: React.ReactNode }> = [
-    {
-      view: 'profile',
-      label: 'Profile',
-      icon: (
-        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
-      )
-    },
-    {
-      view: 'appearance',
-      label: 'Appearance',
-      icon: (
-        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-        </svg>
-      )
-    },
-    {
-      view: 'articleDisplay',
-      label: 'Article Display',
-      icon: (
-        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 14a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2zM14 11a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z" />
-        </svg>
-      )
-    },
-    {
-      view: 'reading',
-      label: 'Reading',
-      icon: (
-        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-        </svg>
-      )
-    },
-    {
-      view: 'learning',
-      label: 'Learning',
-      icon: (
-        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-        </svg>
-      )
-    },
-    {
-      view: 'llm',
-      label: 'LLM Settings',
-      icon: (
-        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-        </svg>
-      )
-    }
-  ];
-
-  // Navigate to a different view
-  const navigateToView = (view: ViewType) => {
-    setCurrentView(view);
-    setIsMobileMenuOpen(false); // Close mobile menu on selection
-    const state = { modal: 'preferences', view };
-    window.history.pushState(state, '', window.location.href);
-  };
-
-  // Handle browser back/forward buttons
-  useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
-      if (event.state?.modal === 'preferences') {
-        setCurrentView(event.state.view || 'profile');
-      } else {
-        handleCloseWithHistory();
-      }
-    };
-
-    const initialState = { modal: 'preferences', view: initialView };
-    window.history.pushState(initialState, '', window.location.href);
-
-    window.addEventListener('popstate', handlePopState);
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [initialView]);
-
-  // Handle click outside mobile dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      // Close mobile dropdown when clicking outside
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsMobileMenuOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   if (isLoading && !localPreferences) {
     return (
       <Modal isOpen={isOpen} onClose={onClose} size="xl">
@@ -428,16 +196,35 @@ export function PreferencesModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={handleCloseWithHistory} size="xl">
+    <Modal isOpen={isOpen} onClose={() => handleClose(true)} size="xl">
       <ModalBody padding={false} className="flex h-[70vh] overflow-hidden">
         {/* Sidebar Navigation - Desktop Only */}
         <aside className="hidden md:flex w-52 flex-shrink-0 border-r border-border bg-muted">
           <div className="flex h-full flex-col">
-            <div className="border-b border-border p-4">
+            <div className="border-b border-border p-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">Preferences</h2>
+              <button
+                onClick={() => handleClose(true)}
+                className="rounded-lg p-1.5 hover:bg-background transition-colors"
+                aria-label="Close modal"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
             </div>
             <nav className="flex-1 space-y-1 overflow-y-auto p-2">
-              {navigationItems.map((item) => (
+              {NAVIGATION_ITEMS.map((item) => (
                 <button
                   key={item.view}
                   onClick={() => navigateToView(item.view)}
@@ -459,9 +246,31 @@ export function PreferencesModal({
         <main className="flex flex-1 flex-col overflow-hidden">
           {/* Mobile Navigation Dropdown */}
           <div className="md:hidden border-b border-border p-4 flex-shrink-0">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold">Preferences</h2>
+              <button
+                onClick={() => handleClose(true)}
+                className="rounded-lg p-1.5 hover:bg-muted transition-colors"
+                aria-label="Close modal"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
             <div className="relative" ref={dropdownRef}>
               <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                onClick={toggleMobileMenu}
                 className="flex w-full items-center justify-between rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
               >
                 <span>{getViewLabel(currentView)}</span>
@@ -478,7 +287,7 @@ export function PreferencesModal({
               {/* Dropdown Menu */}
               {isMobileMenuOpen && (
                 <div className="absolute top-full left-0 right-0 mt-2 rounded-lg border border-border bg-background shadow-lg z-10 max-h-80 overflow-y-auto">
-                  {navigationItems.map((item) => (
+                  {NAVIGATION_ITEMS.map((item) => (
                     <button
                       key={item.view}
                       onClick={() => navigateToView(item.view)}
@@ -534,7 +343,7 @@ export function PreferencesModal({
       <ModalFooter>
         <Button
           variant="outline"
-          onClick={handleClose}
+          onClick={() => handleClose(false)}
         >
           Cancel
         </Button>
@@ -550,1092 +359,3 @@ export function PreferencesModal({
     </Modal>
   );
 }
-
-// Profile View Component
-function ProfileView({ session }: { session: any }) {
-  return (
-    <div>
-      <h2 className="mb-6 text-2xl font-bold">Profile</h2>
-      <div className="flex items-center gap-4">
-        {session.user.image ? (
-          <img
-            src={session.user.image}
-            alt={session.user.name || "User"}
-            className="h-20 w-20 rounded-full"
-          />
-        ) : (
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary text-3xl font-medium text-primary-foreground">
-            {session.user.name?.[0]?.toUpperCase() || session.user.email?.[0]?.toUpperCase() || "U"}
-          </div>
-        )}
-        <div>
-          <p className="text-lg font-medium">{session.user.name || "User"}</p>
-          <p className="text-sm text-gray-600 dark:text-gray-400">{session.user.email}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Appearance View Component
-function AppearanceView({
-  preferences,
-  updatePreference,
-}: {
-  preferences: UserPreferences;
-  updatePreference: <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => void;
-}) {
-  return (
-    <div>
-      <h2 className="mb-6 text-2xl font-bold">Appearance</h2>
-      <div className="space-y-6">
-        {/* Theme Selection */}
-        <div>
-          <label className="mb-3 block text-sm font-medium">Theme</label>
-          <ThemePalette
-            selectedTheme={preferences.theme || "system"}
-            onThemeChange={(theme) => {
-              updatePreference("theme", theme);
-              window.dispatchEvent(new CustomEvent("preferencesUpdated", {
-                detail: { theme }
-              }));
-            }}
-          />
-        </div>
-
-        {/* Font Size */}
-        <div>
-          <label className="mb-2 block text-sm font-medium">Font Size</label>
-          <div className="flex gap-2">
-            <select
-              value={["small", "medium", "large"].includes(preferences.fontSize || "medium") ? preferences.fontSize : "custom"}
-              onChange={(e) => {
-                if (e.target.value !== "custom") {
-                  updatePreference("fontSize", e.target.value);
-                }
-              }}
-              className="flex-1 rounded-lg border border-border bg-muted px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            >
-              <option value="small">Small (14px)</option>
-              <option value="medium">Medium (16px)</option>
-              <option value="large">Large (18px)</option>
-              <option value="custom">Custom</option>
-            </select>
-            {!["small", "medium", "large"].includes(preferences.fontSize || "medium") && (
-              <input
-                type="text"
-                value={preferences.fontSize}
-                onChange={(e) => updatePreference("fontSize", e.target.value)}
-                placeholder="e.g., 20px"
-                className="w-32 rounded-lg border border-border bg-muted px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            )}
-          </div>
-        </div>
-
-        {/* Section-Specific Font Sizes */}
-        <Card className="bg-muted/50">
-          <CardHeader title="Section-Specific Font Sizes" />
-          <CardBody>
-            <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-              Customize text sizes for different sections relative to your main font size.
-              &quot;Smaller&quot; is -2px, &quot;Same&quot; is ±0, &quot;Larger&quot; is +2px.
-            </p>
-
-          <div className="space-y-4">
-            {/* Sidebar Font Size */}
-            <div>
-              <label className="mb-2 block text-sm font-medium">Sidebar</label>
-              <select
-                value={preferences.sidebarFontSize || "smaller"}
-                onChange={(e) => updatePreference("sidebarFontSize", e.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              >
-                <option value="smaller">Smaller (Main -2px)</option>
-                <option value="same">Same as Main</option>
-                <option value="larger">Larger (Main +2px)</option>
-              </select>
-            </div>
-
-            {/* Article Cards Font Size */}
-            <div>
-              <label className="mb-2 block text-sm font-medium">Article Cards</label>
-              <select
-                value={preferences.cardFontSize || "same"}
-                onChange={(e) => updatePreference("cardFontSize", e.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              >
-                <option value="smaller">Smaller (Main -2px)</option>
-                <option value="same">Same as Main</option>
-                <option value="larger">Larger (Main +2px)</option>
-              </select>
-            </div>
-
-            {/* Modals Font Size */}
-            <div>
-              <label className="mb-2 block text-sm font-medium">Modals & Dialogs</label>
-              <select
-                value={preferences.modalFontSize || "same"}
-                onChange={(e) => updatePreference("modalFontSize", e.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              >
-                <option value="smaller">Smaller (Main -2px)</option>
-                <option value="same">Same as Main</option>
-                <option value="larger">Larger (Main +2px)</option>
-              </select>
-            </div>
-
-            {/* UI Elements Font Size */}
-            <div>
-              <label className="mb-2 block text-sm font-medium">UI Elements (Buttons, Badges, etc.)</label>
-              <select
-                value={preferences.uiFontSize || "same"}
-                onChange={(e) => updatePreference("uiFontSize", e.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              >
-                <option value="smaller">Smaller (Main -2px)</option>
-                <option value="same">Same as Main</option>
-                <option value="larger">Larger (Main +2px)</option>
-              </select>
-            </div>
-
-            {/* Preview */}
-            <div className="mt-4 rounded-lg bg-background p-4 border border-border">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Preview</p>
-              <div className="space-y-2">
-                <div style={{ fontSize: `var(--font-size-sidebar)` }}>
-                  <span className="text-gray-500">Sidebar: </span>
-                  <span>The quick brown fox jumps over the lazy dog</span>
-                </div>
-                <div style={{ fontSize: `var(--font-size-card)` }}>
-                  <span className="text-gray-500">Cards: </span>
-                  <span>The quick brown fox jumps over the lazy dog</span>
-                </div>
-                <div style={{ fontSize: `var(--font-size-modal)` }}>
-                  <span className="text-gray-500">Modals: </span>
-                  <span>The quick brown fox jumps over the lazy dog</span>
-                </div>
-                <div style={{ fontSize: `var(--font-size-ui)` }}>
-                  <span className="text-gray-500">UI: </span>
-                  <span>The quick brown fox jumps over the lazy dog</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          </CardBody>
-        </Card>
-
-        {/* Default View */}
-        <div>
-          <label className="mb-2 block text-sm font-medium">Default Article View</label>
-          <select
-            value={preferences.defaultView || "expanded"}
-            onChange={(e) => updatePreference("defaultView", e.target.value as "compact" | "expanded")}
-            className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            <option value="compact">Compact</option>
-            <option value="expanded">Expanded</option>
-          </select>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Reading View Component
-function ReadingView({
-  preferences,
-  updatePreference,
-}: {
-  preferences: UserPreferences;
-  updatePreference: <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => void;
-}) {
-  return (
-    <div>
-      <h2 className="mb-6 text-2xl font-bold">Reading Preferences</h2>
-      <div className="space-y-6">
-        {/* Reading Mode Section */}
-        <Card className="bg-muted">
-          <CardHeader title="Reading Mode" />
-          <CardBody>
-            <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-              Choose how articles open when you click them in the feed.
-            </p>
-
-          <div className="space-y-4">
-            {/* Reading Mode Selector */}
-            <div>
-              <label className="mb-2 block text-sm font-medium">Reading Mode</label>
-              <div className="grid grid-cols-1 gap-2">
-                {([
-                  {
-                    value: "side_panel" as const,
-                    label: "Side Panel",
-                    description: "Split-view with resizable panel",
-                    icon: "⊞"
-                  },
-                  {
-                    value: "inline" as const,
-                    label: "Inline",
-                    description: "Accordion-style expansion in list",
-                    icon: "⬍"
-                  },
-                  {
-                    value: "standalone" as const,
-                    label: "Standalone",
-                    description: "Full-page dedicated view",
-                    icon: "□"
-                  },
-                ] as const).map((mode) => (
-                  <button
-                    key={mode.value}
-                    onClick={() => updatePreference("readingMode", mode.value)}
-                    className={`flex items-start gap-3 rounded-lg border px-4 py-3 text-left text-sm font-medium transition-colors ${
-                      (preferences.readingMode || "side_panel") === mode.value
-                        ? "border-primary bg-primary/10 text-primary dark:bg-primary/20"
-                        : "border-border bg-background hover:bg-muted"
-                    }`}
-                  >
-                    <span className="text-xl">{mode.icon}</span>
-                    <div className="flex-1">
-                      <div className="font-semibold">{mode.label}</div>
-                      <div className="mt-0.5 text-xs opacity-80">{mode.description}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Inline Mode Settings */}
-            {(preferences.readingMode || "side_panel") === "inline" && (
-              <div className="rounded-lg border border-border bg-background p-4">
-                <ToggleSwitch
-                  label="Auto-scroll to Article"
-                  description="Automatically scroll to the article when it expands"
-                  checked={preferences.inlineAutoScroll ?? true}
-                  onChange={(checked) => updatePreference("inlineAutoScroll", checked)}
-                />
-              </div>
-            )}
-
-            {/* Side Panel Settings */}
-            {(preferences.readingMode || "side_panel") === "side_panel" && (
-              <div className="space-y-4 rounded-lg border border-border bg-background p-4">
-                <ToggleSwitch
-                  label="Enable Reading Panel"
-                  description="Show articles in a resizable side panel"
-                  checked={preferences.readingPanelEnabled || false}
-                  onChange={(checked) => updatePreference("readingPanelEnabled", checked)}
-                />
-
-                {preferences.readingPanelEnabled && (
-                  <>
-                    {/* Panel Position */}
-                    <div>
-                      <label className="mb-2 block text-sm font-medium">Panel Position</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {[
-                          { value: "right", label: "Right", icon: "→" },
-                          { value: "left", label: "Left", icon: "←" },
-                          { value: "top", label: "Top", icon: "↑" },
-                          { value: "bottom", label: "Bottom", icon: "↓" },
-                        ].map((pos) => (
-                          <button
-                            key={pos.value}
-                            onClick={() => updatePreference("readingPanelPosition", pos.value)}
-                            className={`flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-colors ${
-                              preferences.readingPanelPosition === pos.value
-                                ? "border-primary bg-primary/10 text-primary dark:bg-primary/20"
-                                : "border-border bg-background hover:bg-muted"
-                            }`}
-                          >
-                            <span className="text-lg">{pos.icon}</span>
-                            <span>{pos.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                        Choose where the reading panel appears on your screen
-                      </p>
-                    </div>
-
-                    {/* Panel Size */}
-                    <div>
-                      <label className="mb-2 block text-sm font-medium">
-                        Default Panel Size: {preferences.readingPanelSize}%
-                      </label>
-                      <input
-                        type="range"
-                        min="30"
-                        max="70"
-                        step="5"
-                        value={preferences.readingPanelSize || 50}
-                        onChange={(e) => updatePreference("readingPanelSize", parseInt(e.target.value))}
-                        className="w-full"
-                      />
-                      <div className="mt-1 flex justify-between text-xs text-gray-500">
-                        <span>30%</span>
-                        <span>50%</span>
-                        <span>70%</span>
-                      </div>
-                      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                        Adjust the default size of the reading panel (can be resized while reading)
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-          </CardBody>
-        </Card>
-
-        {/* Articles Per Page */}
-        <div>
-          <label className="mb-2 block text-sm font-medium">Articles Per Page</label>
-          <input
-            type="number"
-            min="5"
-            max="100"
-            value={preferences.articlesPerPage || 20}
-            onChange={(e) => updatePreference("articlesPerPage", parseInt(e.target.value))}
-            className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          />
-        </div>
-
-        {/* Infinite Scroll Mode */}
-        <div>
-          <label className="mb-2 block text-sm font-medium">Infinite Scroll Mode</label>
-          <select
-            value={preferences.infiniteScrollMode || "both"}
-            onChange={(e) => updatePreference("infiniteScrollMode", e.target.value)}
-            className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            <option value="auto">Auto-load (scroll to load more)</option>
-            <option value="button">Button only (manual load)</option>
-            <option value="both">Both (auto-load + button)</option>
-          </select>
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Choose how to load more articles: automatically when scrolling, with a button, or both
-          </p>
-        </div>
-
-        {/* Toggle Switches */}
-        <ToggleSwitch
-          label="Show Read Articles"
-          description="Display articles you've already read in the feed"
-          checked={preferences.showReadArticles || false}
-          onChange={(checked) => updatePreference("showReadArticles", checked)}
-        />
-
-        <ToggleSwitch
-          label="Auto Mark as Read"
-          description="Automatically mark articles as read when you open them"
-          checked={preferences.autoMarkAsRead || false}
-          onChange={(checked) => updatePreference("autoMarkAsRead", checked)}
-        />
-
-        <ToggleSwitch
-          label="Show Excerpts in Related Articles"
-          description="Display article snippets in the related articles section"
-          checked={preferences.showRelatedExcerpts || false}
-          onChange={(checked) => updatePreference("showRelatedExcerpts", checked)}
-        />
-      </div>
-    </div>
-  );
-}
-
-// Learning View Component
-function LearningView({
-  preferences,
-  updatePreference,
-}: {
-  preferences: UserPreferences;
-  updatePreference: <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => void;
-}) {
-  return (
-    <div>
-      <h2 className="mb-6 text-2xl font-bold">Learning System</h2>
-      <div className="space-y-6">
-        {/* Bounce Threshold */}
-        <div>
-          <label className="mb-2 block text-sm font-medium">
-            Bounce Detection Threshold: {Math.round((preferences.bounceThreshold || 0.25) * 100)}%
-          </label>
-          <input
-            type="range"
-            min="10"
-            max="50"
-            step="5"
-            value={(preferences.bounceThreshold || 0.25) * 100}
-            onChange={(e) => updatePreference("bounceThreshold", parseInt(e.target.value) / 100)}
-            className="w-full"
-          />
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            If you leave an article before reading {Math.round((preferences.bounceThreshold || 0.25) * 100)}% of the estimated time,
-            it counts as negative feedback
-          </p>
-        </div>
-
-        <ToggleSwitch
-          label="Show Low-Relevance Articles"
-          description="Display articles with low relevance scores (dimmed) instead of hiding them"
-          checked={preferences.showLowRelevanceArticles || false}
-          onChange={(checked) => updatePreference("showLowRelevanceArticles", checked)}
-        />
-
-        {/* Search Recency Weight */}
-        <div>
-          <label className="mb-2 block text-sm font-medium">
-            Search Recency Weight: {Math.round((preferences.searchRecencyWeight || 0.3) * 100)}%
-          </label>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            step="5"
-            value={(preferences.searchRecencyWeight || 0.3) * 100}
-            onChange={(e) => updatePreference("searchRecencyWeight", parseInt(e.target.value) / 100)}
-            className="w-full"
-          />
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            How much to prioritize recent articles in semantic search results. 
-            0% = pure semantic similarity, 100% = only recency matters
-          </p>
-        </div>
-
-        {/* Search Recency Decay Days */}
-        <div>
-          <label className="mb-2 block text-sm font-medium">
-            Recency Decay Period: {preferences.searchRecencyDecayDays || 30} days
-          </label>
-          <input
-            type="range"
-            min="7"
-            max="180"
-            step="7"
-            value={preferences.searchRecencyDecayDays || 30}
-            onChange={(e) => updatePreference("searchRecencyDecayDays", parseInt(e.target.value))}
-            className="w-full"
-          />
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            How quickly article recency importance fades. Shorter periods favor very recent articles.
-          </p>
-        </div>
-
-        {/* Reset Button */}
-        <Card className="bg-muted">
-          <CardHeader title="Learned Patterns" />
-          <CardBody>
-            <p className="mb-3 text-xs text-gray-600 dark:text-gray-400">
-              The system learns from your feedback to personalize article recommendations
-            </p>
-            <ResetPatternsButton />
-          </CardBody>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-// LLM View Component
-function LLMView({
-  preferences,
-  updatePreference,
-}: {
-  preferences: UserPreferences;
-  updatePreference: <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => void;
-}) {
-  const [showApiKey, setShowApiKey] = useState(false);
-
-  return (
-    <div>
-      <h2 className="mb-6 text-2xl font-bold">LLM Settings</h2>
-      <Card className="mb-4 border-primary/20 bg-primary/10 dark:border-primary/30 dark:bg-primary/20">
-        <CardBody>
-          <p className="text-sm text-primary dark:text-primary">
-            Configure your personal LLM settings for article summarization and key points extraction.
-            Leave blank to use system defaults.
-          </p>
-        </CardBody>
-      </Card>
-      <div className="space-y-6">
-        {/* LLM Provider */}
-        <div>
-          <label className="mb-2 block text-sm font-medium">LLM Provider</label>
-          <select
-            value={preferences.llmProvider || ""}
-            onChange={(e) => updatePreference("llmProvider", e.target.value || null)}
-            className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            <option value="">System Default</option>
-            <option value="openai">OpenAI</option>
-            <option value="ollama">Ollama (Local)</option>
-          </select>
-        </div>
-
-        {/* Summary Model */}
-        <div>
-          <label className="mb-2 block text-sm font-medium">Summarization Model</label>
-          <input
-            type="text"
-            value={preferences.llmSummaryModel || ""}
-            onChange={(e) => updatePreference("llmSummaryModel", e.target.value || null)}
-            placeholder={preferences.llmProvider === "openai" ? "e.g., gpt-4o-mini" : preferences.llmProvider === "ollama" ? "e.g., llama2" : "Use system default"}
-            className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          />
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            {preferences.llmProvider === "openai" && "For article summaries. Recommended: gpt-4o-mini, gpt-4o, gpt-3.5-turbo"}
-            {preferences.llmProvider === "ollama" && "For article summaries. Examples: llama2, mistral, codellama"}
-            {!preferences.llmProvider && "Model for generating article summaries"}
-          </p>
-        </div>
-
-        {/* Embedding Model */}
-        <div>
-          <label className="mb-2 block text-sm font-medium">Embedding Model</label>
-          <input
-            type="text"
-            value={preferences.llmEmbeddingModel || ""}
-            onChange={(e) => updatePreference("llmEmbeddingModel", e.target.value || null)}
-            placeholder={preferences.llmProvider === "openai" ? "e.g., text-embedding-3-small" : preferences.llmProvider === "ollama" ? "e.g., nomic-embed-text" : "Use system default"}
-            className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          />
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            {preferences.llmProvider === "openai" && "For semantic search. Recommended: text-embedding-3-small, text-embedding-3-large"}
-            {preferences.llmProvider === "ollama" && "For semantic search. Example: nomic-embed-text"}
-            {!preferences.llmProvider && "Model for generating embeddings (semantic search)"}
-          </p>
-        </div>
-
-        {/* Digest Model */}
-        <div>
-          <label className="mb-2 block text-sm font-medium">Digest Model</label>
-          <input
-            type="text"
-            value={preferences.llmDigestModel || ""}
-            onChange={(e) => updatePreference("llmDigestModel", e.target.value || null)}
-            placeholder={preferences.llmProvider === "openai" ? "e.g., gpt-4o" : preferences.llmProvider === "ollama" ? "e.g., mistral" : "Use system default"}
-            className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          />
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            {preferences.llmProvider === "openai" && "For digest generation (future). Recommended: gpt-4o, gpt-4-turbo"}
-            {preferences.llmProvider === "ollama" && "For digest generation (future). Example: mistral"}
-            {!preferences.llmProvider && "Model for generating daily digests (future feature)"}
-          </p>
-        </div>
-
-        {/* API Key (OpenAI only) */}
-        {preferences.llmProvider === "openai" && (
-          <div>
-            <label className="mb-2 block text-sm font-medium">OpenAI API Key</label>
-            <div className="relative">
-              <input
-                type={showApiKey ? "text" : "password"}
-                value={preferences.llmApiKey || ""}
-                onChange={(e) => updatePreference("llmApiKey", e.target.value || null)}
-                placeholder="sk-..."
-                className="w-full rounded-lg border border-border bg-muted px-4 py-2 pr-20 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-              <button
-                type="button"
-                onClick={() => setShowApiKey(!showApiKey)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded px-3 py-1 text-xs text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
-              >
-                {showApiKey ? "Hide" : "Show"}
-              </button>
-            </div>
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Your API key is encrypted and stored securely
-            </p>
-          </div>
-        )}
-
-        {/* Base URL */}
-        {(preferences.llmProvider === "openai" || preferences.llmProvider === "ollama") && (
-          <div>
-            <label className="mb-2 block text-sm font-medium">
-              {preferences.llmProvider === "openai" ? "Base URL (Optional)" : "Ollama Base URL"}
-            </label>
-            <input
-              type="url"
-              value={preferences.llmBaseUrl || ""}
-              onChange={(e) => updatePreference("llmBaseUrl", e.target.value || null)}
-              placeholder={preferences.llmProvider === "openai" ? "https://api.openai.com/v1" : "http://localhost:11434"}
-              className="w-full rounded-lg border border-border bg-muted px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              {preferences.llmProvider === "openai"
-                ? "For OpenAI-compatible endpoints (e.g., Azure OpenAI, local proxies). Leave blank for default OpenAI API."
-                : "URL where your Ollama instance is running"}
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// Article Display View Component
-function ArticleDisplayView({
-  preferences,
-  updatePreference,
-}: {
-  preferences: UserPreferences;
-  updatePreference: <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => void;
-}) {
-  const densityOptions = [
-    {
-      value: "compact" as const,
-      label: "Compact",
-      description: "Minimal spacing, more articles visible",
-    },
-    {
-      value: "normal" as const,
-      label: "Normal",
-      description: "Balanced spacing and readability",
-    },
-    {
-      value: "comfortable" as const,
-      label: "Comfortable",
-      description: "Generous spacing, easier reading",
-    },
-  ];
-
-  const currentDensity = (preferences.articleCardDensity as "compact" | "normal" | "comfortable") || "normal";
-
-  // Sample articles for preview - one unread, one read
-  // Use static dates to avoid react-hooks/purity errors
-  const sampleArticles = useMemo(() => {
-    const oneHourAgo = new Date(new Date().getTime() - 3600000);
-    return [
-    {
-      id: "preview-article-1",
-      title: "How to Customize Your RSS Reader Experience",
-      excerpt: "Learn how to personalize your article cards with custom layouts, density settings, and component visibility controls for the perfect reading experience.",
-      content: "Sample content",
-      url: "#",
-      feedId: "sample-feed",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      publishedAt: new Date(),
-      author: "John Doe",
-      imageUrl: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=300&fit=crop",
-      isRead: false, // Unread article
-      feeds: {
-        id: "sample-feed",
-        name: "Tech News Daily",
-        url: "#",
-        imageUrl: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=32&h=32&fit=crop",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    },
-    {
-      id: "preview-article-2",
-      title: "Building Modern Web Applications",
-      excerpt: "Explore the latest techniques and best practices for creating responsive, performant web applications with modern frameworks.",
-      content: "Sample content",
-      url: "#",
-      feedId: "sample-feed",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      publishedAt: oneHourAgo,
-      author: "Jane Smith",
-      imageUrl: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400&h=300&fit=crop",
-      isRead: true, // Read article
-      feeds: {
-        id: "sample-feed",
-        name: "Tech News Daily",
-        url: "#",
-        imageUrl: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=32&h=32&fit=crop",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    },
-  ];
-  }, []);
-
-  // Build display preferences from current settings
-  const displayPreferences = useMemo<ArticleDisplayPreferences>(() => ({
-    density: (preferences.articleCardDensity as "compact" | "normal" | "comfortable") || "normal",
-    showImage: preferences.showArticleImage ?? true,
-    showExcerpt: preferences.showArticleExcerpt ?? true,
-    showAuthor: preferences.showArticleAuthor ?? true,
-    showFeedInfo: preferences.showArticleFeedInfo ?? true,
-    showDate: preferences.showArticleDate ?? true,
-    sectionOrder: (preferences.articleCardSectionOrder as string[]) || ["feedInfo", "title", "excerpt", "actions"],
-    borderWidth: (preferences.articleCardBorderWidth as "none" | "thin" | "normal" | "thick") || "normal",
-    borderRadius: (preferences.articleCardBorderRadius as "sharp" | "slight" | "normal" | "rounded") || "normal",
-    borderContrast: (preferences.articleCardBorderContrast as "subtle" | "medium" | "strong") || "medium",
-  }), [preferences]);
-
-  // Get spacing class for preview
-  const previewSpacingClass = useMemo(() => {
-    const spacing = preferences.articleCardSpacing || "normal";
-    switch (spacing) {
-      case "none":
-        return "space-y-0";
-      case "compact":
-        return "space-y-2";
-      case "comfortable":
-        return "space-y-6";
-      case "spacious":
-        return "space-y-8";
-      case "normal":
-      default:
-        return "space-y-4";
-    }
-  }, [preferences.articleCardSpacing]);
-
-  const handleDensityChange = (density: "compact" | "normal" | "comfortable") => {
-    updatePreference("articleCardDensity", density);
-    
-    // Auto-adjust visibility toggles based on density
-    if (density === "compact") {
-      updatePreference("showArticleImage", false);
-      updatePreference("showArticleExcerpt", false);
-    } else if (density === "comfortable") {
-      updatePreference("showArticleImage", true);
-      updatePreference("showArticleExcerpt", true);
-    }
-  };
-
-  return (
-    <div>
-      <h2 className="mb-6 text-2xl font-bold">Article Display</h2>
-      
-      <div className="space-y-8">
-        {/* Live Preview - Sticky */}
-        <Card className="sticky top-0 z-10 border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent shadow-lg backdrop-blur-sm">
-          <CardBody>
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-foreground">Live Preview</h3>
-                <p className="text-sm text-foreground/70">
-                  Changes apply instantly as you customize
-                </p>
-              </div>
-              <div className="rounded-full bg-green-500/20 px-3 py-1 text-xs font-medium text-green-600 dark:text-green-400">
-                ● Real-time
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-border bg-background p-4">
-              <div className={previewSpacingClass}>
-                {sampleArticles.map((article) => (
-                  <ArticleCard
-                    key={article.id}
-                    article={article as any}
-                    displayPreferences={displayPreferences}
-                  />
-                ))}
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* Density Presets */}
-        <div>
-          <label className="mb-3 block text-sm font-medium">Display Density</label>
-          <div className="grid grid-cols-3 gap-3">
-            {densityOptions.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => handleDensityChange(option.value)}
-                className={`
-                  flex flex-col items-start gap-2 rounded-lg border-2 p-4 text-left transition-all
-                  ${
-                    currentDensity === option.value
-                      ? "border-primary bg-primary/10 dark:bg-primary/20"
-                      : "border-border bg-background hover:bg-muted"
-                  }
-                `}
-              >
-                <span className="font-semibold text-sm">{option.label}</span>
-                <span className="text-xs text-foreground/60">{option.description}</span>
-                
-                {/* Visual indicator */}
-                <div className="mt-2 space-y-1 w-full">
-                  <div className={`h-2 rounded bg-foreground/20 ${option.value === "compact" ? "w-3/4" : option.value === "comfortable" ? "w-full" : "w-5/6"}`} />
-                  <div className={`h-1.5 rounded bg-foreground/10 ${option.value === "compact" ? "w-1/2" : "w-3/4"}`} />
-                  {option.value !== "compact" && (
-                    <div className="h-1 rounded bg-foreground/5 w-full" />
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Component Visibility Toggles */}
-        <Card className="bg-muted">
-          <CardBody>
-            <h3 className="mb-4 text-lg font-semibold">Show/Hide Components</h3>
-            <p className="mb-4 text-sm text-foreground/70">
-              Choose which elements to display in article cards
-            </p>
-
-            <div className="space-y-4">
-              <ToggleSwitch
-                label="Show Feed Information"
-                description="Display feed icon and name"
-                checked={preferences.showArticleFeedInfo ?? true}
-                onChange={(checked) => updatePreference("showArticleFeedInfo", checked)}
-              />
-
-              <ToggleSwitch
-                label="Show Article Images"
-                description="Display featured images when available"
-                checked={preferences.showArticleImage ?? true}
-                onChange={(checked) => updatePreference("showArticleImage", checked)}
-              />
-
-              <ToggleSwitch
-                label="Show Excerpts"
-                description="Display article summaries/descriptions"
-                checked={preferences.showArticleExcerpt ?? true}
-                onChange={(checked) => updatePreference("showArticleExcerpt", checked)}
-              />
-
-              <ToggleSwitch
-                label="Show Author Names"
-                description="Display article author when available"
-                checked={preferences.showArticleAuthor ?? true}
-                onChange={(checked) => updatePreference("showArticleAuthor", checked)}
-              />
-
-              <ToggleSwitch
-                label="Show Publication Dates"
-                description="Display when articles were published"
-                checked={preferences.showArticleDate ?? true}
-                onChange={(checked) => updatePreference("showArticleDate", checked)}
-              />
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* Border Appearance */}
-        <Card className="bg-muted">
-          <CardBody>
-            <h3 className="mb-4 text-lg font-semibold">Border Appearance</h3>
-            <p className="mb-6 text-sm text-foreground/70">
-              Customize borders to create a card-like or table-like appearance
-            </p>
-
-            <div className="space-y-6">
-            {/* Border Width */}
-            <div>
-              <label className="mb-3 block text-sm font-medium">Border Width</label>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {[
-                  { value: "none", label: "None", description: "No borders (minimal)" },
-                  { value: "thin", label: "Thin", description: "Subtle borders" },
-                  { value: "normal", label: "Normal", description: "Standard borders" },
-                  { value: "thick", label: "Thick", description: "Prominent (table-like)" },
-                ].map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => updatePreference("articleCardBorderWidth", option.value as "none" | "thin" | "normal" | "thick")}
-                    className={`
-                      flex flex-col items-center gap-2 rounded-lg border-2 p-4 text-left transition-all
-                      ${
-                        (preferences.articleCardBorderWidth || "normal") === option.value
-                          ? "border-primary bg-primary/10 dark:bg-primary/20"
-                          : "border-border bg-background hover:bg-muted"
-                      }
-                    `}
-                  >
-                    <span className="text-sm font-semibold">{option.label}</span>
-                    <span className="text-xs text-foreground/60 text-center">{option.description}</span>
-                    <div className="mt-2 w-full h-8 bg-foreground/5 rounded flex items-center justify-center">
-                      <div 
-                        className={`bg-foreground/30 rounded ${
-                          option.value === "none" ? "w-12 h-0" :
-                          option.value === "thin" ? "w-12 h-0.5" :
-                          option.value === "thick" ? "w-12 h-2" :
-                          "w-12 h-1"
-                        }`}
-                      />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Border Radius */}
-            <div>
-              <label className="mb-3 block text-sm font-medium">Border Radius</label>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {[
-                  { value: "sharp", label: "Sharp", description: "Square corners (table)" },
-                  { value: "slight", label: "Slight", description: "Slightly rounded" },
-                  { value: "normal", label: "Normal", description: "Rounded corners" },
-                  { value: "rounded", label: "Rounded", description: "Very rounded (card)" },
-                ].map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => updatePreference("articleCardBorderRadius", option.value as "sharp" | "slight" | "normal" | "rounded")}
-                    className={`
-                      flex flex-col items-center gap-2 rounded-lg border-2 p-4 text-left transition-all
-                      ${
-                        (preferences.articleCardBorderRadius || "normal") === option.value
-                          ? "border-primary bg-primary/10 dark:bg-primary/20"
-                          : "border-border bg-background hover:bg-muted"
-                      }
-                    `}
-                  >
-                    <span className="text-sm font-semibold">{option.label}</span>
-                    <span className="text-xs text-foreground/60 text-center">{option.description}</span>
-                    <div className="mt-2 w-full h-8 bg-foreground/5 flex items-center justify-center">
-                      <div 
-                        className={`w-12 h-6 bg-foreground/30 border-2 border-foreground/40 ${
-                          option.value === "sharp" ? "rounded-none" :
-                          option.value === "slight" ? "rounded" :
-                          option.value === "rounded" ? "rounded-xl" :
-                          "rounded-lg"
-                        }`}
-                      />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Border Contrast */}
-            <div>
-              <label className="mb-3 block text-sm font-medium">Border Contrast</label>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { value: "subtle", label: "Subtle", description: "Low visibility" },
-                  { value: "medium", label: "Medium", description: "Balanced (default)" },
-                  { value: "strong", label: "Strong", description: "Maximum contrast" },
-                ].map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => updatePreference("articleCardBorderContrast", option.value as "subtle" | "medium" | "strong")}
-                    className={`
-                      flex flex-col items-center gap-2 rounded-lg border-2 p-4 text-left transition-all
-                      ${
-                        (preferences.articleCardBorderContrast || "medium") === option.value
-                          ? "border-primary bg-primary/10 dark:bg-primary/20"
-                          : "border-border bg-background hover:bg-muted"
-                      }
-                    `}
-                  >
-                    <span className="text-sm font-semibold">{option.label}</span>
-                    <span className="text-xs text-foreground/60 text-center">{option.description}</span>
-                    <div className="mt-2 w-full h-8 bg-foreground/5 rounded flex items-center justify-center">
-                      <div 
-                        className={`w-12 h-6 rounded ${
-                          option.value === "subtle" ? "border border-foreground/40" :
-                          option.value === "strong" ? "border-4 border-foreground" :
-                          "border-2 border-foreground/80"
-                        }`}
-                      />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Card Spacing */}
-            <div>
-              <label className="mb-3 block text-sm font-medium">Card Spacing</label>
-              <p className="mb-3 text-xs text-foreground/60">
-                Space between article cards in the feed
-              </p>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-                {[
-                  { value: "none", label: "None", description: "No spacing (table)" },
-                  { value: "compact", label: "Compact", description: "Minimal spacing" },
-                  { value: "normal", label: "Normal", description: "Standard spacing" },
-                  { value: "comfortable", label: "Comfortable", description: "Generous spacing" },
-                  { value: "spacious", label: "Spacious", description: "Maximum spacing" },
-                ].map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => updatePreference("articleCardSpacing", option.value as "none" | "compact" | "normal" | "comfortable" | "spacious")}
-                    className={`
-                      flex flex-col items-center gap-2 rounded-lg border-2 p-4 text-left transition-all
-                      ${
-                        (preferences.articleCardSpacing || "normal") === option.value
-                          ? "border-primary bg-primary/10 dark:bg-primary/20"
-                          : "border-border bg-background hover:bg-muted"
-                      }
-                    `}
-                  >
-                    <span className="text-sm font-semibold">{option.label}</span>
-                    <span className="text-xs text-foreground/60 text-center">{option.description}</span>
-                    <div className="mt-2 w-full h-8 bg-foreground/5 rounded flex flex-col items-center justify-center gap-0.5">
-                      <div className={`w-12 h-1 bg-foreground/30 rounded`} />
-                      <div className={`w-12 ${
-                        option.value === "none" ? "h-0" :
-                        option.value === "compact" ? "h-0.5" :
-                        option.value === "comfortable" ? "h-2" :
-                        option.value === "spacious" ? "h-3" :
-                        "h-1"
-                      }`} />
-                      <div className={`w-12 h-1 bg-foreground/30 rounded`} />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* Section Order Customization */}
-        <Card className="bg-muted">
-          <CardBody>
-            <DraggableOrderEditor
-              sections={(preferences.articleCardSectionOrder as string[]) || ["feedInfo", "title", "excerpt", "actions"]}
-              onReorder={(newOrder) => updatePreference("articleCardSectionOrder", newOrder)}
-            />
-          </CardBody>
-        </Card>
-
-        {/* Info Box */}
-        <Card className="border-primary/20 bg-primary/10 dark:border-primary/30 dark:bg-primary/20">
-          <CardBody padding={false} className="p-4">
-            <p className="text-sm text-primary dark:text-primary">
-              💡 <strong>Tip:</strong> Watch the live preview above update instantly as you make changes.
-              All adjustments apply immediately to your feeds. You can reset to defaults anytime by selecting a density preset.
-            </p>
-          </CardBody>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-// Reset Patterns Button Component
-function ResetPatternsButton() {
-  const resetPatterns = useResetPatterns();
-
-  const handleReset = async () => {
-    if (confirm("Are you sure you want to reset all learned patterns? This cannot be undone.")) {
-      try {
-        await resetPatterns.mutateAsync();
-        toast.success("Patterns reset successfully!");
-      } catch (error) {
-        console.error("Failed to reset patterns:", error);
-        toast.error("Failed to reset patterns. Please try again.");
-      }
-    }
-  };
-
-  return (
-    <button
-      onClick={handleReset}
-      disabled={resetPatterns.isPending}
-      className="btn btn-danger btn-sm disabled:opacity-50"
-    >
-      {resetPatterns.isPending ? "Resetting..." : "Reset Learning"}
-    </button>
-  );
-}
-
-// Toggle Switch Component

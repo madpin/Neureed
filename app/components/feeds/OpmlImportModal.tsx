@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useImportOpml } from "@/hooks/queries/use-opml";
-import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from "@/app/components/ui";
+import { Modal, ModalHeader, ModalBody, ModalFooter, Button, StatCard } from "@/app/components/ui";
+import { useFileDrop } from "@/hooks/use-file-drop";
 
 interface ImportSummary {
   totalFeeds: number;
@@ -25,78 +26,56 @@ interface OpmlImportModalProps {
 }
 
 export function OpmlImportModal({ isOpen, onClose, onSuccess }: OpmlImportModalProps) {
-  const [file, setFile] = useState<File | null>(null);
-  const [dragActive, setDragActive] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [importErrors, setImportErrors] = useState<ImportError[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Use React Query mutation
   const importMutation = useImportOpml();
   const importing = importMutation.isPending;
 
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
+  // Use custom hook for file drop handling
+  const { file, isDragging, error, handleDrag, handleDrop, reset } = useFileDrop({
+    accept: ['.opml', '.xml'],
+    maxSize: 10 * 1024 * 1024, // 10MB
+    errorMessages: {
+      invalidType: 'Please select a valid OPML or XML file',
+      sizeTooLarge: 'File size exceeds 10MB limit',
+    },
+    onFileSelect: () => {
+      // Reset success state when new file is selected
+      setSuccess(false);
+      setSummary(null);
+      setImportErrors([]);
+    },
+  });
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileSelect(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleFileSelect = (selectedFile: File) => {
-    // Validate file type
-    const validExtensions = [".opml", ".xml"];
-    const hasValidExtension = validExtensions.some((ext) =>
-      selectedFile.name.toLowerCase().endsWith(ext)
-    );
-
-    if (!hasValidExtension) {
-      setError("Please select a valid OPML or XML file");
-      return;
-    }
-
-    // Validate file size (10MB max)
-    const maxSize = 10 * 1024 * 1024;
-    if (selectedFile.size > maxSize) {
-      setError("File size exceeds 10MB limit");
-      return;
-    }
-
-    setFile(selectedFile);
-    setError(null);
-    setSuccess(false);
-    setSummary(null);
-    setImportErrors([]);
-  };
-
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      handleFileSelect(e.target.files[0]);
-    }
+  // Simulate file input click for browse functionality
+  const triggerFileSelect = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.opml,.xml';
+    input.onchange = (e) => {
+      const target = e.target as HTMLInputElement;
+      if (target.files && target.files[0]) {
+        // Create a synthetic drag event to reuse handleDrop
+        const syntheticEvent = {
+          preventDefault: () => {},
+          stopPropagation: () => {},
+          dataTransfer: { files: target.files },
+        } as React.DragEvent;
+        handleDrop(syntheticEvent);
+      }
+    };
+    input.click();
   };
 
   const handleImport = async () => {
     if (!file) {
-      setError("Please select a file first");
-      return;
+      return; // Error is already handled by useFileDrop
     }
 
     try {
-      setError(null);
       setSuccess(false);
 
       const result = await importMutation.mutateAsync(file);
@@ -110,7 +89,7 @@ export function OpmlImportModal({ isOpen, onClose, onSuccess }: OpmlImportModalP
         subscriptionsAdded: result.imported || 0,
         categoriesCreated: 0,
       });
-      setImportErrors((result.errors || []).map((err: any) => 
+      setImportErrors((result.errors || []).map((err: any) =>
         typeof err === 'string' ? { feedUrl: '', feedTitle: '', error: err } : err
       ));
 
@@ -119,7 +98,8 @@ export function OpmlImportModal({ isOpen, onClose, onSuccess }: OpmlImportModalP
         setTimeout(() => onSuccess(), 1000);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Import failed");
+      // Import errors are shown via importErrors state
+      console.error('Import failed:', err);
     }
   };
 
@@ -136,66 +116,54 @@ export function OpmlImportModal({ isOpen, onClose, onSuccess }: OpmlImportModalP
       <ModalBody>
           {success && summary ? (
             /* Success View */
-            <div className="space-y-4">
-              <div className="rounded-lg bg-green-50 p-4 dark:bg-green-900/20">
-                <div className="flex items-center gap-3">
-                  <svg className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <div>
-                    <h3 className="font-semibold text-green-800 dark:text-green-200">
-                      Import Successful!
-                    </h3>
-                    <p className="text-sm text-green-700 dark:text-green-300">
-                      Your feeds have been imported
-                    </p>
-                  </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+              <div className="flex items-center gap-3 rounded-lg bg-green-50 dark:bg-green-900/20" style={{ padding: "var(--space-4)" }}>
+                <svg className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <div>
+                  <h3 className="font-semibold text-green-800 dark:text-green-200">Import Successful!</h3>
+                  <p className="text-sm text-green-700 dark:text-green-300">Your feeds have been imported</p>
                 </div>
               </div>
 
               {/* Summary Stats */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-lg border border-border p-4 border-border">
-                  <div className="text-2xl font-bold text-primary dark:text-primary">
-                    {summary.subscriptionsAdded}
-                  </div>
-                  <div className="text-sm text-foreground/70">
-                    New Subscriptions
-                  </div>
-                </div>
-                <div className="rounded-lg border border-border p-4 border-border">
-                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                    {summary.feedsCreated}
-                  </div>
-                  <div className="text-sm text-foreground/70">
-                    New Feeds Created
-                  </div>
-                </div>
-                <div className="rounded-lg border border-border p-4 border-border">
-                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                    {summary.categoriesCreated}
-                  </div>
-                  <div className="text-sm text-foreground/70">
-                    New Categories
-                  </div>
-                </div>
-                <div className="rounded-lg border border-border p-4 border-border">
-                  <div className="text-2xl font-bold text-foreground/70">
-                    {summary.feedsSkipped}
-                  </div>
-                  <div className="text-sm text-foreground/70">
-                    Already Existing
-                  </div>
-                </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "var(--space-4)" }}>
+                <StatCard
+                  title="Subscriptions"
+                  value={summary.subscriptionsAdded}
+                  label="New subscriptions added"
+                  iconColor="blue"
+                />
+                <StatCard
+                  title="Feeds"
+                  value={summary.feedsCreated}
+                  label="New feeds created"
+                  iconColor="green"
+                />
+                <StatCard
+                  title="Categories"
+                  value={summary.categoriesCreated}
+                  label="New categories"
+                  iconColor="purple"
+                />
+                <StatCard
+                  title="Skipped"
+                  value={summary.feedsSkipped}
+                  label="Already existing"
+                />
               </div>
 
               {/* Errors */}
               {importErrors.length > 0 && (
-                <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-700 dark:bg-yellow-900/20">
-                  <h4 className="mb-2 font-semibold text-yellow-800 dark:text-yellow-200">
+                <div
+                  className="rounded-lg border border-yellow-200 bg-yellow-50 dark:border-yellow-700 dark:bg-yellow-900/20"
+                  style={{ padding: "var(--space-4)" }}
+                >
+                  <h4 style={{ marginBottom: "var(--space-2)" }} className="font-semibold text-yellow-800 dark:text-yellow-200">
                     {importErrors.length} feed(s) could not be imported:
                   </h4>
-                  <div className="max-h-32 overflow-y-auto space-y-2">
+                  <div style={{ maxHeight: "8rem", overflowY: "auto", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
                     {importErrors.map((err, idx) => (
                       <div key={idx} className="text-sm text-yellow-700 dark:text-yellow-300">
                         <span className="font-medium">{err.feedTitle}</span>: {err.error}
@@ -207,29 +175,22 @@ export function OpmlImportModal({ isOpen, onClose, onSuccess }: OpmlImportModalP
             </div>
           ) : (
             /* Upload View */
-            <div className="space-y-6">
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
               {/* File Drop Zone */}
               <div
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
                 onDragOver={handleDrag}
                 onDrop={handleDrop}
-                className={`relative rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
-                  dragActive
+                className={`relative rounded-lg border-2 border-dashed text-center transition-colors ${
+                  isDragging
                     ? "border-primary bg-primary/10 dark:bg-primary/20"
                     : "border-border hover:border-primary border-border"
                 }`}
+                style={{ padding: "var(--space-8)", transition: "var(--transition-base)" }}
               >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".opml,.xml"
-                  onChange={handleFileInputChange}
-                  className="hidden"
-                />
-
                 {file ? (
-                  <div className="space-y-3">
+                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                     <svg className="mx-auto h-12 w-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -242,19 +203,15 @@ export function OpmlImportModal({ isOpen, onClose, onSuccess }: OpmlImportModalP
                       </p>
                     </div>
                     <button
-                      onClick={() => {
-                        setFile(null);
-                        if (fileInputRef.current) {
-                          fileInputRef.current.value = "";
-                        }
-                      }}
+                      onClick={reset}
                       className="text-sm text-red-600 hover:text-red-700 dark:text-red-400"
+                      style={{ transition: "var(--transition-fast)" }}
                     >
                       Remove file
                     </button>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                     <svg className="mx-auto h-12 w-12 text-foreground/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
@@ -262,13 +219,14 @@ export function OpmlImportModal({ isOpen, onClose, onSuccess }: OpmlImportModalP
                       <p className="text-foreground/70">
                         Drag and drop your OPML file here, or{" "}
                         <button
-                          onClick={() => fileInputRef.current?.click()}
+                          onClick={triggerFileSelect}
                           className="text-primary hover:text-primary/90 dark:text-primary"
+                          style={{ transition: "var(--transition-fast)" }}
                         >
                           browse
                         </button>
                       </p>
-                      <p className="mt-1 text-sm text-foreground/60">
+                      <p style={{ marginTop: "var(--space-1)" }} className="text-sm text-foreground/60">
                         Accepts .opml and .xml files (max 10MB)
                       </p>
                     </div>
@@ -278,17 +236,23 @@ export function OpmlImportModal({ isOpen, onClose, onSuccess }: OpmlImportModalP
 
               {/* Error Message */}
               {error && (
-                <div className="rounded-lg bg-red-50 p-4 text-red-800 dark:bg-red-900/20 dark:text-red-200">
+                <div
+                  className="rounded-lg bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-200"
+                  style={{ padding: "var(--space-4)" }}
+                >
                   {error}
                 </div>
               )}
 
               {/* Info */}
-              <div className="rounded-lg bg-primary/10 p-4 dark:bg-primary/20">
-                <h3 className="mb-2 font-semibold text-primary dark:text-primary">
+              <div
+                className="rounded-lg bg-primary/10 dark:bg-primary/20"
+                style={{ padding: "var(--space-4)" }}
+              >
+                <h3 style={{ marginBottom: "var(--space-2)" }} className="font-semibold text-primary dark:text-primary">
                   What happens when you import?
                 </h3>
-                <ul className="space-y-1 text-sm text-primary/80 dark:text-primary/90">
+                <ul style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }} className="text-sm text-primary/80 dark:text-primary/90">
                   <li>• New feeds will be created automatically</li>
                   <li>• Missing categories will be created</li>
                   <li>• You will be subscribed to all imported feeds</li>

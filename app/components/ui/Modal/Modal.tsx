@@ -5,7 +5,6 @@ import {
   useEffect,
   useRef,
   MouseEvent,
-  KeyboardEvent,
 } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";

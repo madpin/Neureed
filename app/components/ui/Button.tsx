@@ -102,6 +102,16 @@ export function Button({
     },
   };
 
+  // Omit conflicting event handlers for framer-motion
+  const {
+    onDrag,
+    onDragEnd,
+    onDragStart,
+    onAnimationStart,
+    onAnimationEnd,
+    ...restProps
+  } = props;
+
   return (
     <motion.button
       type={type}
@@ -112,7 +122,7 @@ export function Button({
       initial="rest"
       whileHover={!disabled && !loading ? "hover" : "rest"}
       whileTap={!disabled && !loading ? "tap" : "rest"}
-      {...props}
+      {...restProps}
     >
       {loading && (
         <svg

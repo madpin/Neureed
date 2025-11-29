@@ -485,22 +485,26 @@ export function MainLayout({
       )}
 
       {/* Saved Search Modal */}
-      <SavedSearchModal
-        isOpen={isSaveSearchModalOpen}
-        onClose={() => {
-          setIsSaveSearchModalOpen(false);
-          setEditingSavedSearch(undefined);
-        }}
-        initialQuery={searchQuery}
-        savedSearch={editingSavedSearch}
-      />
+      {isSaveSearchModalOpen && (
+        <SavedSearchModal
+          isOpen={true}
+          onClose={() => {
+            setIsSaveSearchModalOpen(false);
+            setEditingSavedSearch(undefined);
+          }}
+          initialQuery={searchQuery}
+          savedSearch={editingSavedSearch}
+        />
+      )}
 
       {/* Onboarding Modal */}
-      <SavedSearchOnboarding
-        isOpen={showOnboarding}
-        onClose={() => setShowOnboarding(false)}
-        onComplete={handleCompleteOnboarding}
-      />
+      {showOnboarding && (
+        <SavedSearchOnboarding
+          isOpen={true}
+          onClose={() => setShowOnboarding(false)}
+          onComplete={handleCompleteOnboarding}
+        />
+      )}
     </div>
   );
 }

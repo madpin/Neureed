@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { SearchTab } from "./SearchTab";
 import type { EmbeddingStats, EmbeddingConfig } from "@/hooks/queries/use-admin";
 
