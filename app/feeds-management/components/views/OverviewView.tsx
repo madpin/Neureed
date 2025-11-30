@@ -202,11 +202,11 @@ export function OverviewView() {
                         }`}
                         title={
                           feed.healthStatus === "disabled"
-                            ? feed.consecutiveFailures >= (feed.autoDisableThreshold || 10)
-                              ? `Auto-disabled after ${feed.consecutiveFailures} consecutive failures`
+                            ? (feed.consecutiveFailures ?? 0) >= (feed.autoDisableThreshold || 10)
+                              ? `Auto-disabled after ${feed.consecutiveFailures ?? 0} consecutive failures`
                               : "Manually disabled"
                             : feed.healthStatus === "error"
-                            ? `${feed.consecutiveFailures} consecutive failures`
+                            ? `${feed.consecutiveFailures ?? 0} consecutive failures`
                             : feed.healthStatus === "warning"
                             ? "1-2 recent failures"
                             : "Feed is healthy"

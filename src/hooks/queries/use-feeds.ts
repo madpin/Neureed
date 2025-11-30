@@ -24,6 +24,14 @@ export interface Feed {
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  // Health tracking fields
+  healthStatus?: "healthy" | "warning" | "error" | "disabled";
+  consecutiveFailures?: number;
+  lastSuccessfulFetch?: string;
+  autoDisableThreshold?: number;
+  notifyOnError?: boolean;
+  httpStatus?: number;
+  redirectUrl?: string;
 }
 
 /**
@@ -101,6 +109,14 @@ async function fetchUserFeeds(includeAll = false): Promise<UserFeed[] | UserFeed
       maxArticlesPerFeed: sub.maxArticlesPerFeed,
       maxArticleAge: sub.maxArticleAge,
     },
+    // Preserve health tracking fields
+    healthStatus: sub.feeds.healthStatus,
+    consecutiveFailures: sub.feeds.consecutiveFailures,
+    lastSuccessfulFetch: sub.feeds.lastSuccessfulFetch,
+    autoDisableThreshold: sub.feeds.autoDisableThreshold,
+    notifyOnError: sub.feeds.notifyOnError,
+    httpStatus: sub.feeds.httpStatus,
+    redirectUrl: sub.feeds.redirectUrl,
     // Store original name for reference
     _originalName: sub.feeds.name,
     _subscriptionId: sub.id,
