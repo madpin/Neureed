@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useFeedNavigation } from "@/hooks/use-feed-navigation";
-import { useUserFeeds } from "@/hooks/queries/use-feeds";
+import { useUserFeeds, useToggleFeedStatus } from "@/hooks/queries/use-feeds";
 import { useCategories } from "@/hooks/queries/use-categories";
 
 interface FeedDetailsViewProps {
@@ -120,6 +120,25 @@ export function FeedDetailsView({ feedId }: FeedDetailsViewProps) {
 // Tab Components
 
 function BasicSettingsTab({ feed, categories }: { feed: any; categories: any[] }) {
+  const toggleStatus = useToggleFeedStatus();
+  const [isEnabled, setIsEnabled] = useState(feed.isActive ?? true);
+
+  const handleToggle = async () => {
+    const newStatus = !isEnabled;
+    setIsEnabled(newStatus); // Optimistic update
+
+    try {
+      await toggleStatus.mutateAsync({
+        feedId: feed.id,
+        enabled: newStatus
+      });
+    } catch (error) {
+      // Revert on error
+      setIsEnabled(!newStatus);
+      console.error("Failed to toggle feed status:", error);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -177,16 +196,38 @@ function BasicSettingsTab({ feed, categories }: { feed: any; categories: any[] }
         </p>
       </div>
 
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="enabled"
-          defaultChecked={feed.isActive}
-          className="cursor-pointer"
-        />
-        <label htmlFor="enabled" className="text-sm cursor-pointer">
-          Enable this feed (fetch new articles)
-        </label>
+      {/* Feed Status Section */}
+      <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/30">
+        <div>
+          <label htmlFor="enabled" className="text-sm font-medium cursor-pointer block">
+            Enable this feed
+          </label>
+          <p className="text-xs text-muted-foreground mt-1">
+            When disabled, this feed will not be fetched during updates
+          </p>
+          {feed.healthStatus && feed.healthStatus !== "healthy" && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Current status: <span className="font-medium">{feed.healthStatus}</span>
+              {feed.consecutiveFailures > 0 && ` (${feed.consecutiveFailures} failures)`}
+            </p>
+          )}
+        </div>
+        <button
+          onClick={handleToggle}
+          disabled={toggleStatus.isPending}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+            isEnabled
+              ? "bg-primary"
+              : "bg-muted-foreground/30"
+          } ${toggleStatus.isPending ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+          aria-label={isEnabled ? "Disable feed" : "Enable feed"}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              isEnabled ? "translate-x-6" : "translate-x-1"
+            }`}
+          />
+        </button>
       </div>
     </div>
   );

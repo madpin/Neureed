@@ -111,7 +111,7 @@ export function OverviewView() {
                 {selectedFeedIds.length} selected
               </span>
               <button
-                onClick={() => openModal("bulk-edit")}
+                onClick={() => openModal("bulk-edit", { selected: selectedFeedIds.join(",") })}
                 className="px-2 py-1 text-xs border border-border rounded hover:bg-muted transition-colors"
               >
                 Bulk Edit
@@ -192,12 +192,33 @@ export function OverviewView() {
                     <td className="p-2">
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded text-xs ${
-                          feed.isActive
-                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                            : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400"
+                          feed.healthStatus === "disabled"
+                            ? "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400"
+                            : feed.healthStatus === "error"
+                            ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                            : feed.healthStatus === "warning"
+                            ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                            : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
                         }`}
+                        title={
+                          feed.healthStatus === "disabled"
+                            ? feed.consecutiveFailures >= (feed.autoDisableThreshold || 10)
+                              ? `Auto-disabled after ${feed.consecutiveFailures} consecutive failures`
+                              : "Manually disabled"
+                            : feed.healthStatus === "error"
+                            ? `${feed.consecutiveFailures} consecutive failures`
+                            : feed.healthStatus === "warning"
+                            ? "1-2 recent failures"
+                            : "Feed is healthy"
+                        }
                       >
-                        {feed.isActive ? "Active" : "Paused"}
+                        {feed.healthStatus === "disabled"
+                          ? "Disabled"
+                          : feed.healthStatus === "error"
+                          ? "Error"
+                          : feed.healthStatus === "warning"
+                          ? "Warning"
+                          : "Active"}
                       </span>
                     </td>
                     <td className="p-2">

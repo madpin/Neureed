@@ -92,6 +92,8 @@ async function fetchUserFeeds(includeAll = false): Promise<UserFeed[] | UserFeed
     // Add subscription specific fields
     subscribedAt: sub.createdAt,
     category: sub.category,
+    // Compute isActive from healthStatus
+    isActive: sub.feeds.healthStatus !== "disabled",
     // Preserve feed settings (extraction, etc.) and add user subscription settings
     settings: {
       ...(sub.feeds.settings || {}), // Keep feed-level settings (extraction, etc.)
@@ -391,6 +393,52 @@ export function useRefreshAllFeeds() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.articles.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.feeds.all });
+    },
+  });
+}
+
+/**
+ * Toggle feed enabled/disabled status
+ */
+async function toggleFeedStatus(feedId: string, enabled: boolean): Promise<void> {
+  await apiPut(`/api/feeds/${feedId}/status`, { enabled });
+}
+
+/**
+ * Hook to toggle feed enabled/disabled status
+ */
+export function useToggleFeedStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ feedId, enabled }: { feedId: string; enabled: boolean }) =>
+      toggleFeedStatus(feedId, enabled),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.feeds.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.feeds.userFeeds() });
+    },
+  });
+}
+
+/**
+ * Bulk toggle feed status
+ */
+async function bulkToggleFeedStatus(feedIds: string[], enabled: boolean): Promise<any> {
+  return await apiPost("/api/feeds/bulk/status", { feedIds, enabled });
+}
+
+/**
+ * Hook to bulk toggle feed enabled/disabled status
+ */
+export function useBulkToggleFeedStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ feedIds, enabled }: { feedIds: string[]; enabled: boolean }) =>
+      bulkToggleFeedStatus(feedIds, enabled),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.feeds.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.feeds.userFeeds() });
     },
   });
 }

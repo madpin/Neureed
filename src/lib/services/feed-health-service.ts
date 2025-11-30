@@ -260,3 +260,30 @@ export async function updateErrorNotifications(
     data: { notifyOnError: enabled },
   });
 }
+
+/**
+ * Manually enable a feed
+ * Sets healthStatus to "healthy" and resets failure counter
+ */
+export async function enableFeed(feedId: string): Promise<void> {
+  await prisma.feeds.update({
+    where: { id: feedId },
+    data: {
+      healthStatus: "healthy",
+      consecutiveFailures: 0,
+    },
+  });
+}
+
+/**
+ * Manually disable a feed
+ * Sets healthStatus to "disabled" while preserving failure count
+ */
+export async function disableFeed(feedId: string): Promise<void> {
+  await prisma.feeds.update({
+    where: { id: feedId },
+    data: {
+      healthStatus: "disabled",
+    },
+  });
+}
