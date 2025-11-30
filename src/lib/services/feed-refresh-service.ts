@@ -129,7 +129,9 @@ export async function refreshFeed(
     // Log article content before upserting (for debugging)
     if (extractionUsed && parsedFeed.items.length > 0) {
       const firstArticle = parsedFeed.items[0];
-      logger.info(`[FeedRefresh] First article before upsert - Title: ${firstArticle.title}, Content length: ${firstArticle.content?.length || 0}`);
+      if (firstArticle) {
+        logger.info(`[FeedRefresh] First article before upsert - Title: ${firstArticle.title}, Content length: ${firstArticle.content?.length || 0}`);
+      }
     }
 
     // Upsert articles

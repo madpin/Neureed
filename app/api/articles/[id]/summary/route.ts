@@ -16,6 +16,10 @@ export const dynamic = "force-dynamic";
 export const GET = createHandler(async ({ params }) => {
   const { id: articleId } = params;
 
+  if (!articleId) {
+    return { error: "Article ID is required", status: 400 };
+  }
+
   const user = await getCurrentUser();
   const summary = await summarizeArticle(articleId, {
     userId: user?.id,

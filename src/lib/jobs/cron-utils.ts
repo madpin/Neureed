@@ -23,6 +23,11 @@ export function getNextRunTime(cronExpression: string): Date | null {
   const now = new Date();
   const [minutePart, hourPart, dayPart, monthPart, weekdayPart] = parts;
 
+  // Validate all parts are defined
+  if (!minutePart || !hourPart || !dayPart || !monthPart || !weekdayPart) {
+    return null;
+  }
+
   // Create a new date starting from current time
   const nextRun = new Date(now);
   nextRun.setSeconds(0);
@@ -46,15 +51,19 @@ export function getNextRunTime(cronExpression: string): Date | null {
     if (part.includes(",")) {
       const values = part.split(",").map(v => parseInt(v, 10)).sort((a, b) => a - b);
       const next = values.find(v => v > current);
-      return next !== undefined ? next : values[0];
+      return next !== undefined ? next : (values[0] ?? null);
     }
 
     // Handle range (e.g., "1-5")
     if (part.includes("-")) {
-      const [start, end] = part.split("-").map(v => parseInt(v, 10));
-      if (current < start) return start;
-      if (current >= start && current < end) return current + 1;
-      return start;
+      const parts = part.split("-").map(v => parseInt(v, 10));
+      const start = parts[0];
+      const end = parts[1];
+      if (start !== undefined && end !== undefined) {
+        if (current < start) return start;
+        if (current >= start && current < end) return current + 1;
+        return start;
+      }
     }
 
     // Specific value
@@ -115,6 +124,7 @@ function matchesCronPart(part: string, value: number, min: number, max: number):
   // Range (e.g., "1-5")
   if (part.includes("-")) {
     const [start, end] = part.split("-").map(v => parseInt(v, 10));
+    if (start === undefined || end === undefined) return false;
     return value >= start && value <= end;
   }
 
@@ -137,6 +147,11 @@ export function getCronDescription(cronExpression: string): string {
   }
 
   const [minute, hour, day, month, weekday] = parts;
+
+  // Validate all parts are defined
+  if (!minute || !hour || !day || !month || !weekday) {
+    return "Invalid cron expression";
+  }
 
   // Common patterns
   if (cronExpression === "*/30 * * * *") {

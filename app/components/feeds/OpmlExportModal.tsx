@@ -1,41 +1,30 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { useUserFeeds } from "@/hooks/queries/use-feeds";
 import { useCategories } from "@/hooks/queries/use-categories";
 import { useExportOpml } from "@/hooks/queries/use-opml";
+import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from "@/app/components/ui";
 
 interface OpmlExportModalProps {
+  isOpen: boolean;
   onClose: () => void;
 }
 
-export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
+export function OpmlExportModal({ isOpen, onClose }: OpmlExportModalProps) {
   const [exportMode, setExportMode] = useState<"all" | "categories" | "feeds">("all");
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<string>>(new Set());
   const [selectedFeedIds, setSelectedFeedIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
-  const modalRef = useRef<HTMLDivElement>(null);
 
   // Use React Query hooks
   const { data: subscriptions = [], isLoading: loadingFeeds } = useUserFeeds();
   const { data: categoriesData = [], isLoading: loadingCategories } = useCategories();
-  
+
   const exportMutation = useExportOpml();
 
   const loading = loadingFeeds || loadingCategories;
   const exporting = exportMutation.isPending;
-
-  // Handle click outside modal
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        onClose();
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [onClose]);
 
   const handleExport = async () => {
     try {
@@ -118,121 +107,73 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div ref={modalRef} className="w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-lg border border-border bg-background shadow-xl border-border bg-background">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-6 py-4 border-border">
-          <h2 className="text-xl font-semibold text-foreground">
-            Export Feeds (OPML)
-          </h2>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-2 hover:bg-muted"
-          >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="overflow-y-auto p-6" style={{ maxHeight: "calc(90vh - 180px)" }}>
+    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+      <ModalHeader title="Export Feeds (OPML)" onClose={onClose} />
+      <ModalBody>
           {loading ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center" style={{ paddingTop: "var(--space-12)", paddingBottom: "var(--space-12)" }}>
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
             </div>
           ) : error ? (
-            <div className="rounded-lg bg-red-50 p-4 text-red-800 dark:bg-red-900/20 dark:text-red-200">
+            <div className="rounded-lg bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-200" style={{ padding: "var(--space-4)" }}>
               {error}
             </div>
           ) : (
-            <div className="space-y-6">
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
               {/* Export Mode Selection */}
               <div>
-                <label className="mb-3 block text-sm font-medium text-foreground/70">
+                <label className="block text-sm font-medium text-foreground/70" style={{ marginBottom: "var(--space-3)" }}>
                   What would you like to export?
                 </label>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="exportMode"
-                      value="all"
-                      checked={exportMode === "all"}
-                      onChange={(e) => setExportMode(e.target.value as any)}
-                      className="h-4 w-4 text-primary"
-                    />
-                    <span className="text-sm text-foreground/70">
-                      All feeds ({subscriptions.length})
-                    </span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="exportMode"
-                      value="categories"
-                      checked={exportMode === "categories"}
-                      onChange={(e) => setExportMode(e.target.value as any)}
-                      className="h-4 w-4 text-primary"
-                    />
-                    <span className="text-sm text-foreground/70">
-                      Select by categories
-                    </span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="exportMode"
-                      value="feeds"
-                      checked={exportMode === "feeds"}
-                      onChange={(e) => setExportMode(e.target.value as any)}
-                      className="h-4 w-4 text-primary"
-                    />
-                    <span className="text-sm text-foreground/70">
-                      Select individual feeds
-                    </span>
-                  </label>
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                  {[
+                    { value: "all", label: `All feeds (${subscriptions.length})` },
+                    { value: "categories", label: "Select by categories" },
+                    { value: "feeds", label: "Select individual feeds" }
+                  ].map(({ value, label }) => (
+                    <label key={value} className="flex items-center cursor-pointer" style={{ gap: "var(--space-3)" }}>
+                      <input
+                        type="radio"
+                        name="exportMode"
+                        value={value}
+                        checked={exportMode === value}
+                        onChange={(e) => setExportMode(e.target.value as any)}
+                        className="h-4 w-4 text-primary"
+                      />
+                      <span className="text-sm text-foreground/70">{label}</span>
+                    </label>
+                  ))}
                 </div>
               </div>
 
               {/* Category Selection */}
               {exportMode === "categories" && (
                 <div>
-                  <div className="mb-3 flex items-center justify-between">
-                    <label className="text-sm font-medium text-foreground/70">
-                      Select Categories
-                    </label>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={selectAllCategories}
-                        className="text-xs text-primary hover:text-primary/90 dark:text-primary"
-                      >
+                  <div className="flex items-center justify-between" style={{ marginBottom: "var(--space-3)" }}>
+                    <label className="text-sm font-medium text-foreground/70">Select Categories</label>
+                    <div className="flex" style={{ gap: "var(--space-2)" }}>
+                      <button onClick={selectAllCategories} className="text-xs text-primary hover:text-primary/90" style={{ transition: "var(--transition-fast)" }}>
                         Select All
                       </button>
                       <span className="text-xs text-foreground/50">|</span>
-                      <button
-                        onClick={deselectAllCategories}
-                        className="text-xs text-primary hover:text-primary/90 dark:text-primary"
-                      >
+                      <button onClick={deselectAllCategories} className="text-xs text-primary hover:text-primary/90" style={{ transition: "var(--transition-fast)" }}>
                         Deselect All
                       </button>
                     </div>
                   </div>
-                  <div className="max-h-48 overflow-y-auto space-y-2 rounded-lg border border-border p-3 border-border">
+                  <div className="rounded-lg border border-border overflow-y-auto" style={{ maxHeight: "12rem", padding: "var(--space-3)", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
                     {categoriesData.length === 0 ? (
                       <p className="text-sm text-foreground/60">No categories found</p>
                     ) : (
                       categoriesData.map((category) => (
-                        <label key={category.id} className="flex items-center gap-3 cursor-pointer">
+                        <label key={category.id} className="flex items-center cursor-pointer" style={{ gap: "var(--space-3)" }}>
                           <input
                             type="checkbox"
                             checked={selectedCategoryIds.has(category.id)}
                             onChange={() => toggleCategory(category.id)}
                             className="h-4 w-4 rounded text-primary"
                           />
-                          <span className="text-sm text-foreground/70">
-                            {category.name}
-                          </span>
+                          <span className="text-sm text-foreground/70">{category.name}</span>
                         </label>
                       ))
                     )}
@@ -243,38 +184,28 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
               {/* Feed Selection */}
               {exportMode === "feeds" && (
                 <div>
-                  <div className="mb-3 flex items-center justify-between">
-                    <label className="text-sm font-medium text-foreground/70">
-                      Select Feeds
-                    </label>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={selectAllFeeds}
-                        className="text-xs text-primary hover:text-primary/90 dark:text-primary"
-                      >
+                  <div className="flex items-center justify-between" style={{ marginBottom: "var(--space-3)" }}>
+                    <label className="text-sm font-medium text-foreground/70">Select Feeds</label>
+                    <div className="flex" style={{ gap: "var(--space-2)" }}>
+                      <button onClick={selectAllFeeds} className="text-xs text-primary hover:text-primary/90" style={{ transition: "var(--transition-fast)" }}>
                         Select All
                       </button>
                       <span className="text-xs text-foreground/50">|</span>
-                      <button
-                        onClick={deselectAllFeeds}
-                        className="text-xs text-primary hover:text-primary/90 dark:text-primary"
-                      >
+                      <button onClick={deselectAllFeeds} className="text-xs text-primary hover:text-primary/90" style={{ transition: "var(--transition-fast)" }}>
                         Deselect All
                       </button>
                     </div>
                   </div>
-                  <div className="max-h-64 overflow-y-auto space-y-2 rounded-lg border border-border p-3 border-border">
+                  <div className="rounded-lg border border-border overflow-y-auto" style={{ maxHeight: "16rem", padding: "var(--space-3)", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
                     {subscriptions.map((subscription) => (
-                      <label key={subscription.id} className="flex items-center gap-3 cursor-pointer">
+                      <label key={subscription.id} className="flex items-center cursor-pointer" style={{ gap: "var(--space-3)" }}>
                         <input
                           type="checkbox"
                           checked={selectedFeedIds.has(subscription.id)}
                           onChange={() => toggleFeed(subscription.id)}
-                          className="h-4 w-4 rounded text-blue-600"
+                          className="h-4 w-4 rounded text-primary"
                         />
-                        <span className="text-sm text-foreground/70">
-                          {subscription.name}
-                        </span>
+                        <span className="text-sm text-foreground/70">{subscription.name}</span>
                       </label>
                     ))}
                   </div>
@@ -282,33 +213,31 @@ export function OpmlExportModal({ onClose }: OpmlExportModalProps) {
               )}
 
               {/* Export Info */}
-              <div className="rounded-lg bg-primary/10 p-4 dark:bg-primary/20">
+              <div className="rounded-lg bg-primary/10 dark:bg-primary/20" style={{ padding: "var(--space-4)" }}>
                 <p className="text-sm text-primary dark:text-primary">
                   {getExportCount()} feed(s) will be exported
                 </p>
               </div>
             </div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4 border-border">
-          <button
-            onClick={onClose}
-            disabled={exporting}
-            className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50 border-border"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleExport}
-            disabled={exporting || loading || getExportCount() === 0}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-          >
-            {exporting ? "Exporting..." : "Export OPML"}
-          </button>
-        </div>
-      </div>
-    </div>
+      </ModalBody>
+      <ModalFooter>
+        <Button
+          variant="outline"
+          onClick={onClose}
+          disabled={exporting}
+        >
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          onClick={handleExport}
+          disabled={exporting || loading || getExportCount() === 0}
+          loading={exporting}
+        >
+          Export OPML
+        </Button>
+      </ModalFooter>
+    </Modal>
   );
 }

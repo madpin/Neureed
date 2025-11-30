@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Brain, Search, Palette, Target, DollarSign, Lock } from "lucide-react";
+import { Brain, Search, Palette, Target, DollarSign, Lock, Bookmark, Layout } from "lucide-react";
 
 const features = [
   {
@@ -9,6 +9,19 @@ const features = [
     title: "AI That Gets You",
     description: "NeuReed learns your reading patterns over time. Like articles? It finds more like them. Skip content? It learns what to deprioritize. Your feed gets smarter every day.",
     gradient: "from-purple-500 to-pink-500",
+  },
+  {
+    icon: Bookmark,
+    title: "Saved Searches",
+    description: "Create persistent queries that continuously monitor all your articles. Use advanced syntax with AND/OR/NOT operators, get relevance scores, and receive smart notifications only for high-quality matches.",
+    gradient: "from-cyan-500 to-blue-500",
+  },
+  {
+    icon: Layout,
+    title: "Flexible Reading Modes",
+    description: "Choose how you read: Side Panel (split-screen), Inline (accordion-style in the list), or Standalone (full-page). Auto-scroll to articles, customize layouts, and read your way.",
+    gradient: "from-violet-500 to-purple-500",
+    badge: "NEW",
   },
   {
     icon: Search,
@@ -85,8 +98,13 @@ export function FeaturesSection() {
                   </div>
 
                   {/* Title */}
-                  <h3 className="mb-3 text-xl font-semibold text-foreground">
+                  <h3 className="mb-3 text-xl font-semibold text-foreground flex items-center gap-2">
                     {feature.title}
+                    {feature.badge && (
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-primary text-primary-foreground">
+                        {feature.badge}
+                      </span>
+                    )}
                   </h3>
 
                   {/* Description */}

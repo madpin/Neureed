@@ -1,0 +1,114 @@
+import { Meta } from '@storybook/blocks';
+
+<Meta title="Admin/Tabs/JobsTab" />
+
+# JobsTab
+
+The JobsTab component provides comprehensive cron job monitoring and management functionality.
+
+## Features
+
+### Job Overview
+Each job displays:
+- **Job Name**: Identifier for the cron job
+- **Status Badge**: Current state (running, idle, error)
+- **Schedule**: Cron schedule expression (e.g., `*/30 * * * *`)
+- **Run Now Button**: Manual trigger for immediate execution
+- **Last Run**: Timestamp of most recent execution
+- **Next Run**: Scheduled time for next execution
+- **Total Runs**: Count of recorded executions
+
+### Collapsible Jobs
+- Jobs can be expanded/collapsed to show run history
+- First job expanded by default
+- Click job header to toggle expansion
+
+### Run History Table
+For each job execution:
+- **Status**: Completed, Failed, or Running (animated)
+- **Started/Completed Timestamps**: Formatted dates
+- **Duration**: Execution time in ms or seconds
+- **Log Count**: Number of log entries
+- **Copy Action**: Copy logs to clipboard
+
+### Expandable Logs
+- Click arrow to expand individual run logs
+- **Log Filtering**: Search/filter logs by message or level
+- **Color-Coded Levels**: ERROR (red), WARN (yellow), INFO (blue), DEBUG (gray), SUCCESS (green)
+- **Structured Table**: Level, Time, Message columns
+- **Terminal-Style Display**: Dark background with syntax coloring
+- **Scrollable**: Max height with scrollbar for long logs
+
+### Show More/Less
+- Default: Shows 3 most recent runs per job
+- Button appears if job has >3 runs
+- Click to toggle between 3 runs and all runs
+
+### Log Filtering
+- Available when run has >5 log entries
+- Filters by message content or log level
+- Shows filtered count vs total
+- Real-time filtering as you type
+
+## Implementation Notes
+
+This component uses React Query hooks:
+- `useTriggerCronJob()` - Manual job triggering
+
+Requires `JobWithHistory[]` prop with structure:
+```typescript
+interface JobWithHistory {
+  name: string;
+  schedule: string;
+  lastRun?: JobRunEntry;
+  nextRun?: string;
+  status: "idle" | "running" | "error";
+  recentRuns: JobRunEntry[];
+}
+
+interface JobRunEntry {
+  id: number;
+  status: string;
+  startedAt: string;
+  completedAt?: string;
+  duration?: number;
+  logs?: JobLogEntry[];
+}
+
+interface JobLogEntry {
+  level: string;
+  message: string;
+  timestamp?: string;
+}
+```
+
+## Usage
+
+```tsx
+import { JobsTab } from '@/app/admin/dashboard/components/tabs/JobsTab';
+
+function AdminDashboard() {
+  const { data: cronHistory } = useCronHistoryFull(30000);
+
+  return (
+    <div>
+      <JobsTab jobs={cronHistory?.jobs || []} />
+    </div>
+  );
+}
+```
+
+## Key Interactions
+
+1. **Expand Job**: Click job name/arrow to show run history
+2. **Trigger Job**: Click "Run Now" button (disabled if running)
+3. **Expand Logs**: Click arrow in run row to show detailed logs
+4. **Filter Logs**: Type in filter input to search log entries
+5. **Copy Logs**: Click "Copy" button to copy logs to clipboard
+6. **Show All Runs**: Click "Show X More Runs" to see full history
+
+## Performance Considerations
+- Logs are filtered client-side for instant feedback
+- Large log outputs are scrollable with fixed height
+- Expansion state managed with Set for O(1) lookups
+- Only visible runs are rendered (3 by default)

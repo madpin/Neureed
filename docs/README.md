@@ -1,62 +1,157 @@
 # NeuReed Documentation
 
-Welcome to the NeuReed documentation! This guide will help you understand, deploy, configure, and extend NeuReed.
+Welcome to the NeuReed documentation! This guide will help you navigate all available documentation for using, deploying, and developing NeuReed.
 
-## 📖 Quick Navigation
+---
 
-### Getting Started
-- **[Main README](../README.md)** - Project overview, quick start, and basic setup
-- **[Deployment Guide](deployment/deployment.md)** - Deploy NeuReed to production
+## 🚀 Quick Start
+
+- **[Installation & Setup](../README.md#installation)** - Get NeuReed running locally
+- **[Deployment Guide](deployment/deployment.md)** - Deploy to production
 - **[Configuration Reference](configuration/configuration-reference.md)** - Complete settings guide
 
-### For Users & Administrators
-- **[Default Feeds](features/default-feeds.md)** - Understanding the default feed subscriptions
-- **[Summarization Feature](features/summarization.md)** - AI-powered article summaries
-- **[Summarization Setup](features/summarization-setup.md)** - Configure summarization for your instance
+---
+
+## 📚 User Guides
+
+### Features
+- **[Saved Searches](features/saved-searches/)** - Create and manage persistent search queries
+  - [User Guide](features/saved-searches/USER_GUIDE_SAVED_SEARCHES.md) - How to use saved searches
+  - [Performance Guide](features/saved-searches/SAVED_SEARCH_PERFORMANCE_GUIDE.md) - Optimization tips
+- **[Article Summarization](features/summarization.md)** - AI-powered article summaries
 - **[Admin Provider Control](features/admin-provider-control.md)** - Manage AI providers
+- **[Default Feeds](features/default-feeds.md)** - Understanding default subscriptions
 
-### For Developers
-- **[Architecture Documentation](architecture/)** - System design and patterns
-  - [Credentials Management](architecture/credentials-management.md) - Admin vs user credentials
-  - [Caching Strategy](architecture/caching.md) - Redis cache implementation
-- **[API Documentation](api/)** - API endpoints and integration
-  - [Admin LLM Configuration API](api/admin-llm-config.md) - Manage LLM settings programmatically
+---
 
-### Deployment & Operations
-- **[Deployment Guide](deployment/deployment.md)** - Complete deployment instructions
+## 🏗️ Architecture
+
+### System Design
+- **[Credentials Management](architecture/credentials-management.md)** - Admin vs user credentials architecture
+- **[Caching Strategy](architecture/caching.md)** - Redis cache implementation and patterns
+
+### Key Concepts
+- **Settings Hierarchy**: Feed-level → Category-level → User defaults → System defaults
+- **AI Provider Architecture**: Admin controls + user credentials + system fallback
+- **Caching Pattern**: Cache-aside with automatic invalidation
+
+---
+
+## 🔧 Developer Guides
+
+### Development Patterns
+- **[Development Guides](guides/development/)** - Modern React and Next.js patterns
+  - [Server Actions Migration](guides/development/server-actions-migration.md) - Migrate API routes to Server Actions
+  - [Server Actions Testing](guides/development/server-actions-testing.md) - Testing strategies
+  - [Optimistic Updates](guides/development/optimistic-updates.md) - Implement optimistic UI
+  - [Modal Management](guides/development/modal-management.md) - Intercepting Routes + Context API
+  - [Suspense Boundaries](guides/development/suspense-boundaries.md) - Loading states with skeletons
+  - [Layout Abstractions](guides/development/layout-abstractions.md) - Reusable page layouts
+
+### Architecture Patterns
+- **[Architecture Guides](guides/architecture/)** - Architectural decisions and patterns
+  - [Server vs Client Components](guides/architecture/server-vs-client-components.md) - Decision tree
+  - [Bundle Analysis](guides/architecture/bundle-analysis.md) - Optimize JavaScript bundles
+
+### Testing
+- **[Testing Saved Searches](features/saved-searches/TESTING_SAVED_SEARCHES.md)** - Testing strategies
+- **[Test Infrastructure](archive/2024-refactoring/PHASE_0_COMPLETION.md)** - Vitest + Testing Library setup
+
+---
+
+## 🚀 Deployment
+
+- **[General Deployment](deployment/deployment.md)** - Complete deployment instructions
 - **[Dokploy Setup](deployment/dokploy-setup.md)** - Deploy with Dokploy
-- **[Production Configuration](deployment/production-config.md)** - Cron jobs and embeddings in production
+- **[Production Configuration](deployment/production-config.md)** - Cron jobs and production settings
+- **[Production Migration Guide](deployment/PRODUCTION_MIGRATION_GUIDE.md)** - Migrating to production
 
-## 📚 Documentation Structure
+---
+
+## 📖 API Reference
+
+- **[Admin LLM Configuration](api/admin-llm-config.md)** - Manage LLM settings programmatically
+
+---
+
+## ⚙️ Configuration
+
+- **[Complete Configuration Reference](configuration/configuration-reference.md)** - All environment variables and settings
+
+---
+
+## 📋 Planning & Roadmap
+
+- **[Feature Backlog](planning/backlog.md)** - Planned features and enhancements
+- **[Animation System Plan](planning/animation-system-plan.md)** - Proposed animation architecture
+- **[React Hook Form Plan](planning/react-hook-form-plan.md)** - Form library integration proposal
+
+---
+
+## 📦 Archive
+
+### 2024 Refactoring
+- **[Refactoring Report](archive/2024-refactoring/REFACTORING_2024_REPORT.md)** - Complete refactoring summary
+- **[Refactoring Completion Summary](REFACTOR_COMPLETION_SUMMARY.md)** - Final completion status
+- **[Phase Documentation](archive/2024-refactoring/)** - Historical phase reports
+
+### Bundle Analysis
+- **[Historical Bundle Analysis](archive/bundle-analysis/2024-11-25/)** - Baseline bundle metrics
+
+---
+
+## 🔗 External Links
+
+- **[Main README](../README.md)** - Project overview and quick start
+- **[Contributing Guide](../CONTRIBUTING.md)** - How to contribute
+- **[Changelog](../CHANGELOG.md)** - Version history and changes
+- **[CLAUDE.md](../CLAUDE.md)** - AI assistant development guide
+
+---
+
+## 📊 Documentation Structure
 
 ```
 docs/
-├── api/                    # API documentation
+├── api/                             # API documentation
 │   └── admin-llm-config.md
-├── architecture/           # System architecture
+├── architecture/                    # System architecture
 │   ├── caching.md
 │   └── credentials-management.md
-├── configuration/          # Configuration guides
+├── configuration/                   # Configuration guides
 │   └── configuration-reference.md
-├── deployment/             # Deployment guides
+├── deployment/                      # Deployment guides
 │   ├── deployment.md
 │   ├── dokploy-setup.md
 │   └── production-config.md
-├── features/               # Feature documentation
+├── features/                        # Feature documentation
+│   ├── saved-searches/             # Saved searches feature
 │   ├── admin-provider-control.md
 │   ├── default-feeds.md
 │   ├── summarization-setup.md
 │   └── summarization.md
-├── BACKLOG.md             # Feature roadmap
-└── README.md              # This file
+├── guides/                          # Developer guides
+│   ├── development/                # Development patterns
+│   └── architecture/               # Architecture patterns
+├── planning/                        # Future work and roadmap
+│   ├── backlog.md
+│   ├── animation-system-plan.md
+│   └── react-hook-form-plan.md
+├── archive/                         # Historical documentation
+│   ├── 2024-refactoring/          # Refactoring reports
+│   └── bundle-analysis/           # Bundle analysis reports
+├── screenshots/                     # Application screenshots
+└── README.md                        # This file
 ```
+
+---
 
 ## 🎯 Common Tasks
 
 ### I Want To...
 
 **Deploy NeuReed**
-→ Start with [Deployment Guide](deployment/deployment.md), then check [Production Configuration](deployment/production-config.md)
+→ Start with [Deployment Guide](deployment/deployment.md), then [Production Configuration](deployment/production-config.md)
 
 **Configure AI Features**
 → See [Configuration Reference](configuration/configuration-reference.md) and [Admin LLM Config API](api/admin-llm-config.md)
@@ -67,78 +162,73 @@ docs/
 **Set Up Summarization**
 → Follow [Summarization Setup](features/summarization-setup.md)
 
-**Customize Default Feeds**
-→ Check [Default Feeds](features/default-feeds.md)
+**Use Saved Searches**
+→ Check [Saved Searches User Guide](features/saved-searches/USER_GUIDE_SAVED_SEARCHES.md)
+
+**Implement Modern React Patterns**
+→ Browse [Development Guides](guides/development/)
+
+**Optimize Bundle Size**
+→ See [Bundle Analysis Guide](guides/architecture/bundle-analysis.md) and [Server vs Client Components](guides/architecture/server-vs-client-components.md)
 
 **Deploy with Dokploy**
 → Follow [Dokploy Setup Guide](deployment/dokploy-setup.md)
 
-## 🔍 Key Concepts
-
-### Settings Hierarchy
-NeuReed uses a cascading settings system:
-- **Feed-level** settings override category settings
-- **Category-level** settings override user defaults
-- **User defaults** override system defaults
-- **Admin settings** provide system-wide defaults
-
-See [Configuration Reference](configuration/configuration-reference.md) for details.
-
-### AI Provider Architecture
-- **Admin** controls which providers are available
-- **Users** configure their own credentials (optional)
-- **System** credentials serve as fallback
-- Supports OpenAI, local models, and custom endpoints
-
-See [Credentials Management](architecture/credentials-management.md) for details.
-
-### Caching Strategy
-- Redis-based caching for performance
-- Cache-aside pattern with automatic invalidation
-- Configurable TTLs for different data types
-- Semantic search caching for 95%+ speedup
-
-See [Caching Strategy](architecture/caching.md) for implementation details.
+---
 
 ## 🛠️ Development Resources
 
-### Project Overview
-See [CLAUDE.md](../CLAUDE.md) for:
-- Common commands
-- High-level architecture
-- Service layer patterns
-- Development guidelines
+### For Developers
 
-### Contributing
-See [Main README](../README.md#-contributing) for contribution guidelines.
+- **[CLAUDE.md](../CLAUDE.md)** - Complete development guide for AI assistants
+  - Common commands
+  - High-level architecture
+  - Service layer patterns
+  - Development guidelines
+  - Important notes
 
-### Changelog
-See [CHANGELOG.md](../CHANGELOG.md) for version history and recent changes.
+### For Contributors
 
-## 📋 Planning & Roadmap
+- **[Contributing Guide](../CONTRIBUTING.md)** - Contribution guidelines and standards
+- **[Changelog](../CHANGELOG.md)** - Version history and recent changes
 
-Check [BACKLOG.md](BACKLOG.md) for:
-- Planned features
-- Known issues
-- Enhancement ideas
-- Future improvements
+### Historical Context
+
+- **[2024 Refactoring Report](archive/2024-refactoring/REFACTORING_2024_REPORT.md)** - Major refactoring completed in November 2024
+- **[Refactoring Completion Summary](REFACTOR_COMPLETION_SUMMARY.md)** - Achievement summary and metrics
+
+---
 
 ## 💡 Tips
 
 - **New to NeuReed?** Start with the [Main README](../README.md)
 - **Deploying?** Check [Deployment Guide](deployment/deployment.md) first
 - **Configuring features?** Use [Configuration Reference](configuration/configuration-reference.md)
-- **Building integrations?** See [API Documentation](api/)
-- **Understanding internals?** Read [Architecture docs](architecture/)
-
-## 🔗 External Resources
-
-- **GitHub Repository**: [https://github.com/madpin/neureed](https://github.com/madpin/neureed)
-- **Issue Tracker**: [GitHub Issues](https://github.com/madpin/neureed/issues)
-- **Next.js Docs**: [https://nextjs.org/docs](https://nextjs.org/docs)
-- **Prisma Docs**: [https://www.prisma.io/docs](https://www.prisma.io/docs)
-- **pgvector**: [https://github.com/pgvector/pgvector](https://github.com/pgvector/pgvector)
+- **Building features?** See [Development Guides](guides/development/)
+- **Understanding internals?** Read [Architecture docs](architecture/) and [CLAUDE.md](../CLAUDE.md)
+- **Optimizing performance?** Check [Bundle Analysis](guides/architecture/bundle-analysis.md) and [Caching Strategy](architecture/caching.md)
 
 ---
 
-**Questions?** Check the relevant documentation section above, or [open an issue](https://github.com/madpin/neureed/issues)!
+## 🔍 Search Tips
+
+Can't find what you're looking for? Try:
+1. Use `Ctrl+F` / `Cmd+F` to search this page
+2. Check the [Documentation Structure](#-documentation-structure) above
+3. Browse specific sections: [Guides](guides/), [Features](features/), [API](api/)
+4. Review [CLAUDE.md](../CLAUDE.md) for development-specific information
+5. Check [archived documentation](archive/) for historical context
+
+---
+
+## 📞 Support
+
+**Questions or Issues?**
+- Check the relevant documentation section above
+- Review [CLAUDE.md](../CLAUDE.md) for development guidance
+- Search [existing issues](https://github.com/madpin/neureed/issues)
+- [Open a new issue](https://github.com/madpin/neureed/issues/new) if needed
+
+---
+
+**Last Updated:** November 29, 2025 (v0.3.0 release)

@@ -10,7 +10,7 @@ import { prisma } from "@/lib/db";
 export const dynamic = "force-dynamic";
 
 export const GET = createHandler(
-  async () => {
+  async ({}) => {
     // Get counts
     const [
       userCount,

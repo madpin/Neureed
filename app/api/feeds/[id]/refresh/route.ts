@@ -13,6 +13,11 @@ export const dynamic = "force-dynamic";
  */
 export const POST = createHandler(async ({ params, session }) => {
   const { id } = params;
+
+  if (!id) {
+    return { error: "Feed ID is required", status: 400 };
+  }
+
   const userId = session?.user?.id;
 
   // Check if feed exists

@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
  * GET - Get provider enable/disable status
  */
 export const GET = createHandler(
-  async () => {
+  async ({}) => {
     const status = await getProviderStatus();
 
     return {

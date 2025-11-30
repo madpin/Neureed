@@ -1,0 +1,318 @@
+'use client';
+
+/**
+ * Search Performance Insights Component
+ *
+ * Displays analytics and insights about saved searches performance
+ */
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  TrendingUp,
+  TrendingDown,
+  AlertCircle,
+  CheckCircle,
+  Target,
+  Activity,
+  Zap,
+  BarChart3,
+} from 'lucide-react';
+
+interface SavedSearchInsight {
+  id: string;
+  name: string;
+  icon: string;
+  totalMatches: number;
+  newMatchesLast24h: number;
+  avgRelevanceScore: number;
+  engagementRate: number; // Percentage of matched articles that were read
+  trend: 'up' | 'down' | 'stable';
+  status: 'productive' | 'underperforming' | 'inactive';
+  lastMatchedAt: string | null;
+}
+
+interface SearchInsightsProps {
+  userId: string;
+}
+
+export function SearchInsights({ userId }: SearchInsightsProps) {
+  const [insights, setInsights] = useState<SavedSearchInsight[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalSearches: 0,
+    activeSearches: 0,
+    totalMatches: 0,
+    avgMatchesPerSearch: 0,
+  });
+
+  useEffect(() => {
+    async function fetchInsights() {
+      try {
+        const response = await fetch('/api/saved-searches/insights');
+        const data = await response.json();
+
+        if (data.data) {
+          setInsights(data.data.insights || []);
+          setStats(data.data.stats || stats);
+        }
+      } catch (error) {
+        console.error('Failed to fetch insights:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchInsights();
+  }, [userId]);
+
+  // Calculate recommendations
+  const recommendations = React.useMemo(() => {
+    const recs: Array<{ type: string; message: string; searchId?: string }> = [];
+
+    insights.forEach((insight) => {
+      // Underperforming searches
+      if (insight.status === 'underperforming' && insight.totalMatches < 5) {
+        recs.push({
+          type: 'warning',
+          message: `"${insight.name}" has very few matches. Consider broadening your query.`,
+          searchId: insight.id,
+        });
+      }
+
+      // Inactive searches
+      if (insight.status === 'inactive') {
+        recs.push({
+          type: 'info',
+          message: `"${insight.name}" hasn't found new matches recently. Try updating the query.`,
+          searchId: insight.id,
+        });
+      }
+
+      // Low engagement
+      if (insight.engagementRate < 20 && insight.totalMatches > 10) {
+        recs.push({
+          type: 'warning',
+          message: `"${insight.name}" has low engagement. Consider raising the relevance threshold.`,
+          searchId: insight.id,
+        });
+      }
+
+      // High performance
+      if (insight.status === 'productive' && insight.engagementRate > 60) {
+        recs.push({
+          type: 'success',
+          message: `"${insight.name}" is performing excellently! ${Math.round(insight.engagementRate)}% engagement rate.`,
+          searchId: insight.id,
+        });
+      }
+    });
+
+    return recs;
+  }, [insights]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h2 className="text-2xl font-bold mb-2">Search Performance Insights</h2>
+        <p className="text-muted-foreground">
+          Analyze your saved searches to optimize relevance and engagement
+        </p>
+      </div>
+
+      {/* Overview Stats */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Total Searches</CardTitle>
+            <Target className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalSearches}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats.activeSearches} active
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Total Matches</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalMatches}</div>
+            <p className="text-xs text-muted-foreground">
+              Across all searches
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Avg Matches</CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {stats.avgMatchesPerSearch.toFixed(1)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Per search
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Recommendations</CardTitle>
+            <Zap className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{recommendations.length}</div>
+            <p className="text-xs text-muted-foreground">
+              Actions to improve
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recommendations */}
+      {recommendations.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Recommendations</CardTitle>
+            <CardDescription>
+              Suggestions to improve your saved searches
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {recommendations.map((rec, index) => (
+              <div
+                key={index}
+                className="flex items-start gap-3 p-3 rounded-lg border"
+              >
+                {rec.type === 'success' && (
+                  <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                )}
+                {rec.type === 'warning' && (
+                  <AlertCircle className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+                )}
+                {rec.type === 'info' && (
+                  <AlertCircle className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                )}
+                <div className="flex-1">
+                  <p className="text-sm">{rec.message}</p>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Search Performance Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Search Performance</CardTitle>
+          <CardDescription>
+            Detailed metrics for each saved search
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {insights.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                No saved searches yet. Create one to see insights!
+              </p>
+            ) : (
+              insights.map((insight) => (
+                <div
+                  key={insight.id}
+                  className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="text-2xl">{insight.icon}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-medium truncate">{insight.name}</h3>
+                        {insight.status === 'productive' && (
+                          <Badge variant="default" className="gap-1">
+                            <CheckCircle className="h-3 w-3" />
+                            Productive
+                          </Badge>
+                        )}
+                        {insight.status === 'underperforming' && (
+                          <Badge variant="secondary" className="gap-1">
+                            <AlertCircle className="h-3 w-3" />
+                            Low Matches
+                          </Badge>
+                        )}
+                        {insight.status === 'inactive' && (
+                          <Badge variant="outline" className="gap-1">
+                            <AlertCircle className="h-3 w-3" />
+                            Inactive
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span>{insight.totalMatches} total matches</span>
+                        <span className="flex items-center gap-1">
+                          {insight.newMatchesLast24h > 0 ? (
+                            <>
+                              <TrendingUp className="h-3 w-3 text-green-500" />
+                              {insight.newMatchesLast24h} new
+                            </>
+                          ) : (
+                            <>
+                              <TrendingDown className="h-3 w-3 text-gray-400" />
+                              No new matches
+                            </>
+                          )}
+                        </span>
+                        <span>
+                          {Math.round(insight.avgRelevanceScore * 100)}% avg relevance
+                        </span>
+                        <span>
+                          {Math.round(insight.engagementRate)}% engagement
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm">
+                    View
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Trending Topics (Future Enhancement) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Trending Topics</CardTitle>
+          <CardDescription>
+            Popular topics across your saved searches (coming soon)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-center text-muted-foreground py-8">
+            This feature will show trending topics and suggested search refinements based on your reading patterns.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

@@ -8,6 +8,7 @@ export interface UserCategoryWithFeeds extends user_categories {
     name: string;
     imageUrl: string | null;
     userFeedId: string;
+    unreadCount?: number;
   }>;
 }
 
@@ -19,6 +20,7 @@ export interface FeedsGroupedByCategory {
     imageUrl: string | null;
     userFeedId: string;
     feedId: string;
+    unreadCount?: number;
   }>;
 }
 
@@ -454,7 +456,7 @@ export async function getFeedsGroupedByCategory(
       userFeedId: uf.id,
       feedId: uf.feeds.id,
       lastFetched: uf.feeds.lastFetched,
-      articleCount: unreadCountMap.get(uf.feeds.id) || 0,
+      unreadCount: unreadCountMap.get(uf.feeds.id) || 0,
     }));
 
   // Map categories with their feeds
@@ -469,6 +471,13 @@ export async function getFeedsGroupedByCategory(
       settings: cat.settings,
       createdAt: cat.createdAt,
       updatedAt: cat.updatedAt,
+      parentId: cat.parentId,
+      color: cat.color,
+      collapsed: cat.collapsed,
+      sortOrder: cat.sortOrder,
+      includeInSearch: cat.includeInSearch,
+      isDefault: cat.isDefault,
+      isReadOnly: cat.isReadOnly,
       feedCount: cat.user_feed_categories.length,
       feeds: cat.user_feed_categories.map((ufc) => ({
         id: ufc.user_feeds.feeds.id,
@@ -476,7 +485,7 @@ export async function getFeedsGroupedByCategory(
         imageUrl: ufc.user_feeds.feeds.imageUrl,
         userFeedId: ufc.user_feeds.id,
         lastFetched: ufc.user_feeds.feeds.lastFetched,
-        articleCount: unreadCountMap.get(ufc.user_feeds.feeds.id) || 0,
+        unreadCount: unreadCountMap.get(ufc.user_feeds.feeds.id) || 0,
       })),
     })
   );
@@ -557,10 +566,12 @@ export async function getFeedEffectiveSettings(
 
   // Apply category settings (if feed is in a category)
   if (userFeed.user_feed_categories.length > 0) {
-    const categorySettings = userFeed.user_feed_categories[0].user_categories
-      .settings as Record<string, any> | null;
-    if (categorySettings) {
-      effectiveSettings = { ...effectiveSettings, ...categorySettings };
+    const firstCategory = userFeed.user_feed_categories[0];
+    if (firstCategory) {
+      const categorySettings = firstCategory.user_categories.settings as Record<string, any> | null;
+      if (categorySettings) {
+        effectiveSettings = { ...effectiveSettings, ...categorySettings };
+      }
     }
   }
 

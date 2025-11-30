@@ -44,10 +44,13 @@ const preferencesSchema = z.object({
   readingPanelEnabled: z.boolean().optional(),
   readingPanelPosition: z.enum(["right", "left", "top", "bottom"]).optional(),
   readingPanelSize: z.number().int().min(30).max(70).optional(),
+  // Reading Mode Settings
+  readingMode: z.enum(["side_panel", "inline", "standalone"]).optional(),
+  inlineAutoScroll: z.boolean().optional(),
   // Sidebar Settings
   sidebarCollapsed: z.boolean().optional(),
   sidebarWidth: z.number().int().min(10).max(40).optional(),
-  categoryStates: z.record(z.boolean()).nullable().optional(),
+  categoryStates: z.record(z.string(), z.boolean()).nullable().optional(),
   // Reading Typography Settings
   readingFontFamily: z.string().optional(),
   readingFontSize: z.number().int().min(12).max(32).optional(),

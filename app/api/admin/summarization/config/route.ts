@@ -24,7 +24,7 @@ const summarizationConfigSchema = z.object({
  * GET - Get summarization configuration
  */
 export const GET = createHandler(
-  async () => {
+  async ({}) => {
     logger.info("[API] Getting summarization configuration");
 
     const config = await getSummarizationConfiguration();

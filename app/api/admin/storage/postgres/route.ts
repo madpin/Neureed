@@ -90,11 +90,15 @@ export async function GET(_req: NextRequest) {
         (SELECT count(*) FROM pg_stat_activity WHERE state = 'active') as "activeConnections",
         (SELECT count(*) FROM pg_stat_activity WHERE state = 'idle') as "idleConnections"
     `;
+    const connectionData = connectionResultRaw[0];
+    if (!connectionData) {
+      throw new Error('Failed to fetch connection information');
+    }
     const connectionInfo = {
-      maxConnections: connectionResultRaw[0].maxConnections,
-      currentConnections: Number(connectionResultRaw[0].currentConnections),
-      activeConnections: Number(connectionResultRaw[0].activeConnections),
-      idleConnections: Number(connectionResultRaw[0].idleConnections),
+      maxConnections: connectionData.maxConnections,
+      currentConnections: Number(connectionData.currentConnections),
+      activeConnections: Number(connectionData.activeConnections),
+      idleConnections: Number(connectionData.idleConnections),
     };
 
     // Get cache hit ratio

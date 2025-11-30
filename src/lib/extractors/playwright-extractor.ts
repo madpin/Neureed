@@ -11,8 +11,8 @@ import { sanitizeHtml } from "@/lib/feed-parser";
  * Falls back gracefully if Playwright is not available
  */
 export class PlaywrightExtractor extends BaseExtractor {
-  name = "playwright";
-  priority = 100; // Highest priority when enabled
+  override name = "playwright";
+  override priority = 100; // Highest priority when enabled
   private playwrightAvailable: boolean | null = null;
 
   /**
@@ -174,7 +174,7 @@ export class PlaywrightExtractor extends BaseExtractor {
         }
 
         // Clean content
-        const cleanContent = sanitizeHtml(article.content);
+        const cleanContent = sanitizeHtml(article.content || "");
 
         // Extract metadata
         const metadata = this.extractMetadata(document);
@@ -195,7 +195,7 @@ export class PlaywrightExtractor extends BaseExtractor {
           `[Playwright] Successfully extracted: ${article.title} (${cleanContent.length} chars)`
         );
 
-        return this.createSuccessResult(article.title, cleanContent, {
+        return this.createSuccessResult(article.title || "Untitled", cleanContent, {
           excerpt,
           author: article.byline || metadata.author,
           publishedAt,

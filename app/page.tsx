@@ -6,13 +6,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { MainLayout } from "./components/layout/MainLayout";
 import { ReadingPanelLayout } from "./components/layout/ReadingPanelLayout";
 import { CategoryList } from "./components/feeds/CategoryList";
-import { FeedManagementModal } from "./components/feeds/FeedManagementModal";
+import { SavedSearchList } from "./components/saved-searches/SavedSearchList";
 import { AddFeedForm } from "./components/feeds/AddFeedForm";
 import { FeedBrowser } from "./components/feeds/FeedBrowser";
 import { IconPicker } from "./components/feeds/IconPicker";
 import { ArticleList } from "./components/articles/ArticleList";
-import { Tooltip } from "./components/layout/Tooltip";
-import { LoadingSpinner } from "./components/layout/LoadingSpinner";
+import { Tooltip } from "./components/ui";
+import { LoadingSpinner } from "@/app/components/ui/LoadingSpinner";
 import { LandingPage } from "./components/landing/LandingPage";
 import type { ArticleSortOrder, ArticleSortDirection } from "@/lib/validations/article-validation";
 import { useUserPreferences, useUpdatePreference } from "@/hooks/queries/use-user-preferences";
@@ -20,9 +20,11 @@ import { useInfiniteArticles } from "@/hooks/queries/use-articles";
 import {
   useAddFeed,
 } from "@/hooks/queries/use-feeds";
+import { useInfiniteMatchingArticles } from "@/hooks/queries/use-saved-searches";
 import { useUpdateCategory } from "@/hooks/queries/use-categories";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/query-keys";
+import { FeedManagementModal } from "./feeds-management/components/FeedManagementModal";
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -34,16 +36,11 @@ export default function Home() {
   const selectedFeedId = searchParams.get('feed') || undefined;
   const selectedCategoryId = searchParams.get('categoryId') || undefined;
   const searchQuery = searchParams.get('search') || "";
+  const selectedSavedSearchId = searchParams.get('savedSearch') || undefined;
 
   // Local State
   const [isAddFeedOpen, setIsAddFeedOpen] = useState(false);
   const [isFeedBrowserOpen, setIsFeedBrowserOpen] = useState(false);
-  const [managementModalState, setManagementModalState] = useState<{
-    isOpen: boolean;
-    view?: 'feed' | 'category' | 'overview';
-    feedId?: string;
-    categoryId?: string;
-  }>({ isOpen: false });
   const [renameCategoryState, setRenameCategoryState] = useState<{
     isOpen: boolean;
     categoryId?: string;
@@ -75,15 +72,8 @@ export default function Home() {
   const searchRecencyWeight = preferences?.searchRecencyWeight ?? 0.3;
   const searchRecencyDecayDays = preferences?.searchRecencyDecayDays ?? 30;
 
-  // Articles Query
-  const { 
-    data: articlesData,
-    isLoading: isLoadingArticles,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    refetch: refetchArticles
-  } = useInfiniteArticles({
+  // Articles Query - conditionally use saved search or normal articles
+  const normalArticlesQuery = useInfiniteArticles({
     feedId: selectedFeedId,
     categoryId: selectedCategoryId,
     search: searchQuery,
@@ -96,6 +86,24 @@ export default function Home() {
     sortBy: sortOrder,
     sortOrder: sortDirection,
   });
+
+  const savedSearchArticlesQuery = useInfiniteMatchingArticles(
+    selectedSavedSearchId || '',
+    {
+      sortBy: 'relevance',
+    },
+    20
+  );
+
+  // Use the appropriate query based on whether a saved search is selected
+  const {
+    data: articlesData,
+    isLoading: isLoadingArticles,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch: refetchArticles
+  } = selectedSavedSearchId ? savedSearchArticlesQuery : normalArticlesQuery;
 
   const articles = articlesData?.pages.flatMap(page => page.articles) ?? [];
 
@@ -131,17 +139,34 @@ export default function Home() {
     }
   }, [searchQuery, isLoadingArticles, articles.length, missingEmbeddingsCount]);
 
+  // Helper to preserve query params when navigating
+  const pushWithPreservedParams = useCallback((updates: Record<string, string | null>) => {
+    const currentParams = new URLSearchParams(window.location.search);
+
+    // Apply updates (null means delete the param)
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null) {
+        currentParams.delete(key);
+      } else {
+        currentParams.set(key, value);
+      }
+    });
+
+    const paramsString = currentParams.toString();
+    router.push(paramsString ? `/?${paramsString}` : '/');
+  }, [router]);
+
   // Handlers
   const handleSelectFeed = (feedId: string | null) => {
     if (feedId) {
-      router.push(`/?feed=${feedId}`);
+      pushWithPreservedParams({ feed: feedId, categoryId: null });
     } else {
-      router.push("/");
+      pushWithPreservedParams({ feed: null, categoryId: null });
     }
   };
 
   const handleSelectCategory = (categoryId: string) => {
-    router.push(`/?categoryId=${categoryId}`);
+    pushWithPreservedParams({ categoryId, feed: null });
   };
 
   const handleOpenRenameCategory = (categoryId: string, currentName: string) => {
@@ -188,13 +213,13 @@ export default function Home() {
   const onSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (localSearchQuery && localSearchQuery.length >= 2) {
-      router.push(`/?search=${encodeURIComponent(localSearchQuery)}`);
+      pushWithPreservedParams({ search: localSearchQuery });
     }
   };
 
   const handleClearSearch = () => {
     setLocalSearchQuery("");
-    router.push("/");
+    pushWithPreservedParams({ search: null });
   };
 
   const handleSortChange = (newSortOrder: ArticleSortOrder, newSortDirection: ArticleSortDirection) => {
@@ -232,7 +257,7 @@ export default function Home() {
   if (status === "loading") {
     return (
       <div className="flex h-screen items-center justify-center bg-background text-foreground">
-        <LoadingSpinner size="lg" text="Loading..." />
+        <LoadingSpinner size="lg" label="Loading..." />
       </div>
     );
   }
@@ -248,14 +273,14 @@ export default function Home() {
       sortDirection={sortDirection}
       onSortChange={handleSortChange}
       isLoadingArticles={isLoadingArticles}
-      sidebar={({ isCollapsed, closeMobileMenu }) => (
+      sidebar={({ isCollapsed, closeMobileMenu, onOpenCreateModal, onOpenEditModal, onOpenOnboarding }) => (
         <div className="flex flex-col gap-4">
           {!isCollapsed && (
             <div className="space-y-2">
               <button
                 onClick={() => {
                   closeMobileMenu();
-                  setManagementModalState({ isOpen: true, view: 'overview' });
+                  pushWithPreservedParams({ feedsModal: 'open' });
                 }}
                 className="btn btn-primary w-full"
               >
@@ -283,7 +308,7 @@ export default function Home() {
                 <button
                   onClick={() => {
                     closeMobileMenu();
-                    setManagementModalState({ isOpen: true, view: 'overview' });
+                    pushWithPreservedParams({ feedsModal: 'open' });
                   }}
                   className="flex items-center justify-center rounded-lg bg-primary p-3 text-primary-foreground hover:bg-primary/90"
                   title="Manage Feeds"
@@ -312,17 +337,34 @@ export default function Home() {
             onSelectFeed={handleSelectFeed}
             onSelectCategory={handleSelectCategory}
             isCollapsed={isCollapsed}
-            onOpenFeedSettings={(feedId) => setManagementModalState({ isOpen: true, view: 'feed', feedId })}
-            onOpenCategorySettings={(categoryId) => setManagementModalState({ isOpen: true, view: 'category', categoryId })}
+            onOpenFeedSettings={(feedId) => pushWithPreservedParams({ feedsModal: 'open', view: 'feed', id: feedId })}
+            onOpenCategorySettings={(categoryId) => pushWithPreservedParams({ feedsModal: 'open', view: 'category', id: categoryId })}
             onOpenRenameCategory={handleOpenRenameCategory}
             onOpenIconPicker={handleOpenIconPicker}
             onCloseMobileMenu={closeMobileMenu}
           />
+
+          {/* Saved Searches */}
+          <div className="border-t border-border pt-4">
+            {!isCollapsed && (
+              <h3 className="mb-2 px-2 text-xs font-semibold text-secondary uppercase tracking-wide">
+                Saved Searches
+              </h3>
+            )}
+            <SavedSearchList
+              selectedSearchId={selectedSavedSearchId}
+              isCollapsed={isCollapsed}
+              onCloseMobileMenu={closeMobileMenu}
+              onOpenCreateModal={onOpenCreateModal}
+              onOpenEditModal={onOpenEditModal}
+              onOpenOnboarding={onOpenOnboarding}
+            />
+          </div>
         </div>
       )}
     >
       <ReadingPanelLayout onArticleReadStatusChange={handleArticleReadStatusChange}>
-        {({ onArticleSelect, selectedArticleId }: { onArticleSelect?: (articleId: string) => void; selectedArticleId?: string | null }) => (
+        {({ onArticleSelect, selectedArticleId }: { onArticleSelect?: (articleId: string | null) => void; selectedArticleId?: string | null }) => (
           <div className="space-y-6">
             {/* Search Form - Show when search param is present */}
             {searchQuery && (
@@ -535,27 +577,6 @@ export default function Home() {
         }} />
       )}
 
-      {managementModalState.isOpen && (
-        <FeedManagementModal
-          onClose={() => setManagementModalState({ isOpen: false })}
-          initialView={managementModalState.view}
-          feedId={managementModalState.feedId}
-          categoryId={managementModalState.categoryId}
-          onRefreshData={() => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.feeds.all });
-            queryClient.invalidateQueries({ queryKey: queryKeys.categories.all });
-          }}
-          onAddFeed={() => {
-            setManagementModalState({ isOpen: false });
-            setIsAddFeedOpen(true);
-          }}
-          onBrowseFeeds={() => {
-            setManagementModalState({ isOpen: false });
-            setIsFeedBrowserOpen(true);
-          }}
-        />
-      )}
-
       {/* Rename Category Modal */}
       {renameCategoryState.isOpen && renameCategoryState.categoryId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -623,6 +644,9 @@ export default function Home() {
           onClose={() => setIconPickerState({ isOpen: false })}
         />
       )}
+
+      {/* Feed Management Modal */}
+      <FeedManagementModal />
     </MainLayout>
   );
 }

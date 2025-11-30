@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Tooltip } from "../layout/Tooltip";
+import { Tooltip } from "@/app/components/ui";
 import { EmptyState } from "../layout/EmptyState";
 import {
   useGroupedFeeds,
@@ -48,6 +48,10 @@ export function CategoryList({
   onCloseMobileMenu,
 }: CategoryListProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Track expected params to avoid navigation loops in React Strict Mode
+  const expectedParamsRef = useRef<URLSearchParams | null>(null);
 
   // Queries
   const { data: groupedFeeds, isLoading: loading } = useGroupedFeeds();
@@ -76,6 +80,11 @@ export function CategoryList({
   const categories = groupedFeeds?.categories || [];
   const uncategorizedFeeds = groupedFeeds?.uncategorized || [];
 
+  // Initialize and sync ref with searchParams
+  useEffect(() => {
+    expectedParamsRef.current = new URLSearchParams(searchParams.toString());
+  }, [searchParams]);
+
   // Close category menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -92,17 +101,37 @@ export function CategoryList({
     }
   }, [categoryActionsId]);
 
+  const pushWithPreservedParams = useCallback((updates: Record<string, string | null>) => {
+    // Use ref instead of searchParams directly to avoid dependency that causes navigation loops
+    if (!expectedParamsRef.current) {
+      expectedParamsRef.current = new URLSearchParams(searchParams.toString());
+    }
+
+    const currentParams = new URLSearchParams(expectedParamsRef.current.toString());
+
+    // Apply updates (null means delete the param)
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null) {
+        currentParams.delete(key);
+      } else {
+        currentParams.set(key, value);
+      }
+    });
+
+    const paramsString = currentParams.toString();
+    router.push(paramsString ? `/?${paramsString}` : '/');
+
+    // Update ref with new expected params
+    expectedParamsRef.current = currentParams;
+  }, [router, searchParams]);
+
   const handleSelectFeed = (feedId: string | null) => {
     if (onSelectFeed) {
       // Use callback if provided
       onSelectFeed(feedId);
     } else {
-      // Use router navigation with query params
-      if (feedId) {
-        router.push(`/?feed=${feedId}`);
-      } else {
-        router.push("/");
-      }
+      // Use router navigation with query params preserved
+      pushWithPreservedParams({ feed: feedId });
     }
   };
 
@@ -121,7 +150,7 @@ export function CategoryList({
         if (onSelectCategory) {
           onSelectCategory(categoryId);
         } else {
-          router.push(`/?categoryId=${categoryId}`);
+          pushWithPreservedParams({ categoryId });
         }
       }, 250); // 250ms delay for double-click detection
     }
@@ -195,6 +224,10 @@ export function CategoryList({
 
     // Calculate new order
     const [removed] = newOrder.splice(draggedIndex, 1);
+    if (!removed) {
+      setDraggedCategoryId(null);
+      return;
+    }
     newOrder.splice(targetIndex, 0, removed);
     
     reorderCategories.mutate(newOrder.map(c => c.id));
@@ -299,12 +332,12 @@ export function CategoryList({
             className="flex flex-1 items-center gap-2 text-left min-w-0"
           >
             {renderFeedIcon(feed)}
-            <div className="flex-1 min-w-0" style={{ fontSize: 'var(--font-size-sidebar)' }}>
+            <div className="flex-1 min-w-0 flex items-center" style={{ fontSize: 'var(--font-size-sidebar)' }}>
               <div className="font-normal truncate">{feed.name}</div>
               {(feed.unreadCount !== undefined && feed.unreadCount > 0) && (
-                <div className="text-secondary" style={{ fontSize: '0.7em', fontWeight: '300' }}>
-                  {feed.unreadCount} unread
-                </div>
+                <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium leading-none rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 flex-shrink-0">
+                  {feed.unreadCount > 99 ? '99+' : feed.unreadCount}
+                </span>
               )}
             </div>
           </button>

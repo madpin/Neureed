@@ -5,14 +5,15 @@
 
 import { env } from "@/env";
 import { logger } from "@/lib/logger";
+import { prisma } from "@/lib/db";
 import { OpenAIEmbeddingProvider } from "@/lib/embeddings/openai-provider";
 import { LocalEmbeddingProvider } from "@/lib/embeddings/local-provider";
 import { trackEmbeddingCost } from "./embedding-cost-tracker";
-import { 
+import {
   getActiveEmbeddingProvider,
   isProviderEnabled,
-  getSystemLLMCredentials,
 } from "./admin-settings-service";
+import { getSystemLLMConfig } from "./admin-llm-config-service";
 import { getUserPreferencesWithDecryptedKey } from "./user-preferences-service";
 import type {
   EmbeddingProvider,
@@ -105,11 +106,32 @@ export async function getEmbeddingProvider(
 
   // If no user credentials, try to use system credentials
   if (!apiKey) {
-    const systemCreds = await getSystemLLMCredentials(false);
-    if (systemCreds.provider === provider || (!systemCreds.provider && provider === "openai")) {
-      apiKey = systemCreds.apiKey || undefined;
-      baseUrl = baseUrl || systemCreds.baseUrl || undefined;
-      // System credentials don't have embedding model - always use EMBEDDING_MODEL env var
+    try {
+      const systemConfig = await getSystemLLMConfig();
+      if (systemConfig.provider === provider || (!systemConfig.provider && provider === "openai")) {
+        // Get and decrypt API key for use
+        const setting = await prisma.admin_settings.findUnique({
+          where: { key: "system_llm_api_key" },
+        });
+        if (setting?.value) {
+          try {
+            const { decrypt } = await import("../crypto");
+            apiKey = decrypt(setting.value as string) || undefined;
+          } catch (error) {
+            logger.warn("Failed to decrypt system API key", { error });
+          }
+        }
+        baseUrl = baseUrl || systemConfig.baseUrl || undefined;
+        model = model || systemConfig.embeddingModel || undefined;
+
+        logger.info("Using system LLM configuration for embeddings", {
+          hasSystemKey: !!apiKey,
+          model,
+          userId,
+        });
+      }
+    } catch (error) {
+      logger.warn("Failed to get system LLM configuration", { error, userId });
     }
   }
 

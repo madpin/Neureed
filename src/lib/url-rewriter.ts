@@ -87,9 +87,11 @@ export function rewriteUrls(html: string, baseUrl: string, proxyEndpoint: string
           .split(",")
           .map((entry) => {
             const [url, descriptor] = entry.trim().split(/\s+/);
+            if (!url) return '';
             const proxiedUrl = proxyResourceUrl(url);
             return descriptor ? `${proxiedUrl} ${descriptor}` : proxiedUrl;
           })
+          .filter(Boolean)
           .join(", ");
         img.setAttribute("srcset", rewrittenSrcset);
       }

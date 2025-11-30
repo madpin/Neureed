@@ -16,6 +16,10 @@ export const POST = createHandler(
   async ({ params }) => {
     const { userId } = params;
 
+    if (!userId) {
+      return apiError("User ID is required", 400);
+    }
+
     // Get user to verify it exists
     const user = await prisma.user.findUnique({
       where: { id: userId },

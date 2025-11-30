@@ -1,0 +1,403 @@
+'use client';
+
+/**
+ * Visual Query Builder Component
+ *
+ * A drag-and-drop interface for building complex search queries
+ * without writing query syntax manually.
+ */
+
+import React, { useState, useCallback } from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { X, Plus, GripVertical, Code, Eye } from 'lucide-react';
+import { parseQuery, explainQuery, type QueryNode } from '@/lib/services/search-query-parser';
+
+interface QueryBlock {
+  id: string;
+  type: 'term' | 'phrase' | 'group';
+  value: string;
+  operator: 'AND' | 'OR' | 'NOT' | 'NONE';
+  required?: boolean;
+  excluded?: boolean;
+}
+
+interface VisualQueryBuilderProps {
+  value: string;
+  onChange: (query: string) => void;
+  onValidationChange?: (valid: boolean, errors: string[]) => void;
+}
+
+export function VisualQueryBuilder({
+  value,
+  onChange,
+  onValidationChange,
+}: VisualQueryBuilderProps) {
+  const [blocks, setBlocks] = useState<QueryBlock[]>(() => initializeBlocks(value));
+  const [viewMode, setViewMode] = useState<'visual' | 'text'>('visual');
+  const [textQuery, setTextQuery] = useState(value);
+  const [draggedBlock, setDraggedBlock] = useState<string | null>(null);
+
+  // Initialize blocks from query string
+  function initializeBlocks(query: string): QueryBlock[] {
+    if (!query.trim()) {
+      return [];
+    }
+
+    // Simple parsing - in production, use the full AST parser
+    const terms = query.split(/\s+/).filter(Boolean);
+    return terms.map((term, index) => ({
+      id: `block-${Date.now()}-${index}`,
+      type: term.startsWith('"') && term.endsWith('"') ? 'phrase' : 'term',
+      value: term.replace(/^["']|["']$/g, ''),
+      operator: index === 0 ? 'NONE' : 'AND',
+    }));
+  }
+
+  // Convert blocks to query string
+  const blocksToQuery = useCallback((blocks: QueryBlock[]): string => {
+    if (blocks.length === 0) return '';
+
+    const parts: string[] = [];
+
+    blocks.forEach((block, index) => {
+      let part = '';
+
+      // Add operator (except for first block)
+      if (index > 0) {
+        if (block.operator === 'OR') {
+          part += ', ';
+        } else if (block.operator === 'AND') {
+          part += ' ';
+        } else if (block.operator === 'NOT') {
+          part += ' -';
+        }
+      }
+
+      // Add prefix for required/excluded
+      if (block.required) {
+        part += '+';
+      } else if (block.excluded) {
+        part += '-';
+      }
+
+      // Add value
+      if (block.type === 'phrase') {
+        part += `"${block.value}"`;
+      } else if (block.type === 'group') {
+        part += `(${block.value})`;
+      } else {
+        part += block.value;
+      }
+
+      parts.push(part);
+    });
+
+    return parts.join('');
+  }, []);
+
+  // Update query when blocks change
+  const updateQuery = useCallback(
+    (newBlocks: QueryBlock[]) => {
+      const query = blocksToQuery(newBlocks);
+      onChange(query);
+
+      // Validate
+      const result = parseQuery(query);
+      onValidationChange?.(result.valid, result.errors);
+    },
+    [blocksToQuery, onChange, onValidationChange]
+  );
+
+  // Add a new block
+  const addBlock = useCallback(() => {
+    const newBlock: QueryBlock = {
+      id: `block-${Date.now()}`,
+      type: 'term',
+      value: '',
+      operator: blocks.length === 0 ? 'NONE' : 'AND',
+    };
+
+    const newBlocks = [...blocks, newBlock];
+    setBlocks(newBlocks);
+  }, [blocks]);
+
+  // Remove a block
+  const removeBlock = useCallback(
+    (id: string) => {
+      const newBlocks = blocks.filter(b => b.id !== id);
+
+      // Update first block operator
+      if (newBlocks.length > 0) {
+        newBlocks[0].operator = 'NONE';
+      }
+
+      setBlocks(newBlocks);
+      updateQuery(newBlocks);
+    },
+    [blocks, updateQuery]
+  );
+
+  // Update block
+  const updateBlock = useCallback(
+    (id: string, updates: Partial<QueryBlock>) => {
+      const newBlocks = blocks.map(b =>
+        b.id === id ? { ...b, ...updates } : b
+      );
+      setBlocks(newBlocks);
+      updateQuery(newBlocks);
+    },
+    [blocks, updateQuery]
+  );
+
+  // Drag and drop handlers
+  const handleDragStart = useCallback((id: string) => {
+    setDraggedBlock(id);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+  }, []);
+
+  const handleDrop = useCallback(
+    (targetId: string) => {
+      if (!draggedBlock || draggedBlock === targetId) return;
+
+      const draggedIndex = blocks.findIndex(b => b.id === draggedBlock);
+      const targetIndex = blocks.findIndex(b => b.id === targetId);
+
+      if (draggedIndex === -1 || targetIndex === -1) return;
+
+      const newBlocks = [...blocks];
+      const [draggedItem] = newBlocks.splice(draggedIndex, 1);
+      newBlocks.splice(targetIndex, 0, draggedItem);
+
+      // Update first block operator
+      if (newBlocks.length > 0) {
+        newBlocks[0].operator = 'NONE';
+      }
+
+      setBlocks(newBlocks);
+      updateQuery(newBlocks);
+      setDraggedBlock(null);
+    },
+    [draggedBlock, blocks, updateQuery]
+  );
+
+  // Switch to text mode
+  const switchToTextMode = useCallback(() => {
+    setTextQuery(blocksToQuery(blocks));
+    setViewMode('text');
+  }, [blocks, blocksToQuery]);
+
+  // Switch to visual mode
+  const switchToVisualMode = useCallback(() => {
+    const newBlocks = initializeBlocks(textQuery);
+    setBlocks(newBlocks);
+    updateQuery(newBlocks);
+    setViewMode('visual');
+  }, [textQuery, updateQuery]);
+
+  // Handle text query change
+  const handleTextQueryChange = useCallback((query: string) => {
+    setTextQuery(query);
+    onChange(query);
+
+    // Validate
+    const result = parseQuery(query);
+    onValidationChange?.(result.valid, result.errors);
+  }, [onChange, onValidationChange]);
+
+  return (
+    <div className="space-y-4">
+      {/* Mode Toggle */}
+      <div className="flex items-center justify-between">
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant={viewMode === 'visual' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('visual')}
+          >
+            <Eye className="mr-2 h-4 w-4" />
+            Visual
+          </Button>
+          <Button
+            type="button"
+            variant={viewMode === 'text' ? 'default' : 'outline'}
+            size="sm"
+            onClick={switchToTextMode}
+          >
+            <Code className="mr-2 h-4 w-4" />
+            Text
+          </Button>
+        </div>
+
+        {viewMode === 'visual' && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={addBlock}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add Term
+          </Button>
+        )}
+      </div>
+
+      {/* Visual Mode */}
+      {viewMode === 'visual' && (
+        <div className="space-y-3">
+          {blocks.length === 0 && (
+            <Card className="p-8 text-center text-muted-foreground">
+              <p>No terms added yet.</p>
+              <p className="text-sm mt-2">Click "Add Term" to start building your query.</p>
+            </Card>
+          )}
+
+          {blocks.map((block, index) => (
+            <Card
+              key={block.id}
+              className={`p-4 ${draggedBlock === block.id ? 'opacity-50' : ''}`}
+              draggable
+              onDragStart={() => handleDragStart(block.id)}
+              onDragOver={handleDragOver}
+              onDrop={() => handleDrop(block.id)}
+            >
+              <div className="flex items-center gap-3">
+                {/* Drag Handle */}
+                <GripVertical className="h-5 w-5 text-muted-foreground cursor-move" />
+
+                {/* Operator (except for first block) */}
+                {index > 0 && (
+                  <Select
+                    value={block.operator}
+                    onValueChange={(value) =>
+                      updateBlock(block.id, { operator: value as QueryBlock['operator'] })
+                    }
+                  >
+                    <SelectTrigger className="w-24">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="AND">AND</SelectItem>
+                      <SelectItem value="OR">OR</SelectItem>
+                      <SelectItem value="NOT">NOT</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {/* Type */}
+                <Select
+                  value={block.type}
+                  onValueChange={(value) =>
+                    updateBlock(block.id, { type: value as QueryBlock['type'] })
+                  }
+                >
+                  <SelectTrigger className="w-28">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="term">Term</SelectItem>
+                    <SelectItem value="phrase">Phrase</SelectItem>
+                    <SelectItem value="group">Group</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Value */}
+                <Input
+                  value={block.value}
+                  onChange={(e) => updateBlock(block.id, { value: e.target.value })}
+                  placeholder={
+                    block.type === 'phrase'
+                      ? 'Enter exact phrase...'
+                      : block.type === 'group'
+                      ? 'Enter grouped terms...'
+                      : 'Enter search term...'
+                  }
+                  className="flex-1"
+                />
+
+                {/* Modifiers */}
+                <div className="flex gap-2">
+                  <Badge
+                    variant={block.required ? 'default' : 'outline'}
+                    className="cursor-pointer"
+                    onClick={() =>
+                      updateBlock(block.id, {
+                        required: !block.required,
+                        excluded: false,
+                      })
+                    }
+                  >
+                    Required
+                  </Badge>
+                  <Badge
+                    variant={block.excluded ? 'destructive' : 'outline'}
+                    className="cursor-pointer"
+                    onClick={() =>
+                      updateBlock(block.id, {
+                        excluded: !block.excluded,
+                        required: false,
+                      })
+                    }
+                  >
+                    Exclude
+                  </Badge>
+                </div>
+
+                {/* Remove Button */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeBlock(block.id)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Text Mode */}
+      {viewMode === 'text' && (
+        <div className="space-y-2">
+          <textarea
+            value={textQuery}
+            onChange={(e) => handleTextQueryChange(e.target.value)}
+            className="w-full h-32 p-3 border rounded-md font-mono text-sm"
+            placeholder="Enter your query using operators: +required -excluded, OR (grouping) &quot;exact phrase&quot;"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={switchToVisualMode}
+          >
+            Convert to Visual
+          </Button>
+        </div>
+      )}
+
+      {/* Query Preview */}
+      {blocks.length > 0 && (
+        <Card className="p-4 bg-muted/50">
+          <p className="text-sm font-medium mb-2">Query Preview:</p>
+          <code className="text-sm">{blocksToQuery(blocks)}</code>
+        </Card>
+      )}
+    </div>
+  );
+}

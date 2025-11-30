@@ -10,6 +10,10 @@ export const dynamic = "force-dynamic";
 export const GET = createHandler(async ({ params }) => {
   const { id } = params;
 
+  if (!id) {
+    return { error: "Article ID is required", status: 400 };
+  }
+
   const article = await getArticle(id);
 
   if (!article) {
@@ -25,6 +29,10 @@ export const GET = createHandler(async ({ params }) => {
  */
 export const DELETE = createHandler(async ({ params }) => {
   const { id } = params;
+
+  if (!id) {
+    return { error: "Article ID is required", status: 400 };
+  }
 
   // Check if article exists
   const article = await getArticle(id);

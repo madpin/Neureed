@@ -1,0 +1,148 @@
+---
+title: Installation
+description: Multiple installation options for NeuReed
+---
+
+# Installation
+
+NeuReed offers multiple installation options to fit your workflow. Choose the one that works best for you.
+
+## Prerequisites
+
+Before installing NeuReed, ensure you have:
+
+- **Node.js 24+** - [Download here](https://nodejs.org/)
+- **Docker** - [Get Docker](https://www.docker.com/get-started)
+- **Git** - For cloning the repository
+
+## Option 1: Automated Setup (Recommended)
+
+The easiest way to get NeuReed up and running:
+
+```bash
+# Clone the repository
+git clone https://github.com/madpin/neureed.git
+cd neureed
+
+# Run the setup script
+./scripts/setup.sh
+
+# Start the development server
+npm run dev
+```
+
+The setup script automatically handles:
+- ✅ Environment file creation
+- ✅ Docker container setup (PostgreSQL with pgvector)
+- ✅ Dependency installation
+- ✅ Database migrations
+- ✅ Optional sample data loading
+
+Visit `http://localhost:3000` to see NeuReed in action!
+
+## Option 2: Docker Compose (Production-like)
+
+For a production-like environment with all services:
+
+```bash
+# Clone the repository
+git clone https://github.com/madpin/neureed.git
+cd neureed
+
+# Start all services
+docker-compose up -d
+
+# Open your browser
+open http://localhost:3000
+```
+
+This starts:
+- NeuReed application
+- PostgreSQL with pgvector extension
+- Redis for caching (optional but recommended)
+
+## Option 3: Manual Setup
+
+For developers who want full control:
+
+```bash
+# Install dependencies
+npm install
+
+# Create environment file
+cp .env.example .env.local
+
+# Edit .env.local with your configuration
+# (see Configuration section below)
+
+# Start PostgreSQL with pgvector
+docker-compose up -d postgres
+
+# Setup database
+npx prisma migrate dev
+npx prisma db seed
+
+# Start the development server
+npm run dev
+```
+
+## Required Environment Variables
+
+At minimum, you need these environment variables in your `.env.local`:
+
+```bash
+# Database connection
+DATABASE_URL="postgresql://neureed:neureed@localhost:5433/neureed"
+
+# Authentication secret (generate with: openssl rand -base64 32)
+NEXTAUTH_SECRET="your-secret-here"
+NEXTAUTH_URL="http://localhost:3000"
+
+# OAuth Provider (choose at least one)
+GOOGLE_CLIENT_ID="your-google-client-id"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
+
+# OR use GitHub
+GITHUB_CLIENT_ID="your-github-client-id"
+GITHUB_CLIENT_SECRET="your-github-client-secret"
+```
+
+## Optional but Recommended
+
+For the best experience, also configure:
+
+```bash
+# OpenAI for embeddings and summaries
+OPENAI_API_KEY="sk-your-api-key"
+
+# Redis for caching
+REDIS_URL="redis://localhost:6379"
+
+# Enable background jobs
+ENABLE_CRON_JOBS="true"
+```
+
+See the complete [Configuration Reference](/docs/configuration/configuration-reference) for all available options.
+
+## Verify Installation
+
+After installation, verify everything is working:
+
+1. **Check the application**: Visit `http://localhost:3000`
+2. **Sign in**: Use your configured OAuth provider
+3. **Check admin dashboard**: Navigate to Settings → Admin Dashboard
+4. **Verify database**: Run `docker exec -it neureed-postgres psql -U neureed -d neureed`
+
+## Next Steps
+
+- [Quick Start Guide](/docs/getting-started/quick-start) - Get familiar with NeuReed
+- [First Steps](/docs/getting-started/first-steps) - Your first 5 minutes with NeuReed
+- [Configuration Reference](/docs/configuration/configuration-reference) - Configure NeuReed for your needs
+
+## Getting Help
+
+Having trouble? Check out:
+
+- [Troubleshooting Guide](/docs/getting-started/troubleshooting)
+- [GitHub Issues](https://github.com/madpin/neureed/issues)
+- [Community Discussions](https://github.com/madpin/neureed/discussions)

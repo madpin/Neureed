@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./styles/design-tokens.css";
 
 /* Configure dark mode to use class strategy */
 @variant dark (&:where(.dark, .dark *));
@@ -375,4 +376,45 @@ body {
 .btn-lg {
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
+}
+
+/* Mobile bottom sheet animation */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Swipe gesture indicator */
+@keyframes swipeHint {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-10px);
+  }
+}
+
+/* Inline article expansion animation */
+.inline-article-container {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.5rem; /* Add internal padding */
+  background: var(--background);
+  animation: expandArticle 400ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes expandArticle {
+  from {
+    max-height: 0;
+    opacity: 0;
+  }
+  to {
+    max-height: 10000px;
+    opacity: 1;
+  }
 }

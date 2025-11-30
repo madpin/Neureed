@@ -22,7 +22,7 @@ export const GET = createHandler(
 const createCategorySchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().max(500).optional(),
-  settings: z.record(z.any()).optional(),
+  settings: z.record(z.string(), z.any()).optional(),
   icon: z.string().optional(),
 });
 

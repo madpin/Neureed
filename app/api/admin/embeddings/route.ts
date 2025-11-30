@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
  * GET - Get embedding statistics
  */
 export const GET = createHandler(
-  async () => {
+  async ({}) => {
     const stats = await getEmbeddingStats();
     const articlesWithoutEmbeddings = await getArticlesWithoutEmbeddings(10);
 
@@ -107,7 +107,7 @@ export const POST = createHandler(
  * DELETE - Clear all embeddings
  */
 export const DELETE = createHandler(
-  async () => {
+  async ({}) => {
     logger.warn("Clearing all embeddings");
 
     const count = await clearAllEmbeddings();

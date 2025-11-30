@@ -44,6 +44,9 @@ function calculateOpenAICost(
   completionTokens: number
 ): number {
   const pricing = OPENAI_PRICING[model] || OPENAI_PRICING.default;
+  if (!pricing) {
+    throw new Error(`Unknown pricing model: ${model}`);
+  }
   const promptCost = (promptTokens / 1000) * pricing.prompt;
   const completionCost = (completionTokens / 1000) * pricing.completion;
   return promptCost + completionCost;
@@ -145,10 +148,13 @@ export function getSummarizationCostStats(): {
         models: new Set(),
       };
     }
-    byProvider[entry.provider].tokens += entry.tokensTotal;
-    byProvider[entry.provider].cost += entry.cost;
-    byProvider[entry.provider].count++;
-    byProvider[entry.provider].models.add(entry.model);
+    const providerStats = byProvider[entry.provider];
+    if (providerStats) {
+      providerStats.tokens += entry.tokensTotal;
+      providerStats.cost += entry.cost;
+      providerStats.count++;
+      providerStats.models.add(entry.model);
+    }
   }
 
   // Calculate by user
@@ -160,9 +166,12 @@ export function getSummarizationCostStats(): {
       if (!byUser[entry.userId]) {
         byUser[entry.userId] = { tokens: 0, cost: 0, count: 0 };
       }
-      byUser[entry.userId].tokens += entry.tokensTotal;
-      byUser[entry.userId].cost += entry.cost;
-      byUser[entry.userId].count++;
+      const userStats = byUser[entry.userId];
+      if (userStats) {
+        userStats.tokens += entry.tokensTotal;
+        userStats.cost += entry.cost;
+        userStats.count++;
+      }
     }
   }
 
@@ -244,9 +253,12 @@ export function getUserSummarizationCostStats(userId: string): {
     if (!byProvider[entry.provider]) {
       byProvider[entry.provider] = { tokens: 0, cost: 0, count: 0 };
     }
-    byProvider[entry.provider].tokens += entry.tokensTotal;
-    byProvider[entry.provider].cost += entry.cost;
-    byProvider[entry.provider].count++;
+    const providerStats = byProvider[entry.provider];
+    if (providerStats) {
+      providerStats.tokens += entry.tokensTotal;
+      providerStats.cost += entry.cost;
+      providerStats.count++;
+    }
   }
 
   // Calculate time-based stats
@@ -406,9 +418,12 @@ export function getSummarizationCostReport(
     if (!byProvider[entry.provider]) {
       byProvider[entry.provider] = { tokens: 0, cost: 0, count: 0 };
     }
-    byProvider[entry.provider].tokens += entry.tokensTotal;
-    byProvider[entry.provider].cost += entry.cost;
-    byProvider[entry.provider].count++;
+    const providerStats = byProvider[entry.provider];
+    if (providerStats) {
+      providerStats.tokens += entry.tokensTotal;
+      providerStats.cost += entry.cost;
+      providerStats.count++;
+    }
   }
 
   // Calculate by user
@@ -420,9 +435,12 @@ export function getSummarizationCostReport(
       if (!byUser[entry.userId]) {
         byUser[entry.userId] = { tokens: 0, cost: 0, count: 0 };
       }
-      byUser[entry.userId].tokens += entry.tokensTotal;
-      byUser[entry.userId].cost += entry.cost;
-      byUser[entry.userId].count++;
+      const userStats = byUser[entry.userId];
+      if (userStats) {
+        userStats.tokens += entry.tokensTotal;
+        userStats.cost += entry.cost;
+        userStats.count++;
+      }
     }
   }
 
@@ -434,6 +452,8 @@ export function getSummarizationCostReport(
 
   for (const entry of entries) {
     const dateKey = entry.timestamp.toISOString().split("T")[0];
+    if (!dateKey) continue;
+
     const existing = dailyMap.get(dateKey) || { tokens: 0, cost: 0, count: 0 };
     dailyMap.set(dateKey, {
       tokens: existing.tokens + entry.tokensTotal,

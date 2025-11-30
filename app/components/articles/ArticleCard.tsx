@@ -222,18 +222,19 @@ export const ArticleCard = React.memo(({
   }, [article.isRead]);
 
   // Determine the article link based on current context
-  const getArticleLink = () => {
+  const articleLink = useMemo(() => {
     if (onArticleClick) {
+      // For reading panel mode, generate link with current params
       if (typeof window !== 'undefined') {
         const currentParams = new URLSearchParams(window.location.search);
         currentParams.set('article', article.id);
         return `/?${currentParams.toString()}`;
       }
+      return `/?article=${article.id}`;
     }
+    // For standalone mode, link to article page
     return `/articles/${article.id}`;
-  };
-
-  const articleLink = getArticleLink();
+  }, [article.id, onArticleClick]);
 
   const toggleReadStatus = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -329,18 +330,36 @@ export const ArticleCard = React.memo(({
         );
       },
 
-      title: () => (
-        <Link
-          key="title"
-          href={articleLink}
-          className="group-hover:text-primary transition-colors"
-          onClick={handleArticleClick}
-        >
-          <h3 className="mb-2 font-semibold leading-tight line-clamp-2" style={densityFontStyles.titleStyle}>
-            {article.title}
-          </h3>
-        </Link>
-      ),
+      title: () => {
+        // Use regular anchor for callback mode to avoid Link navigation conflicts
+        if (onArticleClick) {
+          return (
+            <a
+              key="title"
+              href={articleLink}
+              className="group-hover:text-primary transition-colors cursor-pointer"
+              onClick={handleArticleClick}
+            >
+              <h3 className="mb-2 font-semibold leading-tight line-clamp-2" style={densityFontStyles.titleStyle}>
+                {article.title}
+              </h3>
+            </a>
+          );
+        }
+
+        // Use Next.js Link for standalone mode
+        return (
+          <Link
+            key="title"
+            href={articleLink}
+            className="group-hover:text-primary transition-colors"
+          >
+            <h3 className="mb-2 font-semibold leading-tight line-clamp-2" style={densityFontStyles.titleStyle}>
+              {article.title}
+            </h3>
+          </Link>
+        );
+      },
 
       excerpt: () => {
         if (!preferences.showExcerpt || !article.excerpt) {
@@ -421,10 +440,10 @@ export const ArticleCard = React.memo(({
   const imageInOrder = preferences.sectionOrder.includes("image");
 
   // Get border styling classes
-  const borderWidthClass = isSelected ? "border-4" : getBorderWidthClasses(preferences.borderWidth);
+  const borderWidthClass = getBorderWidthClasses(preferences.borderWidth);
   const borderRadiusClass = getBorderRadiusClasses(preferences.borderRadius);
   const borderContrastClass = isSelected
-    ? "border-primary ring-4 ring-primary/30 shadow-lg"
+    ? "border-primary ring-2 ring-primary/30 shadow-lg"
     : getBorderContrastClasses(preferences.borderContrast, isRead);
 
   return (
@@ -461,7 +480,7 @@ export const ArticleCard = React.memo(({
       {/* Content */}
       <div className={`flex ${densityClasses.gap} ${hasImage && imageInOrder ? '' : 'flex-col'}`}>
         {/* Render image first if it's in the order and exists */}
-        {hasImage && imageInOrder && sections.image()}
+        {hasImage && imageInOrder && sections.image?.()}
 
         {/* Main content */}
         <div className="flex-1 min-w-0">

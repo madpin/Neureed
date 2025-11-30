@@ -46,10 +46,10 @@ async function fetchCategories(): Promise<Category[]> {
  */
 async function fetchCategoryStates(): Promise<Record<string, boolean>> {
   // Category states are stored in user preferences
-  const response = await apiGet<{ preferences: { categoryStates?: Record<string, boolean> | null } }>(
+  const response = await apiGet<{ preferences: { categoryStates?: Record<string, boolean> | null } | null }>(
     "/api/user/preferences"
   );
-  return response.preferences.categoryStates || {};
+  return response.preferences?.categoryStates || {};
 }
 
 /**

@@ -67,12 +67,12 @@ export default function RootLayout({
                   // Try to get theme from localStorage (set by ThemeProvider)
                   const savedTheme = localStorage.getItem('neureed-theme');
                   const savedFontSize = localStorage.getItem('neureed-fontSize');
-                  
+
                   if (savedTheme && savedTheme !== 'system') {
                     const allThemes = ['light', 'dark', 'nord-light', 'nord-dark', 'solarized-light', 'solarized-dark', 'barbie-light', 'barbie-dark', 'purple-light', 'purple-dark', 'orange-light', 'orange-dark', 'rainbow-light', 'rainbow-dark'];
                     document.documentElement.classList.remove(...allThemes);
                     document.documentElement.classList.add(savedTheme);
-                    
+
                     // Add dark class for dark variants
                     if (savedTheme.includes('-dark') || savedTheme === 'dark') {
                       document.documentElement.classList.add('dark');
@@ -84,7 +84,7 @@ export default function RootLayout({
                       document.documentElement.classList.add('dark');
                     }
                   }
-                  
+
                   // Apply font size
                   if (savedFontSize) {
                     const sizeMap = { small: '14px', medium: '16px', large: '18px' };
@@ -104,7 +104,9 @@ export default function RootLayout({
       >
         <QueryProvider>
           <AuthProvider>
-            <ThemeProvider>{children}</ThemeProvider>
+            <ThemeProvider>
+              {children}
+            </ThemeProvider>
           </AuthProvider>
         </QueryProvider>
       </body>

@@ -1,0 +1,360 @@
+---
+title: Saved Searches User Guide
+description: Create and manage persistent search queries that automatically match new articles
+---
+
+# Saved Searches User Guide
+
+Saved Searches allow you to create persistent, intelligent queries that automatically match new articles as they arrive. Instead of manually searching every time, set up searches that continuously monitor your feeds for relevant content.
+
+## Key Benefits
+
+- 🔄 **Automatic Monitoring** - Articles matched as soon as they're fetched
+- 🧠 **Semantic Understanding** - AI-powered semantic search + keyword matching
+- 🔔 **Customizable Alerts** - Get notified when high-relevance articles match
+- 📰 **Cross-Feed Search** - Search across all subscribed feeds simultaneously
+- ♻️ **Always Up-to-Date** - New matches appear automatically
+
+## Getting Started
+
+### Accessing Saved Searches
+
+1. Look for the **Saved Searches** section in the sidebar
+2. Click **"+ New Saved Search"** to create your first search
+3. Or use the search bar in the header and click the **bookmark icon**
+
+### Creating Your First Search
+
+
+
+### Open the Creation Dialog
+Click "New Saved Search" in the sidebar, or perform a search and click the bookmark icon
+
+### Choose an Icon (Optional)
+Popular icons: 🔍 📰 ⭐ 🔥 💡 📌 🎯 🚀
+
+### Name Your Search
+Give it a descriptive name (e.g., "AI Ethics News")
+
+### Build Your Query
+Enter search terms using the query builder (see syntax guide below)
+
+### Adjust Settings
+- **Match Threshold**: How relevant articles must be (60-100%)
+- **Notifications**: Enable alerts for new matches
+- **Advanced**: Adjust recency bias and other options
+
+### Save and Monitor
+Click "Create" to save. View matches immediately in the main content area
+
+
+
+---
+
+## Query Syntax Guide
+
+### Basic Operators
+
+#### `,` (OR) - Match Any Term
+
+```
+AI, "machine learning", robotics
+```
+Finds articles containing **any** of these terms.
+
+#### `+` (AND) - Required Term
+
+```
++AI +ethics
+```
+Finds articles that **must contain both** terms.
+
+#### `-` (NOT) - Exclude Term
+
+```
+AI -chatbot
+```
+Finds articles about AI but **excludes** those mentioning chatbots.
+
+#### `"..."` (Phrase) - Exact Match
+
+```
+"artificial intelligence"
+```
+Matches the **exact phrase** in that order.
+
+#### `()` (Grouping) - Control Precedence
+
+```
+(AI, ML) +ethics
+```
+Finds articles with (AI **or** ML) **and** ethics.
+
+### Complex Examples
+
+
+
+**Tech News Filtering**
+```
+(+AI, +"machine learning") +ethics -opinion -chatbot
+```
+Articles about AI or machine learning that must include ethics discussion, excluding opinion pieces and chatbot topics.
+
+
+
+**Climate Policy Research**
+```
+"climate change" +(policy, regulation, legislation) -editorial
+```
+Exact phrase "climate change" with policy-related terms, excluding editorials.
+
+
+
+**Startup Funding News**
+```
+(startup, "venture capital") +(funding, investment) +("series A", "series B")
+```
+Startup or VC articles about funding that specifically mention Series A or B rounds.
+
+
+### Operator Precedence
+
+1. **Phrases** (`"..."`) - Highest priority
+2. **Exclusions** (`-`)
+3. **Requirements** (`+`)
+4. **Alternatives** (`,`) - Lowest priority
+
+
+**Tip**: Use parentheses `()` to explicitly control order of operations.
+
+
+---
+
+## Managing Your Saved Searches
+
+### Viewing Matches
+
+1. Click a saved search in the sidebar
+2. Articles are sorted by relevance score (highest first)
+3. Each article shows:
+   - Relevance badge (percentage or dots on mobile)
+   - Source feed
+   - Matched terms highlighting
+   - "Why this matched" explanation
+
+### Editing a Search
+
+
+
+### Open Menu
+Click the **three-dot menu** next to the search name
+
+### Select Edit
+Choose **"Edit"** from the menu
+
+### Modify Settings
+Change any settings as needed
+
+### Save Changes
+Click **"Update"** to save. Existing matches are automatically re-evaluated
+
+
+
+### Rematching
+
+If you've made changes to your feeds or want to find matches in older articles:
+
+1. Click the **three-dot menu**
+2. Select **"Rematch"**
+3. The system re-evaluates all articles against this search
+4. New matches appear immediately
+
+---
+
+## Understanding Relevance Scores
+
+Relevance scores range from **0.0 to 1.0** (displayed as 0-100%):
+
+- **85%+** 🟢 - Excellent match, highly relevant
+- **70-84%** 🔵 - Good match, relevant
+- **60-69%** 🟡 - Moderate match, somewhat relevant
+- **Below 60%** - Below threshold (not shown by default)
+
+### How Scores Are Calculated
+
+1. **Semantic Similarity (60%)**: AI embedding comparison
+2. **Keyword Matching (40%)**: TF-IDF weighted term presence
+3. **Boolean Filters**: AND/OR/NOT logic must pass
+4. **Recency Boost**: Optional bonus for newer articles
+
+### Mobile Display
+
+On mobile devices, relevance is shown as **colored dots**:
+- 🔴🔴🔴 Three dots = 85%+
+- 🔴🔴⚪ Two dots = 70-84%
+- 🔴⚪⚪ One dot = 60-69%
+
+---
+
+## Notifications & Alerts
+
+### Enabling Notifications
+
+1. Edit your saved search
+2. Check **"Notify me when new articles match this search"**
+3. Set the **Notification Threshold** (default: 85%)
+4. Optionally enable **"Daily digest"** for batched notifications
+
+### Notification Types
+
+#### Real-Time Alerts
+- Receive instant notifications for high-relevance matches
+- Useful for time-sensitive topics
+- Can be rate-limited to prevent spam (max 10/hour per search)
+
+#### Daily Digest
+- Receive one daily summary of all matches
+- Sent at 9 AM local time
+- Includes match counts and top articles
+
+
+**Managing Notification Overload**
+
+If you're receiving too many notifications:
+1. **Increase the threshold** (e.g., from 85% to 90%)
+2. **Enable daily digest** instead of real-time
+3. **Refine your query** to be more specific
+4. **Disable notifications** and check manually
+
+
+---
+
+## Mobile Experience
+
+### Optimizations
+
+- **Bottom Sheet Modal**: Swipe down to close creation dialog
+- **Condensed Indicators**: Relevance shown as dots instead of percentages
+- **Swipe Gestures**: Swipe left on saved searches to reveal edit/delete actions
+- **Simplified Syntax Helper**: Expandable panels instead of full documentation
+- **Offline Support**: Cached searches and results available offline
+
+### Offline Mode
+
+When offline, you can:
+- ✅ View cached saved searches
+- ✅ Browse recent match results
+- ✅ Read article details
+- ❌ Create new searches (requires connection)
+- ❌ Trigger rematching
+
+Changes sync automatically when connection is restored.
+
+---
+
+## Tips & Best Practices
+
+### Writing Effective Queries
+
+
+**Start Simple, Then Refine**
+
+Begin with basic terms, add operators gradually based on results, and use preview to test before saving.
+
+
+
+**Use Exact Phrases for Precision**
+
+`"machine learning"` vs `machine learning` - Reduces false positives significantly.
+
+
+
+**Combine Semantic + Keyword**
+
+`(+AI, +"deep learning") +ethics` - Semantic search finds related concepts while keywords ensure specific topics are present.
+
+
+
+**Exclude Noise Strategically**
+
+- `-opinion -editorial -review`
+- `-beginner -tutorial` (for advanced content)
+- `-job -hiring` (to exclude listings)
+
+
+### Performance Optimization
+
+1. **Adjust Thresholds Appropriately**
+   - Too low (50-60%): Many irrelevant matches
+   - Too high (95-100%): May miss relevant content
+   - Sweet spot: 70-80% for most topics
+
+2. **Use Recency Bias Wisely**
+   - Don't overuse (can hide older gems)
+   - Best for time-sensitive content
+   - Set to 0 for research/tutorials
+
+---
+
+## Troubleshooting
+
+### No Matches Found
+
+
+**Problem**: Saved search returns zero results
+
+
+**Solutions**:
+1. Lower the match threshold (try 60%)
+2. Simplify the query (remove some requirements)
+3. Check for typos in query terms
+4. Try broader terms (e.g., "AI" instead of "artificial general intelligence")
+5. Trigger a rematch to scan older articles
+
+### Too Many Irrelevant Matches
+
+
+**Problem**: Getting lots of low-quality matches
+
+
+**Solutions**:
+1. Increase the match threshold (try 80%+)
+2. Add exclusion terms (`-spam -clickbait`)
+3. Use exact phrases for specific concepts
+4. Add required terms with `+`
+5. Make your query more specific
+
+---
+
+## FAQ
+
+### How often are new articles matched?
+
+Articles are matched immediately when feeds are refreshed (typically every 30 minutes). You can also manually trigger a rematch for a specific search.
+
+### Can I search across only certain feeds?
+
+This feature is coming soon! For now, searches span all your subscribed feeds. You can use the feed filter in the articles view to narrow results.
+
+### What's the difference between saved searches and semantic search?
+
+- **Semantic Search**: One-time query for immediate results
+- **Saved Searches**: Persistent, automatically match new articles forever
+
+Both use the same AI-powered semantic understanding.
+
+### How many saved searches can I create?
+
+Currently no hard limit, but we recommend keeping it under 20 for optimal performance. Archive searches you don't actively use.
+
+### Do saved searches work on old articles?
+
+Yes! When you create a search, it immediately matches against all existing articles. Use "Rematch" to re-evaluate if needed.
+
+---
+
+## Need More Help?
+
+- [Technical Specification](/docs/features/saved-searches/technical-spec) - Architecture and implementation details
+- [Performance Guide](/docs/features/saved-searches/performance) - Optimization tips
+- [GitHub Issues](https://github.com/madpin/neureed/issues) - Report bugs or request features

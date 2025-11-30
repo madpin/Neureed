@@ -56,12 +56,14 @@ export function decrypt(ciphertext: string): string {
     
     // Parse the encrypted data
     const parts = ciphertext.split(":");
-    if (parts.length !== 3) {
+    const ivHex = parts[0];
+    const authTagHex = parts[1];
+    const encryptedHex = parts[2];
+
+    if (!ivHex || !authTagHex || !encryptedHex) {
       throw new Error("Invalid encrypted data format");
     }
-    
-    const [ivHex, authTagHex, encryptedHex] = parts;
-    
+
     const iv = Buffer.from(ivHex, "hex");
     const authTag = Buffer.from(authTagHex, "hex");
     const encrypted = Buffer.from(encryptedHex, "hex");

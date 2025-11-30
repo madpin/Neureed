@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
  * Run the pattern decay job
  * This should be called by a cron job or scheduled task
  */
-export const POST = createHandler(async () => {
+export const POST = createHandler(async ({}) => {
   // Optional: Add authentication/authorization for cron jobs
   // const authHeader = request.headers.get("authorization");
   // if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {

@@ -61,26 +61,27 @@ model article_feedback {
 }
 
 model articles {
-  id               String                 @id
-  feedId           String
-  title            String
-  content          String
-  url              String                 @unique
-  publishedAt      DateTime?              @db.Timestamptz
-  embedding        Unsupported("vector")?
-  createdAt        DateTime               @default(now()) @db.Timestamptz
-  updatedAt        DateTime               @updatedAt @db.Timestamptz
-  author           String?
-  contentHash      String?
-  excerpt          String?
-  guid             String?
-  imageUrl         String?
-  keyPoints        Json?
-  summary          String?
-  topics           String[]
-  article_feedback article_feedback[]
-  feeds            feeds                  @relation(fields: [feedId], references: [id], onDelete: Cascade)
-  read_articles    read_articles[]
+  id                   String                 @id
+  feedId               String
+  title                String
+  content              String
+  url                  String                 @unique
+  publishedAt          DateTime?              @db.Timestamptz
+  embedding            Unsupported("vector")?
+  createdAt            DateTime               @default(now()) @db.Timestamptz
+  updatedAt            DateTime               @updatedAt @db.Timestamptz
+  author               String?
+  contentHash          String?
+  excerpt              String?
+  guid                 String?
+  imageUrl             String?
+  keyPoints            Json?
+  summary              String?
+  topics               String[]
+  article_feedback     article_feedback[]
+  feeds                feeds                  @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  read_articles        read_articles[]
+  saved_search_matches saved_search_matches[]
 
   @@index([contentHash])
   @@index([feedId])
@@ -130,28 +131,54 @@ model feed_categories {
 }
 
 model feeds {
-  id              String            @id
-  name            String
-  url             String            @unique
-  lastFetched     DateTime?
-  settings        Json?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  description     String?
-  errorCount      Int               @default(0)
-  etag            String?
-  fetchInterval   Int               @default(60)
-  imageUrl        String?
-  lastError       String?
-  lastModified    String?
-  siteUrl         String?
-  articles        articles[]
-  feed_categories feed_categories[]
-  user_feeds      user_feeds[]
+  id                    String            @id
+  name                  String
+  url                   String            @unique
+  lastFetched           DateTime?
+  settings              Json?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  description           String?
+  errorCount            Int               @default(0)
+  etag                  String?
+  fetchInterval         Int               @default(60)
+  imageUrl              String?
+  lastError             String?
+  lastModified          String?
+  siteUrl               String?
+  // Health tracking fields
+  healthStatus          String            @default("healthy")
+  consecutiveFailures   Int               @default(0)
+  lastSuccessfulFetch   DateTime?
+  autoDisableThreshold  Int               @default(10)
+  notifyOnError         Boolean           @default(false)
+  httpStatus            Int?
+  redirectUrl           String?
+  articles              articles[]
+  feed_categories       feed_categories[]
+  user_feeds            user_feeds[]
+  feed_error_log        feed_error_log[]
 
   @@index([errorCount])
   @@index([lastFetched])
   @@index([url])
+  @@index([healthStatus])
+}
+
+model feed_error_log {
+  id           String   @id
+  feedId       String
+  timestamp    DateTime @default(now())
+  errorType    String
+  errorMessage String
+  httpStatus   Int?
+  details      Json?
+  resolved     Boolean  @default(false)
+  feed         feeds    @relation(fields: [feedId], references: [id], onDelete: Cascade)
+
+  @@index([feedId])
+  @@index([timestamp(sort: Desc)])
+  @@index([resolved])
 }
 
 model read_articles {
@@ -189,12 +216,24 @@ model user_categories {
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
   icon                 String?                @default("📁")
+  // Hierarchical and display fields
+  parentId             String?
+  color                String?
+  collapsed            Boolean                @default(false)
+  sortOrder            String                 @default("manual")
+  includeInSearch      Boolean                @default(true)
+  isDefault            Boolean                @default(false)
+  isReadOnly           Boolean                @default(false)
   users                User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent               user_categories?       @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children             user_categories[]      @relation("CategoryHierarchy")
   user_feed_categories user_feed_categories[]
+  saved_searches       saved_searches[]
 
   @@unique([userId, name])
   @@index([userId])
   @@index([userId, order])
+  @@index([userId, isDefault])
 }
 
 model user_feed_categories {
@@ -218,6 +257,7 @@ model user_feeds {
   settings             Json?
   subscribedAt         DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
+  tags                 String[]               // User-defined tags
   user_feed_categories user_feed_categories[]
   feeds                feeds                  @relation(fields: [feedId], references: [id], onDelete: Cascade)
   users                User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -225,6 +265,7 @@ model user_feeds {
   @@unique([userId, feedId])
   @@index([feedId])
   @@index([userId])
+  @@index([tags], type: Gin)
 }
 
 model user_patterns {
@@ -264,7 +305,7 @@ model user_preferences {
   llmApiKey                 String?
   llmBaseUrl                String?
   llmProvider               String?
-  readingPanelEnabled       Boolean  @default(false)
+  readingPanelEnabled       Boolean  @default(true)
   readingPanelPosition      String   @default("right")
   readingPanelSize          Int      @default(50)
   categoryStates            Json?
@@ -299,6 +340,8 @@ model user_preferences {
   articleCardBorderRadius   String   @default("normal")
   articleCardBorderContrast String   @default("medium")
   articleCardSpacing        String   @default("normal")
+  readingMode               String   @default("side_panel")
+  inlineAutoScroll          Boolean  @default(true)
   users                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -316,6 +359,50 @@ model user_notifications {
 
   @@index([userId, createdAt])
   @@index([userId, read])
+}
+
+model saved_searches {
+  id              String                @id @default(cuid())
+  userId          String
+  name            String
+  query           String                @db.Text
+  icon            String?               @default("🔍")
+  threshold       Float                 @default(0.6)
+  categoryId      String?
+  notifyOnMatch   Boolean               @default(false)
+  notifyThreshold Float                 @default(0.85)
+  dailyDigest     Boolean               @default(false)
+  recencyBias     Float                 @default(0.0)
+  prioritySources Json?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  lastMatchedAt   DateTime?
+  totalMatches    Int                   @default(0)
+  archived        Boolean               @default(false)
+  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category        user_categories?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  matches         saved_search_matches[]
+
+  @@index([userId])
+  @@index([userId, archived])
+}
+
+model saved_search_matches {
+  id             String         @id @default(cuid())
+  savedSearchId  String
+  articleId      String
+  relevanceScore Float
+  matchedTerms   Json
+  matchReason    String?        @db.Text
+  createdAt      DateTime       @default(now())
+  notified       Boolean        @default(false)
+  savedSearch    saved_searches @relation(fields: [savedSearchId], references: [id], onDelete: Cascade)
+  article        articles       @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@unique([savedSearchId, articleId])
+  @@index([savedSearchId, relevanceScore])
+  @@index([articleId])
+  @@index([createdAt])
 }
 
 model User {
@@ -336,6 +423,7 @@ model User {
   user_patterns      user_patterns[]
   user_preferences   user_preferences?
   user_notifications user_notifications[]
+  saved_searches     saved_searches[]
 
   @@map("users")
 }

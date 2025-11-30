@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { feeds } from "@/generated/prisma/client";
 import { FeedSettingsPanel } from "./FeedSettingsPanel";
 
@@ -28,8 +28,41 @@ export function FeedList({
   onUnsubscribeFeed,
 }: FeedListProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [expandedFeedId, setExpandedFeedId] = useState<string | null>(null);
   const [settingsFeedId, setSettingsFeedId] = useState<string | null>(null);
+
+  // Track expected params to avoid navigation loops in React Strict Mode
+  const expectedParamsRef = useRef<URLSearchParams | null>(null);
+
+  // Initialize and sync ref with searchParams
+  useEffect(() => {
+    expectedParamsRef.current = new URLSearchParams(searchParams.toString());
+  }, [searchParams]);
+
+  const pushWithPreservedParams = useCallback((updates: Record<string, string | null>) => {
+    // Use ref instead of searchParams directly to avoid dependency that causes navigation loops
+    if (!expectedParamsRef.current) {
+      expectedParamsRef.current = new URLSearchParams(searchParams.toString());
+    }
+
+    const currentParams = new URLSearchParams(expectedParamsRef.current.toString());
+
+    // Apply updates (null means delete the param)
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null) {
+        currentParams.delete(key);
+      } else {
+        currentParams.set(key, value);
+      }
+    });
+
+    const paramsString = currentParams.toString();
+    router.push(paramsString ? `/?${paramsString}` : '/');
+
+    // Update ref with new expected params
+    expectedParamsRef.current = currentParams;
+  }, [router, searchParams]);
 
   const handleToggleFeed = (feedId: string) => {
     setExpandedFeedId(expandedFeedId === feedId ? null : feedId);
@@ -40,12 +73,8 @@ export function FeedList({
       // Use callback if provided
       onSelectFeed(feedId);
     } else {
-      // Use router navigation with query params
-      if (feedId) {
-        router.push(`/?feed=${feedId}`);
-      } else {
-        router.push("/");
-      }
+      // Use router navigation with query params preserved
+      pushWithPreservedParams({ feed: feedId });
     }
   };
 

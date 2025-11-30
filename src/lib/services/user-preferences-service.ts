@@ -149,6 +149,7 @@ export async function updateUserPreferences(
     const defaults = await getDefaultPreferences();
     updated = await prisma.user_preferences.create({
       data: {
+        id: `pref_${userId}`,
         userId,
         ...defaults,
         ...processedData,
@@ -198,12 +199,14 @@ export async function getDefaultPreferences(): Promise<
     llmEmbeddingModel: null,
     llmDigestModel: null,
     embeddingsEnabled: adminDefaults.embeddingsEnabled, // Inherit from admin
-    readingPanelEnabled: false,
+    readingPanelEnabled: true,
     readingPanelPosition: "right",
     readingPanelSize: 50,
     sidebarCollapsed: false,
     sidebarWidth: 20, // Percentage width (10-40)
-    categoryStates: null,
+    categoryStates: {},
+    readingMode: "side_panel",
+    inlineAutoScroll: true,
     readingFontFamily: "Georgia",
     readingFontSize: 18,
     readingLineHeight: 1.7,

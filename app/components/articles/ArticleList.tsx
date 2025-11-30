@@ -1,18 +1,21 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useRef, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { ArticleCard, type ArticleDisplayPreferences } from "./ArticleCard";
-import { LoadingSpinner, LoadingSkeleton } from "@/app/components/layout/LoadingSpinner";
-import { EmptyState } from "@/app/components/layout/EmptyState";
+import { ArticlePanel } from "./ArticlePanel";
+import { LoadingSpinner } from "@/app/components/ui/LoadingSpinner";
+import { ArticleListSkeleton } from "@/app/components/ui/Skeleton";
+import { EmptyState } from "@/app/components/ui/EmptyState";
 import { useArticleScores, type ArticleScore, type Article } from "@/hooks/queries/use-articles";
 import { useUserPreferences } from "@/hooks/queries/use-user-preferences";
+import React from "react";
 
 interface ArticleListProps {
   articles: Article[];
   isLoading?: boolean;
   variant?: "compact" | "expanded";
-  onArticleSelect?: (articleId: string) => void;
+  onArticleSelect?: (articleId: string | null) => void;
   selectedArticleId?: string | null;
   onReadStatusChange?: () => void;
   // Infinite scroll props
@@ -39,9 +42,18 @@ export function ArticleList({
   const { data: session } = useSession();
   const { data: preferences } = useUserPreferences();
 
+  // Ref for auto-scrolling to expanded article
+  const expandedArticleRef = useRef<HTMLDivElement>(null);
+
+  // Get reading mode settings
+  const readingMode = preferences?.readingMode || "side_panel";
+  const inlineAutoScroll = preferences?.inlineAutoScroll ?? true;
+  const isInlineMode = readingMode === "inline";
+
   // Extract article IDs and use React Query to fetch scores
+  // Filter out any undefined/null articles
   const articleIds = useMemo(
-    () => articles.map((a) => a.id),
+    () => articles.filter((a) => a != null).map((a) => a.id),
     [articles]
   );
 
@@ -92,27 +104,44 @@ export function ArticleList({
     }
   }, [preferences?.articleCardSpacing]);
 
+  // Auto-scroll to expanded article in inline mode
+  useEffect(() => {
+    if (selectedArticleId && isInlineMode && inlineAutoScroll && expandedArticleRef.current) {
+      // Delay slightly longer than transition duration to ensure smooth animation
+      const timeoutId = setTimeout(() => {
+        expandedArticleRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }, 250); // Adjusted to match 200ms transition + buffer
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [selectedArticleId, isInlineMode, inlineAutoScroll]);
+
   if (isLoading) {
-    return <LoadingSkeleton count={5} />;
+    return <ArticleListSkeleton count={5} />;
   }
 
   if (articles.length === 0) {
     return (
       <EmptyState
-        icon={
-          <svg
-            className="h-16 w-16"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
-            />
-          </svg>
+        illustration={
+          <div className="mb-4 flex justify-center">
+            <svg
+              className="h-16 w-16 text-foreground/50"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
+              />
+            </svg>
+          </div>
         }
         title="No articles yet"
         description="Add some feeds to start reading articles"
@@ -124,32 +153,49 @@ export function ArticleList({
   const showButton = infiniteScrollMode === "button" || infiniteScrollMode === "both";
 
   return (
-    <div className={`${spacingClass} transition-all duration-300 ease-in-out`}>
-      {articles.map((article) => {
+    <div className={`${spacingClass} transition-all duration-200 ease-in-out`}>
+      {articles.filter((article) => article != null).map((article) => {
         const score = scores.get(article.id);
         const hasSimilarity = 'similarity' in article && article.similarity !== undefined;
         const similarity = hasSimilarity ? (article as any).similarity : undefined;
+        const isExpanded = selectedArticleId === article.id;
 
         return (
-          <ArticleCard
-            key={article.id}
-            article={article}
-            displayPreferences={displayPreferences}
-            variant={variant}
-            onArticleClick={onArticleSelect}
-            isSelected={selectedArticleId === article.id}
-            onReadStatusChange={onReadStatusChange}
-            showRelevanceScore={!!score}
-            relevanceScore={score}
-            similarity={similarity}
-          />
+          <React.Fragment key={article.id}>
+            <ArticleCard
+              article={article}
+              displayPreferences={displayPreferences}
+              variant={variant}
+              onArticleClick={onArticleSelect}
+              isSelected={isExpanded}
+              onReadStatusChange={onReadStatusChange}
+              showRelevanceScore={!!score}
+              relevanceScore={score}
+              similarity={similarity}
+            />
+            {isExpanded && isInlineMode && onArticleSelect && (
+              <div
+                ref={expandedArticleRef}
+                className="inline-article-container animate-slide-down"
+              >
+                <Suspense fallback={<LoadingSpinner size="md" label="Loading article..." />}>
+                  <ArticlePanel
+                    articleId={article.id}
+                    variant="inline"
+                    onClose={() => onArticleSelect(null)}
+                    onReadStatusChange={onReadStatusChange}
+                  />
+                </Suspense>
+              </div>
+            )}
+          </React.Fragment>
         );
       })}
 
       {/* Loading more indicator */}
       {isLoadingMore && (
         <div className="py-8">
-          <LoadingSpinner size="md" text="Loading more articles..." />
+          <LoadingSpinner size="md" label="Loading more articles..." />
         </div>
       )}
 

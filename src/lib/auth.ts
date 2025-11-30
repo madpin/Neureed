@@ -1,4 +1,4 @@
-import NextAuth, { NextAuthConfig } from "next-auth";
+import NextAuth from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import GoogleProvider from "next-auth/providers/google";
 import GitHubProvider from "next-auth/providers/github";
@@ -7,7 +7,7 @@ import { env } from "../env";
 
 /**
  * NextAuth.js Configuration
- * 
+ *
  * Supports:
  * - Google OAuth
  * - GitHub OAuth
@@ -15,7 +15,7 @@ import { env } from "../env";
  */
 
 // Build providers array dynamically based on environment variables
-const providers: NextAuthConfig["providers"] = [];
+const providers: any[] = [];
 
 // Add Google provider if configured
 if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
@@ -60,7 +60,7 @@ if (
     token: env.OAUTH_TOKEN_URL,
     userinfo: env.OAUTH_USERINFO_URL,
     issuer: env.OAUTH_ISSUER,
-    profile(profile) {
+    profile(profile: any) {
       return {
         id: profile.sub,
         name: profile.name,
@@ -72,7 +72,7 @@ if (
   });
 }
 
-export const authConfig: NextAuthConfig = {
+export const authConfig = {
   adapter: PrismaAdapter(prisma as any),
   providers,
   session: {
@@ -84,28 +84,30 @@ export const authConfig: NextAuthConfig = {
   },
   trustHost: env.AUTH_TRUST_HOST,
   callbacks: {
-    async session({ session, token }) {
+    async session({ session, token }: any) {
       if (token && session.user) {
         session.user.id = token.sub!;
       }
       return session;
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account }: any) {
       if (user) {
         token.sub = user.id;
       }
       return token;
     },
-    async signIn({ user }) {
+    async signIn({ user }: any) {
       // Ensure madpin@gmail.com is always an admin
+      // Only update if user already exists (for returning users)
       if (user.email === "madpin@gmail.com" && user.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: user.id },
           select: { role: true },
         });
 
-        // Update role to ADMIN if not already
-        if (dbUser?.role !== "ADMIN") {
+        // Only update if user exists and is not already an admin
+        // For new users, role is set in the createUser event
+        if (dbUser && dbUser.role !== "ADMIN") {
           await prisma.user.update({
             where: { id: user.id },
             data: { role: "ADMIN" },
@@ -116,7 +118,7 @@ export const authConfig: NextAuthConfig = {
     },
   },
   events: {
-    async createUser({ user }) {
+    async createUser({ user }: any) {
       // Set admin role for madpin@gmail.com
       if (user.email === "madpin@gmail.com" && user.id) {
         await prisma.user.update({
@@ -146,6 +148,9 @@ export const authConfig: NextAuthConfig = {
               showRelatedExcerpts: false,
               bounceThreshold: 0.25,
               showLowRelevanceArticles: true,
+              readingMode: "side_panel",
+              inlineAutoScroll: true,
+              categoryStates: {},
               // updatedAt is auto-managed by Prisma via @updatedAt directive
             },
           });
@@ -164,5 +169,5 @@ export const authConfig: NextAuthConfig = {
   },
 };
 
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
+export const { handlers, auth, signIn, signOut } = (NextAuth as any)(authConfig);
 

@@ -171,9 +171,9 @@ export async function GET(_req: NextRequest) {
         
         keyspaceData.push({
           dbIndex,
-          keys: keysMatch ? parseInt(keysMatch[1]) : 0,
-          expires: expiresMatch ? parseInt(expiresMatch[1]) : 0,
-          avgTtl: avgTtlMatch ? parseInt(avgTtlMatch[1]) : 0,
+          keys: keysMatch?.[1] ? parseInt(keysMatch[1]) : 0,
+          expires: expiresMatch?.[1] ? parseInt(expiresMatch[1]) : 0,
+          avgTtl: avgTtlMatch?.[1] ? parseInt(avgTtlMatch[1]) : 0,
         });
       }
     }

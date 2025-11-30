@@ -6,7 +6,7 @@ import { ArticleToolbar, ViewMode } from "./ArticleToolbar";
 import { ArticleSummary, ArticleSummaryRef } from "./ArticleSummary";
 import { ArticleFeedbackSection } from "./ArticleFeedbackSection";
 import { RelatedArticles } from "./RelatedArticles";
-import { LoadingSpinner } from "@/app/components/layout/LoadingSpinner";
+import { LoadingSpinner } from "@/app/components/ui/LoadingSpinner";
 import { processArticleContent, estimateReadingTime } from "@/lib/content-processor";
 import { formatLocalizedDateTime, toISOString as formatISOString } from "@/lib/date-utils";
 import { useArticle } from "@/hooks/queries/use-articles";
@@ -38,6 +38,7 @@ interface ArticlePanelProps {
   articleId: string;
   onClose: () => void;
   onReadStatusChange?: () => void;
+  variant?: "panel" | "inline" | "standalone";
 }
 
 function normalizeKeyPoints(value: unknown): string[] {
@@ -49,7 +50,7 @@ function normalizeKeyPoints(value: unknown): string[] {
   return [];
 }
 
-export function ArticlePanel({ articleId, onClose, onReadStatusChange }: ArticlePanelProps) {
+export function ArticlePanel({ articleId, onClose, onReadStatusChange, variant = "panel" }: ArticlePanelProps) {
   const summaryRef = useRef<ArticleSummaryRef>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -140,7 +141,7 @@ export function ArticlePanel({ articleId, onClose, onReadStatusChange }: Article
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center bg-background">
-        <LoadingSpinner size="lg" text="Loading article..." />
+        <LoadingSpinner size="lg" label="Loading article..." />
       </div>
     );
   }
@@ -187,8 +188,13 @@ export function ArticlePanel({ articleId, onClose, onReadStatusChange }: Article
         }
       : null;
 
+  // Container classes based on variant
+  const containerClasses = variant === "inline"
+    ? "flex h-full flex-col bg-background"
+    : "flex h-full flex-col bg-background";
+
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div className={containerClasses}>
       {/* View Tracker */}
       <ArticleViewTracker articleId={article.id} estimatedTime={readingTime * 60} onReadStatusChange={onReadStatusChange} />
 

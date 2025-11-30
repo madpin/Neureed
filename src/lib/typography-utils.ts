@@ -188,10 +188,11 @@ export function getTailwindClass(
 
   if (!sizeMap) {
     // Fallback for sizes not in map
-    return RELATIVE_SIZE_TAILWIND_MAP[16][variant];
+    const fallbackMap = RELATIVE_SIZE_TAILWIND_MAP[16];
+    return fallbackMap?.[variant] || 'text-base';
   }
 
-  return sizeMap[variant];
+  return sizeMap[variant] || 'text-base';
 }
 
 /**

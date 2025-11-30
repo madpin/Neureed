@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
  * Get cron job scheduler status with latest run information
  */
 export const GET = createHandler(
-  async () => {
+  async ({}) => {
     const status = getCronJobStatus();
     
     // Fetch latest run for each job to get logs and last run info

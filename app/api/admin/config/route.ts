@@ -83,7 +83,9 @@ function getTailwindThemes(): string[] {
     
     let match;
     while ((match = themeRegex.exec(cssContent)) !== null) {
-      themes.add(match[1]);
+      if (match[1]) {
+        themes.add(match[1]);
+      }
     }
     
     return Array.from(themes);
@@ -145,7 +147,7 @@ function getTypeScriptConfig() {
 }
 
 export const GET = createHandler(
-  async () => {
+  async ({}) => {
 
     // Get environment configuration
     const authProviders = [];

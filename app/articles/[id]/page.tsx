@@ -4,7 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArticlePageClient } from "@/app/components/articles/ArticlePageClient";
 import { ArticleFeedbackSection } from "@/app/components/articles/ArticleFeedbackSection";
 import { RelatedArticles } from "@/app/components/articles/RelatedArticles";
-import { LoadingSpinner } from "@/app/components/layout/LoadingSpinner";
+import { LoadingSpinner } from "@/app/components/ui/LoadingSpinner";
 import { processArticleContent, estimateReadingTime } from "@/lib/content-processor";
 import { formatLocalizedDateTime, toISOString } from "@/lib/date-utils";
 import { useArticle } from "@/hooks/queries/use-articles";
@@ -23,7 +23,7 @@ export default function ArticlePage() {
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
-        <LoadingSpinner size="lg" text="Loading article..." />
+        <LoadingSpinner size="lg" label="Loading article..." />
       </div>
     );
   }

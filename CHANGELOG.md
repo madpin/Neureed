@@ -5,6 +5,38 @@ All notable changes to NeuReed will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2025-11-29
+
+### Added
+- Comprehensive refactoring of core components (AdminDashboard, FeedManagementModal, PreferencesModal)
+- 7 custom hooks for state management (useUnsavedChanges, useFormChanges, useMobileMenu, useViewNavigation, useFileDrop, useConfirmation, useFeedNavigation)
+- Unified Tabs component with WAI-ARIA compliance and keyboard navigation
+- 46 Server Actions replacing API routes for improved type safety and performance
+- 12 Skeleton components for Suspense boundaries and loading states
+- Comprehensive testing infrastructure with 86+ tests using Vitest
+- Storybook integration for component development and documentation
+- Refactored FeedManagementModal with view-based architecture (253 lines from 1,919)
+- 4 reusable form field components (NumberSettingField, SelectSettingField, ToggleSettingField, TextInputField)
+
+### Changed
+- Reorganized documentation structure into logical subdirectories (guides/, planning/, archive/)
+- Consolidated duplicate documentation files
+- Archived historical refactoring artifacts to docs/archive/
+- AdminDashboard reduced from 2,588 lines to 280 lines (91% reduction)
+- PreferencesModal refactored with custom hooks (388 lines)
+- Enhanced documentation navigation with comprehensive README
+
+### Improved
+- Documentation navigation and cross-linking with emoji-enhanced sections
+- Bundle size through Server Components architecture
+- Component reusability and testability across the application
+- Code organization with 68% reduction in root-level documentation files
+
+### Fixed
+- Broken internal documentation links
+- Removed references to non-existent documentation files
+- Updated all cross-references to reflect new documentation structure
+
 ## [0.2.0] - 2025-11-23
 
 ### Added
@@ -112,6 +144,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History Summary
 
+- **0.3.0** (Nov 29, 2025): Major refactoring release with component architecture improvements, custom hooks, Server Actions, and comprehensive documentation reorganization
 - **0.2.0** (Nov 23, 2025): Major feature release with summarization, notifications, OPML support, and improved admin dashboard
 - **0.1.5** (Nov 20, 2025): WASM support, embedding improvements, and bug fixes
 - **0.1.0** (Nov 19, 2025): Initial release with core RSS reader functionality, semantic search, and AI features

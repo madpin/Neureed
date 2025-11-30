@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
  * Returns masked API keys for security
  */
 export const GET = createHandler(
-  async () => {
+  async ({}) => {
     const credentials = await getSystemLLMCredentials(true);
 
     return {

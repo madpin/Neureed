@@ -10,7 +10,11 @@ export const dynamic = "force-dynamic";
  */
 export const DELETE = createHandler(async ({ params }) => {
   const { id } = params;
-  
+
+  if (!id) {
+    return { error: "Feed ID is required", status: 400 };
+  }
+
   logger.info(`[API] Deleting all articles from feed ${id}`);
 
   const count = await deleteAllArticles(id);

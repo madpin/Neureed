@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
  * Get cache statistics
  */
 export const GET = createHandler(
-  async () => {
+  async ({}) => {
     const stats = getCacheStats();
     const status = getRedisStatus();
     const info = await getCacheInfo();

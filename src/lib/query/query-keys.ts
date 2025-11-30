@@ -98,6 +98,10 @@ export const queryKeys = {
     settings: (id: string) => [...queryKeys.feeds.all, "settings", id] as const,
     userFeeds: () => [...queryKeys.feeds.all, "userFeeds"] as const,
     grouped: () => [...queryKeys.feeds.all, "grouped"] as const,
+    health: (id: string) => [...queryKeys.feeds.all, "health", id] as const,
+    bulkHealth: (feedIds: string[]) => [...queryKeys.feeds.all, "bulkHealth", feedIds] as const,
+    errorLogs: (id: string, limit?: number) => [...queryKeys.feeds.all, "errorLogs", id, limit] as const,
+    unhealthy: () => [...queryKeys.feeds.all, "unhealthy"] as const,
   },
 
   // Categories queries
@@ -156,6 +160,24 @@ export const queryKeys = {
       list: () => [...queryKeys.analytics.all, "patterns", "list"] as const,
       stats: () => [...queryKeys.analytics.all, "patterns", "stats"] as const,
     },
+  },
+
+  // Saved Searches queries
+  savedSearches: {
+    all: ["savedSearches"] as const,
+    lists: () => [...queryKeys.savedSearches.all, "list"] as const,
+    list: (includeArchived?: boolean) =>
+      [...queryKeys.savedSearches.lists(), { includeArchived }] as const,
+    detail: (id: string) => [...queryKeys.savedSearches.all, "detail", id] as const,
+    articles: (id: string, options?: {
+      limit?: number;
+      offset?: number;
+      sortBy?: string;
+      startDate?: Date;
+      endDate?: Date;
+      feedIds?: string[];
+    }) => [...queryKeys.savedSearches.all, "articles", id, options] as const,
+    preview: (query: string) => [...queryKeys.savedSearches.all, "preview", query] as const,
   },
 } as const;
 
