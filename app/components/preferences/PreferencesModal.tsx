@@ -180,7 +180,7 @@ export function PreferencesModal({
   if (isLoading && !localPreferences) {
     return (
       <Modal isOpen={isOpen} onClose={onClose} size="xl">
-        <ModalBody className="flex h-[70vh] items-center justify-center">
+        <ModalBody className="flex items-center justify-center">
           <div className="text-gray-500">Loading...</div>
         </ModalBody>
       </Modal>
@@ -192,9 +192,9 @@ export function PreferencesModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={() => handleClose(true)} size="xl">
+    <Modal isOpen={isOpen} onClose={() => handleClose(true)} size="xl" className="h-[90vh]">
       <ModalHeader title="Preferences" onClose={() => handleClose(true)} />
-      <ModalBody padding={false} className="flex overflow-hidden">
+      <ModalBody padding={false} className="flex flex-col md:flex-row overflow-hidden">
         <ModalSidebarNavigation
           items={NAVIGATION_ITEMS.map(item => ({
             id: item.view,

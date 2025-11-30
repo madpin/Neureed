@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { DraggableOrderEditor } from "../DraggableOrderEditor";
 import { ArticleCard, type ArticleDisplayPreferences } from "@/app/components/articles/ArticleCard";
 import { ToggleSwitch, Card, CardBody } from "@/app/components/ui";
@@ -16,6 +16,8 @@ export interface ArticleDisplayViewProps {
  * Article Display View - Customize article card appearance
  */
 export function ArticleDisplayView({ preferences, updatePreference }: ArticleDisplayViewProps) {
+  const [showTwoArticles, setShowTwoArticles] = useState(false);
+
   const densityOptions = [
     {
       value: "compact" as const,
@@ -138,8 +140,8 @@ export function ArticleDisplayView({ preferences, updatePreference }: ArticleDis
       <h2 className="mb-6 text-2xl font-bold">Article Display</h2>
 
       <div className="space-y-8">
-        {/* Live Preview - Sticky */}
-        <Card className="sticky top-0 z-10 border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent shadow-lg backdrop-blur-sm">
+        {/* Live Preview - Conditionally Sticky */}
+        <Card className="lg:sticky lg:top-0 lg:max-h-[85vh] lg:overflow-auto z-10 border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent shadow-lg backdrop-blur-sm">
           <CardBody>
             <div className="mb-4 flex items-center justify-between">
               <div>
@@ -148,20 +150,31 @@ export function ArticleDisplayView({ preferences, updatePreference }: ArticleDis
                   Changes apply instantly as you customize
                 </p>
               </div>
-              <div className="rounded-full bg-green-500/20 px-3 py-1 text-xs font-medium text-green-600 dark:text-green-400">
-                ● Real-time
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowTwoArticles(!showTwoArticles)}
+                  className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
+                  aria-label={showTwoArticles ? "Show one article" : "Show two articles"}
+                >
+                  {showTwoArticles ? "Show 1 article" : "Show 2 articles"}
+                </button>
+                <div className="rounded-full bg-green-500/20 px-3 py-1 text-xs font-medium text-green-600 dark:text-green-400">
+                  ● Real-time
+                </div>
               </div>
             </div>
 
             <div className="rounded-lg border border-border bg-background p-4">
               <div className={previewSpacingClass}>
-                {sampleArticles.map((article) => (
-                  <ArticleCard
-                    key={article.id}
-                    article={article as any}
-                    displayPreferences={displayPreferences}
-                  />
-                ))}
+                {sampleArticles
+                  .slice(0, showTwoArticles ? 2 : 1)
+                  .map((article) => (
+                    <ArticleCard
+                      key={article.id}
+                      article={article as any}
+                      displayPreferences={displayPreferences}
+                    />
+                  ))}
               </div>
             </div>
           </CardBody>

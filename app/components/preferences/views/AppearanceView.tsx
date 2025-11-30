@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { ThemePalette } from "../ThemePalette";
 import { Card, CardHeader, CardBody } from "@/app/components/ui";
 import { SelectSettingField } from "@/app/components/shared/settings";
@@ -14,6 +15,8 @@ export interface AppearanceViewProps {
  * Appearance View - Theme and font size customization
  */
 export function AppearanceView({ preferences, updatePreference }: AppearanceViewProps) {
+  const [showTwoExamples, setShowTwoExamples] = useState(false);
+
   return (
     <div>
       <h2 className="mb-6 text-2xl font-bold">Appearance</h2>
@@ -110,24 +113,27 @@ export function AppearanceView({ preferences, updatePreference }: AppearanceView
 
             {/* Preview */}
             <div className="mt-4 rounded-lg bg-background p-4 border border-border">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Preview</p>
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Live Preview</p>
+                <button
+                  type="button"
+                  onClick={() => setShowTwoExamples(!showTwoExamples)}
+                  className="text-xs text-primary hover:text-primary/80 transition-colors"
+                >
+                  {showTwoExamples ? "Show One" : "Show Two"}
+                </button>
+              </div>
               <div className="space-y-2">
                 <div style={{ fontSize: `var(--font-size-sidebar)` }}>
                   <span className="text-gray-500">Sidebar: </span>
                   <span>The quick brown fox jumps over the lazy dog</span>
                 </div>
-                <div style={{ fontSize: `var(--font-size-card)` }}>
-                  <span className="text-gray-500">Cards: </span>
-                  <span>The quick brown fox jumps over the lazy dog</span>
-                </div>
-                <div style={{ fontSize: `var(--font-size-modal)` }}>
-                  <span className="text-gray-500">Modals: </span>
-                  <span>The quick brown fox jumps over the lazy dog</span>
-                </div>
-                <div style={{ fontSize: `var(--font-size-ui)` }}>
-                  <span className="text-gray-500">UI: </span>
-                  <span>The quick brown fox jumps over the lazy dog</span>
-                </div>
+                {showTwoExamples && (
+                  <div style={{ fontSize: `var(--font-size-card)` }}>
+                    <span className="text-gray-500">Cards: </span>
+                    <span>The quick brown fox jumps over the lazy dog</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

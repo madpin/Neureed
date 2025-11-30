@@ -66,13 +66,23 @@ export function useFeedNavigation(): UseFeedNavigationReturn {
    * Navigate to overview page (main feed management dashboard)
    */
   const navigateToOverview = useCallback(() => {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(searchParams.toString());
+
+    // Clear feed management specific params
+    params.delete("view");
+    params.delete("id");
+    params.delete("modal");
+    params.delete("selected");
+
     if (isInModalContext) {
       params.set("feedsModal", "open");
+    } else {
+      params.delete("feedsModal");
     }
+
     const path = params.toString() ? `/?${params.toString()}` : "/";
     router.push(path);
-  }, [router, isInModalContext]);
+  }, [router, searchParams, isInModalContext]);
 
   /**
    * Navigate to specific feed details page
@@ -80,16 +90,26 @@ export function useFeedNavigation(): UseFeedNavigationReturn {
    */
   const navigateToFeed = useCallback(
     (feedId: string) => {
-      const params = new URLSearchParams();
-      if (isInModalContext) {
-        params.set("feedsModal", "open");
-      }
+      const params = new URLSearchParams(searchParams.toString());
+
+      // Set feed management params
       params.set("view", "feed");
       params.set("id", feedId);
+
+      // Clear modal-specific params
+      params.delete("modal");
+      params.delete("selected");
+
+      if (isInModalContext) {
+        params.set("feedsModal", "open");
+      } else {
+        params.delete("feedsModal");
+      }
+
       const basePath = isInModalContext ? "/" : "/feeds-management";
       router.push(`${basePath}?${params.toString()}`);
     },
-    [router, isInModalContext]
+    [router, searchParams, isInModalContext]
   );
 
   /**
@@ -98,16 +118,26 @@ export function useFeedNavigation(): UseFeedNavigationReturn {
    */
   const navigateToCategory = useCallback(
     (categoryId: string) => {
-      const params = new URLSearchParams();
-      if (isInModalContext) {
-        params.set("feedsModal", "open");
-      }
+      const params = new URLSearchParams(searchParams.toString());
+
+      // Set feed management params
       params.set("view", "category");
       params.set("id", categoryId);
+
+      // Clear modal-specific params
+      params.delete("modal");
+      params.delete("selected");
+
+      if (isInModalContext) {
+        params.set("feedsModal", "open");
+      } else {
+        params.delete("feedsModal");
+      }
+
       const basePath = isInModalContext ? "/" : "/feeds-management";
       router.push(`${basePath}?${params.toString()}`);
     },
-    [router, isInModalContext]
+    [router, searchParams, isInModalContext]
   );
 
   /**

@@ -1,0 +1,106 @@
+---
+title: NeuReed Documentation
+description: Complete documentation for NeuReed, an intelligent RSS reader with semantic search
+---
+
+# NeuReed Documentation
+
+Welcome to the NeuReed documentation! This comprehensive guide will help you navigate all available documentation for using, deploying, and developing NeuReed.
+
+NeuReed is an intelligent RSS reader with semantic search capabilities, built on Next.js 16 with PostgreSQL/pgvector. It features personalized content recommendations through machine learning, automated feed management via cron jobs, and flexible embedding generation.
+
+---
+
+## Quick Links
+
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+  <div className="border rounded-lg p-4 hover:shadow-lg transition-shadow">
+    <h3 className="font-bold mb-2">🚀 Getting Started</h3>
+    <p className="text-sm text-gray-600 dark:text-gray-400">Install and set up NeuReed locally</p>
+  </div>
+
+  <div className="border rounded-lg p-4 hover:shadow-lg transition-shadow">
+    <h3 className="font-bold mb-2">📚 Features</h3>
+    <p className="text-sm text-gray-600 dark:text-gray-400">Explore saved searches, summarization, and more</p>
+  </div>
+
+  <div className="border rounded-lg p-4 hover:shadow-lg transition-shadow">
+    <h3 className="font-bold mb-2">🔧 Developer Guides</h3>
+    <p className="text-sm text-gray-600 dark:text-gray-400">Modern React and Next.js patterns</p>
+  </div>
+
+  <div className="border rounded-lg p-4 hover:shadow-lg transition-shadow">
+    <h3 className="font-bold mb-2">🚀 Deployment</h3>
+    <p className="text-sm text-gray-600 dark:text-gray-400">Deploy to production environments</p>
+  </div>
+</div>
+
+---
+
+## What's New in v0.3.0
+
+The latest release includes:
+
+- 🎨 **Major Component Refactoring** - AdminDashboard, FeedManagementModal, PreferencesModal completely rebuilt
+- 🪝 **7 Custom Hooks** - Better state management and code reusability
+- ⚡ **46 Server Actions** - Replacing API routes for improved type safety
+- 🎭 **Storybook Integration** - Component development and documentation
+- 🧪 **113+ Tests** - Comprehensive testing with Vitest
+- 📦 **12 Skeleton Components** - Enhanced loading states
+- 📚 **Reorganized Documentation** - Cleaner, more navigable structure
+
+---
+
+## Popular Topics
+
+### For Users
+- [Saved Searches User Guide](/docs/features/saved-searches/user-guide) - Create and manage persistent search queries
+- [Article Summarization](/docs/features/summarization) - AI-powered article summaries
+- [Default Feeds](/docs/features/default-feeds) - Understanding default subscriptions
+
+### For Developers
+- [Server Actions Migration](/docs/guides/development/server-actions-migration) - Migrate API routes to Server Actions
+- [Modal Management](/docs/guides/development/modal-management) - Intercepting Routes + Context API
+- [Testing Strategies](/docs/guides/development/server-actions-testing) - Testing Server Actions
+
+### For Deployment
+- [Deployment Guide](/docs/deployment/deployment) - Complete deployment instructions
+- [Dokploy Setup](/docs/deployment/dokploy-setup) - Deploy with Dokploy
+- [Production Configuration](/docs/deployment/production-config) - Cron jobs and production settings
+
+---
+
+## Architecture Overview
+
+NeuReed follows modern Next.js 16 patterns:
+
+- **App Router** - File-based routing with layouts
+- **Server Components** - Default server-side rendering
+- **Server Actions** - Type-safe data mutations
+- **Service Layer** - Clean separation of business logic
+- **Prisma + pgvector** - Type-safe database with vector search
+
+Learn more in the [Architecture](/docs/architecture) section.
+
+---
+
+## Contributing
+
+Interested in contributing? Check out:
+
+- [Development Setup](/docs/getting-started/development-setup)
+- [Development Guides](/docs/guides/development)
+- [Contributing Guidelines](https://github.com/madpin/neureed/blob/main/CONTRIBUTING.md)
+
+---
+
+## Support
+
+**Questions or Issues?**
+- Search the documentation using the search bar above
+- Check [GitHub Issues](https://github.com/madpin/neureed/issues)
+- Review [CLAUDE.md](https://github.com/madpin/neureed/blob/main/CLAUDE.md) for development guidance
+
+---
+
+**Last Updated:** November 29, 2025 (v0.3.0 release)

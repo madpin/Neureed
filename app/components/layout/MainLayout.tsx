@@ -236,7 +236,7 @@ export function MainLayout({
       >
         <div className="flex h-full flex-col">
           {/* Header */}
-          <div className="flex items-center justify-center border-b border-border p-4">
+          <div className="flex items-center justify-center border-b border-border px-4 h-16">
             <h1 className="text-xl font-bold text-primary">
               {/* On mobile, always show full name. On desktop, respect collapse state */}
               <span className="md:hidden">NeuReed</span>
@@ -302,16 +302,16 @@ export function MainLayout({
       {/* Main Content */}
       <main className="flex flex-1 flex-col overflow-hidden relative z-0">
         {/* Top Bar */}
-        <header className="flex items-center justify-between border-b border-border bg-background px-6 py-4">
-          <div className="flex items-center gap-4">
+        <header className="flex items-center justify-between border-b border-border bg-background px-4 h-16">
+          <div className="flex items-center gap-3">
             {/* Hamburger Menu Button - Mobile Only */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 hover:bg-muted rounded-lg transition-colors"
+              className="md:hidden p-1.5 hover:bg-muted rounded-lg transition-colors"
               aria-label="Toggle menu"
             >
               <svg
-                className="h-6 w-6"
+                className="h-5 w-5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -325,12 +325,12 @@ export function MainLayout({
               </svg>
             </button>
 
-            <h2 className="text-lg font-semibold text-foreground">
+            <h2 className="text-base font-semibold text-foreground">
               Articles
             </h2>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {/* Sort Dropdown */}
             {sortOrder && sortDirection && onSortChange && (
               <ArticleSortDropdown

@@ -1,0 +1,180 @@
+---
+title: Quick Start
+description: Get up and running with NeuReed in under 5 minutes
+---
+
+# Quick Start
+
+Get up and running with NeuReed in under 5 minutes!
+
+## 1. Installation
+
+Choose your preferred installation method:
+
+<Tabs items={['Automated', 'Docker Compose', 'Manual']}>
+  <Tab>
+    ```bash
+    git clone https://github.com/madpin/neureed.git
+    cd neureed
+    ./scripts/setup.sh
+    npm run dev
+    ```
+  </Tab>
+  <Tab>
+    ```bash
+    git clone https://github.com/madpin/neureed.git
+    cd neureed
+    docker-compose up -d
+    ```
+  </Tab>
+  <Tab>
+    ```bash
+    git clone https://github.com/madpin/neureed.git
+    cd neureed
+    npm install
+    cp .env.example .env.local
+    docker-compose up -d postgres
+    npx prisma migrate dev
+    npm run dev
+    ```
+  </Tab>
+</Tabs>
+
+See the detailed [Installation Guide](/docs/getting-started/installation) for more options.
+
+## 2. Sign In
+
+1. Open `http://localhost:3000` in your browser
+2. Click "Sign In"
+3. Choose your OAuth provider (Google or GitHub)
+4. Authorize NeuReed
+
+## 3. Add Your First Feed
+
+NeuReed comes with 9 default feeds to get you started, but let's add a custom one:
+
+1. Click the **+** button in the sidebar
+2. Enter a feed URL (try: `https://hnrss.org/newest`)
+3. Choose a category (or create a new one)
+4. Click "Add Feed"
+
+The feed will start refreshing automatically every 30 minutes.
+
+## 4. Explore Articles
+
+- **Browse by feed**: Click any feed in the sidebar
+- **Browse by category**: Click category names to see all articles
+- **View all**: Click "All Articles" to see everything
+
+## 5. Try Semantic Search
+
+This is where NeuReed shines!
+
+1. Click the search icon in the top bar
+2. Type a natural query like: *"machine learning tutorials for beginners"*
+3. Get results based on **meaning**, not just keywords
+
+## 6. Give Feedback
+
+Help NeuReed learn your preferences:
+
+- **👍 Thumbs up**: Articles you love
+- **👎 Thumbs down**: Articles you don't care about
+
+The more feedback you give, the better NeuReed gets at showing you relevant content.
+
+## 7. Customize Your Experience
+
+Click your profile picture → **Preferences** to customize:
+
+### Appearance
+- Choose from 14+ themes (Light, Dark, Nord, Solarized, and more)
+- Adjust article density
+- Configure font sizes and spacing
+
+### Reading Experience
+- Select reading mode (Side Panel, Inline, or Standalone)
+- Set auto-scroll preferences
+- Configure article expansion behavior
+
+### AI Features
+- Enable article summaries
+- Configure your own OpenAI API key
+- Choose embedding models
+
+## What's Next?
+
+### For Regular Users
+
+- [First Steps Guide](/docs/getting-started/first-steps) - Detailed walkthrough
+- [Saved Searches](/docs/features/saved-searches/user-guide) - Create dynamic feeds
+- [Features Overview](/docs/features) - Explore all capabilities
+
+### For Developers
+
+- [Development Guides](/docs/guides/development) - Modern React patterns
+- [Architecture](/docs/architecture) - How NeuReed works
+- [Contributing](/docs/guides/development/contributing) - Join the project
+
+### For Deployment
+
+- [Deployment Guide](/docs/deployment/deployment) - Production setup
+- [Dokploy Setup](/docs/deployment/dokploy-setup) - One-click deployment
+- [Production Config](/docs/deployment/production-config) - Production settings
+
+## Common First Tasks
+
+### Import Existing Feeds (OPML)
+
+If you're migrating from another RSS reader:
+
+1. Export your feeds as OPML from your old reader
+2. In NeuReed, click **Settings** → **Import/Export**
+3. Upload your OPML file
+4. All feeds will be imported with their categories
+
+### Organize Feeds
+
+- **Drag & drop** feeds to reorder them
+- **Create categories** for better organization
+- **Set per-feed settings** for refresh intervals
+
+### Enable AI Features
+
+1. Go to **Preferences** → **AI Settings**
+2. Add your OpenAI API key (or use local models)
+3. Enable article summaries
+4. Enable automatic embedding generation
+
+## Tips & Tricks
+
+### Keyboard Shortcuts
+
+- `j` / `k` - Navigate articles
+- `/` - Focus search
+- `r` - Mark as read
+- `u` - Mark as unread
+
+### Mobile Support
+
+NeuReed is fully responsive and works great on mobile:
+
+- Swipe gestures for navigation
+- Offline support for saved articles
+- Optimized reading experience
+
+### Performance
+
+For the best performance:
+
+- Enable Redis caching (`REDIS_URL` in `.env.local`)
+- Enable automatic embedding generation
+- Set appropriate article retention periods
+
+## Getting Help
+
+- [Troubleshooting](/docs/getting-started/troubleshooting)
+- [FAQ](/docs/getting-started/faq)
+- [GitHub Issues](https://github.com/madpin/neureed/issues)
+
+Ready to dive deeper? Check out our [complete documentation](/docs)!

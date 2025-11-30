@@ -77,6 +77,15 @@ export function useViewNavigation<T extends string = string>(
   const [currentView, setCurrentView] = useState<T>(defaultView);
 
   /**
+   * Reset view to defaultView when modal opens (to handle initialView changes)
+   */
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentView(defaultView);
+    }
+  }, [isOpen, defaultView]);
+
+  /**
    * Navigate to a different view and update browser history
    */
   const navigateToView = useCallback(
