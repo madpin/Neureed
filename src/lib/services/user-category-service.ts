@@ -471,6 +471,13 @@ export async function getFeedsGroupedByCategory(
       settings: cat.settings,
       createdAt: cat.createdAt,
       updatedAt: cat.updatedAt,
+      parentId: cat.parentId,
+      color: cat.color,
+      collapsed: cat.collapsed,
+      sortOrder: cat.sortOrder,
+      includeInSearch: cat.includeInSearch,
+      isDefault: cat.isDefault,
+      isReadOnly: cat.isReadOnly,
       feedCount: cat.user_feed_categories.length,
       feeds: cat.user_feed_categories.map((ufc) => ({
         id: ufc.user_feeds.feeds.id,
@@ -559,10 +566,12 @@ export async function getFeedEffectiveSettings(
 
   // Apply category settings (if feed is in a category)
   if (userFeed.user_feed_categories.length > 0) {
-    const categorySettings = userFeed.user_feed_categories[0].user_categories
-      .settings as Record<string, any> | null;
-    if (categorySettings) {
-      effectiveSettings = { ...effectiveSettings, ...categorySettings };
+    const firstCategory = userFeed.user_feed_categories[0];
+    if (firstCategory) {
+      const categorySettings = firstCategory.user_categories.settings as Record<string, any> | null;
+      if (categorySettings) {
+        effectiveSettings = { ...effectiveSettings, ...categorySettings };
+      }
     }
   }
 

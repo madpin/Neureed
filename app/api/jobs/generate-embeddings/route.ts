@@ -84,7 +84,7 @@ export const POST = createHandler<EmbeddingGenerationRequest>(
 /**
  * GET - Get embedding generation status
  */
-export const GET = createHandler(async () => {
+export const GET = createHandler(async ({}) => {
   const status = getEmbeddingJobStatus();
   const stats = await getEmbeddingStats();
 

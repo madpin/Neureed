@@ -1,0 +1,73 @@
+import { Meta } from '@storybook/blocks';
+
+<Meta title="Admin/Tabs/UsersTab" />
+
+# UsersTab
+
+The UsersTab component provides comprehensive user management functionality for administrators.
+
+## Features
+
+### User Statistics
+- **Total Users**: Count of all registered accounts
+- **Active Users (30d)**: Users who have been active in the last 30 days
+- **Providing Feedback**: Users who have provided article feedback
+
+### Search & Filtering
+- Search by name or email
+- Sort by: Name, Email, or Joined Date
+- Ascending/Descending order toggle
+
+### User Management Table
+Displays user information with inline editing:
+- User avatar and basic info (name, email)
+- Role management (Admin, User, Guest) via dropdown
+- Activity metrics (Feeds, Articles Read, Feedback, Patterns)
+- Join date
+
+### Actions
+- **Reset**: Reset user feeds to defaults (preserves history and preferences)
+- **Delete**: Permanently delete user and all associated data
+- Both actions require confirmation via modal dialogs
+
+### Protected Accounts
+- Special accounts (e.g., `madpin@gmail.com`) are protected from deletion
+- Visual indicator shown on protected accounts
+
+### Pagination
+- 20 users per page
+- Shows item range and total count
+- Page navigation with Previous/Next and page numbers
+
+### Role Permissions
+Information panel explaining each role:
+- **Admin**: Full access to all features including admin panel
+- **User**: Can manage feeds and preferences (default)
+- **Guest**: Read-only access
+
+## Implementation Notes
+
+This component uses React Query hooks and requires the full application context:
+- `useAdminUsers()` - Fetches users with pagination and search
+- `useUpdateUserRole()` - Updates user roles
+- `useDeleteUser()` - Deletes users
+- `useResetUserFeeds()` - Resets user feeds
+
+## Usage
+
+```tsx
+import { UsersTab } from '@/app/admin/dashboard/components/tabs/UsersTab';
+
+function AdminDashboard() {
+  return (
+    <div>
+      <UsersTab />
+    </div>
+  );
+}
+```
+
+## Related Components
+- `MetricCard` - Used for user statistics display
+- `Pagination` - Handles page navigation
+- Modal dialogs for delete/reset confirmation

@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
  * GET - Get default user preferences
  */
 export const GET = createHandler(
-  async () => {
+  async ({}) => {
     const defaults = await getDefaultUserPreferences();
 
     return {

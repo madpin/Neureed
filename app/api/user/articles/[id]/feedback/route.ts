@@ -18,6 +18,10 @@ export const GET = createHandler(
   async ({ params, session }) => {
     const { id: articleId } = params;
 
+    if (!articleId) {
+      return { error: "Article ID is required", status: 400 };
+    }
+
     const feedback = await getUserFeedbackForArticle(
       session!.user!.id,
       articleId
@@ -40,6 +44,10 @@ export const POST = createHandler(
   async ({ params, body, session }) => {
     const { id: articleId } = params;
     const { feedbackValue } = body;
+
+    if (!articleId) {
+      return { error: "Article ID is required", status: 400 };
+    }
 
     // Record feedback
     const feedback = await recordExplicitFeedback(
@@ -66,6 +74,10 @@ export const POST = createHandler(
 export const DELETE = createHandler(
   async ({ params, session }) => {
     const { id: articleId } = params;
+
+    if (!articleId) {
+      return { error: "Article ID is required", status: 400 };
+    }
 
     await deleteFeedback(session!.user!.id, articleId);
 

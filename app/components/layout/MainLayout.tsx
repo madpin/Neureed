@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useState, useRef, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { UserMenu } from "@/app/components/auth/UserMenu";
 import { ArticleSortDropdown } from "@/app/components/articles/ArticleSortDropdown";
 import { NotificationBell } from "@/app/components/notifications/NotificationBell";
@@ -35,11 +35,15 @@ export function MainLayout({
   isLoadingArticles
 }: MainLayoutProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: preferences } = useUserPreferences();
   const updatePreference = useUpdatePreference();
 
   const isSidebarCollapsed = preferences?.sidebarCollapsed ?? false;
   const storedSidebarWidth = preferences?.sidebarWidth ?? 20;
+
+  // Track expected params to avoid navigation loops in React Strict Mode
+  const expectedParamsRef = useRef<URLSearchParams | null>(null);
 
   // Local state for resizing
   const [currentSidebarWidth, setCurrentSidebarWidth] = useState(storedSidebarWidth);
@@ -149,11 +153,40 @@ export function MainLayout({
     setIsSaveSearchModalOpen(true);
   }, []);
 
+  // Initialize and sync ref with searchParams
+  useEffect(() => {
+    expectedParamsRef.current = new URLSearchParams(searchParams.toString());
+  }, [searchParams]);
+
+  const pushWithPreservedParams = useCallback((updates: Record<string, string | null>) => {
+    // Use ref instead of searchParams directly to avoid dependency that causes navigation loops
+    if (!expectedParamsRef.current) {
+      expectedParamsRef.current = new URLSearchParams(searchParams.toString());
+    }
+
+    const currentParams = new URLSearchParams(expectedParamsRef.current.toString());
+
+    // Apply updates (null means delete the param)
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null) {
+        currentParams.delete(key);
+      } else {
+        currentParams.set(key, value);
+      }
+    });
+
+    const paramsString = currentParams.toString();
+    router.push(paramsString ? `/?${paramsString}` : '/');
+
+    // Update ref with new expected params
+    expectedParamsRef.current = currentParams;
+  }, [router, searchParams]);
+
   // Search handlers
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim().length >= 2) {
-      router.push(`/?search=${encodeURIComponent(searchQuery.trim())}`);
+      pushWithPreservedParams({ search: searchQuery.trim() });
       setSearchQuery("");
       setIsSearchOpen(false);
     }
@@ -203,7 +236,7 @@ export function MainLayout({
       >
         <div className="flex h-full flex-col">
           {/* Header */}
-          <div className="flex items-center justify-center border-b border-border p-4">
+          <div className="flex items-center justify-center border-b border-border px-4 h-16">
             <h1 className="text-xl font-bold text-primary">
               {/* On mobile, always show full name. On desktop, respect collapse state */}
               <span className="md:hidden">NeuReed</span>
@@ -269,16 +302,16 @@ export function MainLayout({
       {/* Main Content */}
       <main className="flex flex-1 flex-col overflow-hidden relative z-0">
         {/* Top Bar */}
-        <header className="flex items-center justify-between border-b border-border bg-background px-6 py-4">
-          <div className="flex items-center gap-4">
+        <header className="flex items-center justify-between border-b border-border bg-background px-4 h-16">
+          <div className="flex items-center gap-3">
             {/* Hamburger Menu Button - Mobile Only */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 hover:bg-muted rounded-lg transition-colors"
+              className="md:hidden p-1.5 hover:bg-muted rounded-lg transition-colors"
               aria-label="Toggle menu"
             >
               <svg
-                className="h-6 w-6"
+                className="h-5 w-5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -292,12 +325,12 @@ export function MainLayout({
               </svg>
             </button>
 
-            <h2 className="text-lg font-semibold text-foreground">
+            <h2 className="text-base font-semibold text-foreground">
               Articles
             </h2>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {/* Sort Dropdown */}
             {sortOrder && sortDirection && onSortChange && (
               <ArticleSortDropdown
@@ -452,22 +485,26 @@ export function MainLayout({
       )}
 
       {/* Saved Search Modal */}
-      <SavedSearchModal
-        isOpen={isSaveSearchModalOpen}
-        onClose={() => {
-          setIsSaveSearchModalOpen(false);
-          setEditingSavedSearch(undefined);
-        }}
-        initialQuery={searchQuery}
-        savedSearch={editingSavedSearch}
-      />
+      {isSaveSearchModalOpen && (
+        <SavedSearchModal
+          isOpen={true}
+          onClose={() => {
+            setIsSaveSearchModalOpen(false);
+            setEditingSavedSearch(undefined);
+          }}
+          initialQuery={searchQuery}
+          savedSearch={editingSavedSearch}
+        />
+      )}
 
       {/* Onboarding Modal */}
-      <SavedSearchOnboarding
-        isOpen={showOnboarding}
-        onClose={() => setShowOnboarding(false)}
-        onComplete={handleCompleteOnboarding}
-      />
+      {showOnboarding && (
+        <SavedSearchOnboarding
+          isOpen={true}
+          onClose={() => setShowOnboarding(false)}
+          onComplete={handleCompleteOnboarding}
+        />
+      )}
     </div>
   );
 }

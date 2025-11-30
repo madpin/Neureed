@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Card, CardBody } from "@/app/components/ui";
 
 interface SavedSearchOnboardingProps {
   isOpen: boolean;
@@ -67,23 +68,25 @@ export function SavedSearchOnboarding({
         "Instead of searching repeatedly, create a saved search once. It continuously monitors new articles and finds matches automatically.",
       icon: "💾",
       visual: (
-        <div className="rounded-lg border border-border bg-muted/30 p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-2xl">🤖</span>
-            <div className="text-sm font-medium text-foreground">
-              AI Ethics News
+        <Card className="bg-muted/30">
+          <CardBody>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-2xl">🤖</span>
+              <div className="text-sm font-medium text-foreground">
+                AI Ethics News
+              </div>
             </div>
-          </div>
-          <div className="rounded bg-background p-3 mb-3">
-            <code className="text-xs font-mono text-foreground">
-              (+AI, +"machine learning") +ethics
-            </code>
-          </div>
-          <div className="flex items-center justify-between text-xs text-secondary">
-            <span>42 matches found</span>
-            <span className="text-green-600 dark:text-green-400">● Active</span>
-          </div>
-        </div>
+            <div className="rounded bg-background p-3 mb-3">
+              <code className="text-xs font-mono text-foreground">
+                (+AI, +&quot;machine learning&quot;) +ethics
+              </code>
+            </div>
+            <div className="flex items-center justify-between text-xs text-secondary">
+              <span>42 matches found</span>
+              <span className="text-green-600 dark:text-green-400">● Active</span>
+            </div>
+          </CardBody>
+        </Card>
       ),
     },
     {
@@ -113,7 +116,7 @@ export function SavedSearchOnboarding({
           </div>
           <div className="flex items-center gap-2 text-sm">
             <code className="rounded bg-purple-100 dark:bg-purple-900/30 px-2 py-1 font-mono text-purple-800 dark:text-purple-300">
-              "..."
+              &quot;...&quot;
             </code>
             <span className="text-foreground">Exact phrase</span>
           </div>
@@ -154,28 +157,30 @@ export function SavedSearchOnboarding({
         "Get notified when high-relevance articles match your searches. Choose between real-time alerts or daily digests.",
       icon: "🔔",
       visual: (
-        <div className="rounded-lg border border-border bg-muted/30 p-4">
-          <div className="flex items-start gap-3 mb-3">
-            <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white flex-shrink-0">
-              🔍
-            </div>
-            <div className="flex-1">
-              <div className="text-sm font-medium text-foreground mb-1">
-                New match for "AI Ethics News"
+        <Card className="bg-muted/30">
+          <CardBody>
+            <div className="flex items-start gap-3 mb-3">
+              <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white flex-shrink-0">
+                🔍
               </div>
-              <div className="text-xs text-secondary">
-                The Ethics of Artificial Intelligence in Healthcare
+              <div className="flex-1">
+                <div className="text-sm font-medium text-foreground mb-1">
+                  New match for &quot;AI Ethics News&quot;
+                </div>
+                <div className="text-xs text-secondary">
+                  The Ethics of Artificial Intelligence in Healthcare
+                </div>
+              </div>
+              <div className="text-xs text-green-600 dark:text-green-400">
+                92%
               </div>
             </div>
-            <div className="text-xs text-green-600 dark:text-green-400">
-              92%
+            <div className="flex items-center justify-between text-xs text-secondary">
+              <span>TechCrunch • 2 min ago</span>
+              <span>View article →</span>
             </div>
-          </div>
-          <div className="flex items-center justify-between text-xs text-secondary">
-            <span>TechCrunch • 2 min ago</span>
-            <span>View article →</span>
-          </div>
-        </div>
+          </CardBody>
+        </Card>
       ),
     },
     {
@@ -235,6 +240,8 @@ export function SavedSearchOnboarding({
   if (!isOpen) return null;
 
   const step = steps[currentStep];
+
+  if (!step) return null;
 
   return (
     <div

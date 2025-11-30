@@ -41,13 +41,17 @@ export function decrypt(encryptedText: string): string {
     }
 
     const parts = encryptedText.split(":");
-    if (parts.length !== 3) {
+    const ivHex = parts[0];
+    const encryptedHex = parts[1];
+    const authTagHex = parts[2];
+
+    if (!ivHex || !encryptedHex || !authTagHex) {
       throw new Error("Invalid encrypted format");
     }
 
-    const iv = Buffer.from(parts[0], "hex");
-    const encrypted = parts[1];
-    const authTag = Buffer.from(parts[2], "hex");
+    const iv = Buffer.from(ivHex, "hex");
+    const encrypted = encryptedHex;
+    const authTag = Buffer.from(authTagHex, "hex");
 
     const key = Buffer.from(env.ENCRYPTION_SECRET, "utf-8").subarray(0, 32);
     const decipher = createDecipheriv(ALGORITHM, key, iv);

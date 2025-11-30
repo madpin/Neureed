@@ -225,11 +225,10 @@ export async function findRelatedArticles(
       WHERE id = ${articleId}
     `;
 
-    if (!articleCheck || articleCheck.length === 0) {
+    const article = articleCheck[0];
+    if (!article) {
       throw new Error("Article not found");
     }
-
-    const article = articleCheck[0];
     if (!article.hasEmbedding) {
       throw new Error("Article has no embedding");
     }

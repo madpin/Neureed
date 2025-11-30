@@ -197,6 +197,7 @@ function formatPlainTextContent(content: string): string {
 
   for (let i = 0; i < lines.length; i++) {
     const rawLine = lines[i];
+    if (!rawLine) continue;
     const trimmedLine = rawLine.trim();
 
     if (codeBlock) {
@@ -225,7 +226,7 @@ function formatPlainTextContent(content: string): string {
     }
 
     const headingMatch = trimmedLine.match(/^(#{1,6})\s+(.+)/);
-    if (headingMatch) {
+    if (headingMatch && headingMatch[1] && headingMatch[2]) {
       flushParagraph();
       flushList();
       const level = Math.min(6, headingMatch[1].length);
@@ -239,7 +240,9 @@ function formatPlainTextContent(content: string): string {
       const quoteLines: string[] = [];
       let j = i;
       while (j < lines.length) {
-        const current = lines[j].trim();
+        const currentLine = lines[j];
+        if (!currentLine) break;
+        const current = currentLine.trim();
         if (!current.startsWith(">")) break;
         quoteLines.push(current.replace(/^>\s?/, ""));
         j++;
@@ -254,7 +257,7 @@ function formatPlainTextContent(content: string): string {
     }
 
     const bulletMatch = trimmedLine.match(/^[-*•]\s+(.+)/);
-    if (bulletMatch) {
+    if (bulletMatch && bulletMatch[1]) {
       flushParagraph();
       if (!listBuffer || listBuffer.type !== "ul") {
         flushList();
@@ -265,7 +268,7 @@ function formatPlainTextContent(content: string): string {
     }
 
     const orderedMatch = trimmedLine.match(/^(\d+)[.)]\s+(.+)/);
-    if (orderedMatch) {
+    if (orderedMatch && orderedMatch[2]) {
       flushParagraph();
       if (!listBuffer || listBuffer.type !== "ol") {
         flushList();
@@ -295,6 +298,7 @@ function formatInlineText(text: string): string {
 
   for (let i = 0; i < segments.length; i++) {
     const segment = segments[i];
+    if (segment === undefined) continue;
     const isCode = i % 2 === 1;
 
     if (isCode) {

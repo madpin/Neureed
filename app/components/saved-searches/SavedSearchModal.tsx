@@ -10,6 +10,7 @@ import {
   type SavedSearch,
   type CreateSavedSearchInput,
 } from "@/hooks/queries/use-saved-searches";
+import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from "@/app/components/ui";
 
 interface SavedSearchModalProps {
   isOpen: boolean;
@@ -50,26 +51,31 @@ export function SavedSearchModal({
 
   // Initialize form when saved search changes
   useEffect(() => {
-    if (savedSearch) {
-      setName(savedSearch.name);
-      setQuery(savedSearch.query);
-      setIcon(savedSearch.icon || "🔍");
-      setThreshold(savedSearch.threshold);
-      setNotifyOnMatch(savedSearch.notifyOnMatch);
-      setNotifyThreshold(savedSearch.notifyThreshold);
-      setDailyDigest(savedSearch.dailyDigest);
-      setRecencyBias(savedSearch.recencyBias);
-    } else {
-      // Reset for create mode
-      setName("");
-      setQuery(initialQuery);
-      setIcon("🔍");
-      setThreshold(0.6);
-      setNotifyOnMatch(false);
-      setNotifyThreshold(0.85);
-      setDailyDigest(false);
-      setRecencyBias(0.0);
-    }
+    // Defer setState calls to avoid cascading renders
+    const timer = setTimeout(() => {
+      if (savedSearch) {
+        setName(savedSearch.name);
+        setQuery(savedSearch.query);
+        setIcon(savedSearch.icon || "🔍");
+        setThreshold(savedSearch.threshold);
+        setNotifyOnMatch(savedSearch.notifyOnMatch);
+        setNotifyThreshold(savedSearch.notifyThreshold);
+        setDailyDigest(savedSearch.dailyDigest);
+        setRecencyBias(savedSearch.recencyBias);
+      } else {
+        // Reset for create mode
+        setName("");
+        setQuery(initialQuery);
+        setIcon("🔍");
+        setThreshold(0.6);
+        setNotifyOnMatch(false);
+        setNotifyThreshold(0.85);
+        setDailyDigest(false);
+        setRecencyBias(0.0);
+      }
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, [savedSearch, initialQuery]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -124,43 +130,14 @@ export function SavedSearchModal({
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 p-0 md:p-4"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-3xl max-h-[85vh] md:max-h-[90vh] overflow-y-auto rounded-t-2xl md:rounded-lg border-t md:border border-border bg-background shadow-xl transition-transform duration-300 ease-out"
-        style={{
-          animation: isOpen ? 'slideUp 0.3s ease-out' : 'none'
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Mobile drag handle */}
-        <div className="md:hidden flex justify-center pt-2 pb-1">
-          <div className="w-12 h-1 bg-muted rounded-full"></div>
-        </div>
-
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-border p-4 md:p-6">
-          <h2 className="text-xl md:text-2xl font-bold text-foreground">
-            {isEditMode ? "Edit Saved Search" : "Create Saved Search"}
-          </h2>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-2 hover:bg-muted transition-colors"
-            aria-label="Close"
-          >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-4 md:space-y-6">
+    <Modal isOpen={isOpen} onClose={onClose} size="xl">
+      <ModalHeader
+        title={isEditMode ? "Edit Saved Search" : "Create Saved Search"}
+        onClose={onClose}
+      />
+      <form onSubmit={handleSubmit}>
+        <ModalBody className="space-y-4 md:space-y-6">
           {/* Name and Icon */}
           <div className="grid grid-cols-[auto_1fr] gap-4">
             {/* Icon Picker */}
@@ -366,30 +343,25 @@ export function SavedSearchModal({
               </div>
             )}
           </div>
-
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-3 border-t border-border pt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={createMutation.isPending || updateMutation.isPending}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {createMutation.isPending || updateMutation.isPending
-                ? "Saving..."
-                : isEditMode
-                ? "Update"
-                : "Create"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </ModalBody>
+        <ModalFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={createMutation.isPending || updateMutation.isPending}
+            loading={createMutation.isPending || updateMutation.isPending}
+          >
+            {isEditMode ? "Update" : "Create"}
+          </Button>
+        </ModalFooter>
+      </form>
+    </Modal>
   );
 }

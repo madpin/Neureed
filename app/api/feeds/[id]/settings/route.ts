@@ -16,7 +16,11 @@ export const dynamic = "force-dynamic";
  */
 export const GET = createHandler(async ({ params }) => {
   const { id } = params;
-  
+
+  if (!id) {
+    return { error: "Feed ID is required", status: 400 };
+  }
+
   logger.info(`[API] Getting extraction settings for feed ${id}`);
 
   const settings = await getExtractionSettings(id);
@@ -31,6 +35,10 @@ export const GET = createHandler(async ({ params }) => {
 export const PUT = createHandler(
   async ({ params, body }) => {
     const { id } = params;
+
+    if (!id) {
+      return { error: "Feed ID is required", status: 400 };
+    }
 
     logger.info(`[API] Updating extraction settings for feed ${id}`);
 
@@ -50,7 +58,11 @@ export const PUT = createHandler(
  */
 export const DELETE = createHandler(async ({ params }) => {
   const { id } = params;
-  
+
+  if (!id) {
+    return { error: "Feed ID is required", status: 400 };
+  }
+
   logger.info(`[API] Clearing extraction settings for feed ${id}`);
 
   await clearExtractionSettings(id);

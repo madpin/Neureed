@@ -19,6 +19,10 @@ export const POST = createHandler(
     const { id: articleId } = params;
     const { timeSpent, estimatedTime } = body;
 
+    if (!articleId) {
+      return { error: "Article ID is required", status: 400 };
+    }
+
     // Record exit and check for bounce
     const feedback = await recordArticleExit(
       session!.user!.id,

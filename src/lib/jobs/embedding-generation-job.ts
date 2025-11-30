@@ -3,7 +3,7 @@
  * Processes articles without embeddings on a schedule
  */
 
-import cron from "node-cron";
+import cron, { type ScheduledTask } from "node-cron";
 import { logger } from "@/lib/logger";
 import {
   getArticlesWithoutEmbeddings,
@@ -12,7 +12,7 @@ import {
 } from "@/lib/services/article-embedding-service";
 import { env } from "@/env";
 
-let embeddingJobTask: cron.ScheduledTask | null = null;
+let embeddingJobTask: ScheduledTask | null = null;
 let isRunning = false;
 
 /**

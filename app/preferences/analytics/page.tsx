@@ -5,15 +5,16 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { 
-  useFeedbackStats, 
-  usePatternStats, 
-  usePatterns, 
+import {
+  useFeedbackStats,
+  usePatternStats,
+  usePatterns,
   useResetPatterns,
   type FeedbackStats,
   type PatternStats,
   type Pattern
 } from "@/hooks/queries/use-analytics";
+import { Card, CardHeader, CardBody } from "@/app/components/ui";
 
 export default function AnalyticsPage() {
   const { data: session, status } = useSession();
@@ -187,11 +188,10 @@ function AnalyticsContent({
         )}
 
         {/* Feedback Statistics */}
-        <div className="mb-6 rounded-lg border border-border bg-card p-6 shadow-sm">
-          <h2 className="mb-4 text-xl font-semibold text-foreground">
-            Feedback Statistics
-          </h2>
-          {feedbackStats ? (
+        <Card className="mb-6">
+          <CardHeader title="Feedback Statistics" />
+          <CardBody>
+            {feedbackStats ? (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
               <div className="rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
                 <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
@@ -239,14 +239,14 @@ function AnalyticsContent({
               No feedback data yet. Start rating articles to see your statistics!
             </p>
           )}
-        </div>
+          </CardBody>
+        </Card>
 
         {/* Pattern Statistics */}
-        <div className="mb-6 rounded-lg border border-border bg-card p-6 shadow-sm">
-          <h2 className="mb-4 text-xl font-semibold text-foreground">
-            Pattern Statistics
-          </h2>
-          {patternStats && patternStats.totalPatterns > 0 ? (
+        <Card className="mb-6">
+          <CardHeader title="Pattern Statistics" />
+          <CardBody>
+            {patternStats && patternStats.totalPatterns > 0 ? (
             <div>
               <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div className="rounded-lg bg-muted p-4">
@@ -312,15 +312,13 @@ function AnalyticsContent({
               No patterns learned yet. Keep rating articles to build your preferences!
             </p>
           )}
-        </div>
+          </CardBody>
+        </Card>
 
         {/* Learned Patterns */}
         {patterns.length > 0 && (
-          <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-foreground">
-                Learned Patterns
-              </h2>
+          <Card>
+            <CardHeader title="Learned Patterns">
               {patterns.length > 10 && (
                 <button
                   onClick={() => setShowAllPatterns(!showAllPatterns)}
@@ -329,7 +327,8 @@ function AnalyticsContent({
                   {showAllPatterns ? "Show Less" : `Show All (${patterns.length})`}
                 </button>
               )}
-            </div>
+            </CardHeader>
+            <CardBody>
 
             {/* Pattern Tabs */}
             <div className="mb-4 flex gap-2 border-b border-border">
@@ -382,12 +381,13 @@ function AnalyticsContent({
                 </div>
               ))}
             </div>
-          </div>
+            </CardBody>
+          </Card>
         )}
 
         {/* Empty State and Reset */}
         {patterns.length === 0 && feedbackStats?.totalFeedback === 0 ? (
-          <div className="rounded-lg border border-border bg-card p-12 text-center shadow-sm">
+          <Card className="p-12 text-center">
             <svg
               className="mx-auto mb-4 h-16 w-16 text-muted-foreground"
               fill="none"
@@ -413,7 +413,7 @@ function AnalyticsContent({
             >
               Browse Articles
             </Link>
-          </div>
+          </Card>
         ) : (
           /* Reset Button */
           <div className="mt-8 flex justify-end">

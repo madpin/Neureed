@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
  * Get cron job execution history and status
  */
 export const GET = createHandler(
-  async () => {
+  async ({}) => {
     try {
       // Get current job status
       const jobStatus = getCronJobStatus();

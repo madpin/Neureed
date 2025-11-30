@@ -98,6 +98,10 @@ export const queryKeys = {
     settings: (id: string) => [...queryKeys.feeds.all, "settings", id] as const,
     userFeeds: () => [...queryKeys.feeds.all, "userFeeds"] as const,
     grouped: () => [...queryKeys.feeds.all, "grouped"] as const,
+    health: (id: string) => [...queryKeys.feeds.all, "health", id] as const,
+    bulkHealth: (feedIds: string[]) => [...queryKeys.feeds.all, "bulkHealth", feedIds] as const,
+    errorLogs: (id: string, limit?: number) => [...queryKeys.feeds.all, "errorLogs", id, limit] as const,
+    unhealthy: () => [...queryKeys.feeds.all, "unhealthy"] as const,
   },
 
   // Categories queries

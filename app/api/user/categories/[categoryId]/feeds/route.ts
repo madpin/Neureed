@@ -16,6 +16,10 @@ export const GET = createHandler(
   async ({ params, session }) => {
     const { categoryId } = params;
 
+    if (!categoryId) {
+      return { error: "Category ID is required", status: 400 };
+    }
+
     const categoryWithFeeds = await getCategoryFeeds(
       session!.user!.id,
       categoryId
@@ -46,6 +50,10 @@ export const POST = createHandler(
     const { categoryId } = params;
     const { userFeedId } = body;
 
+    if (!categoryId) {
+      return { error: "Category ID is required", status: 400 };
+    }
+
     const assignment = await assignFeedToCategory(
       session!.user!.id,
       userFeedId,
@@ -72,6 +80,10 @@ export const DELETE = createHandler(
   async ({ params, body, session }) => {
     const { categoryId } = params;
     const { userFeedId } = body;
+
+    if (!categoryId) {
+      return { error: "Category ID is required", status: 400 };
+    }
 
     await unassignFeedFromCategory(session!.user!.id, userFeedId, categoryId);
 

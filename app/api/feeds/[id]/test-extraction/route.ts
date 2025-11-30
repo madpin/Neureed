@@ -15,6 +15,10 @@ export const POST = createHandler(
   async ({ params, body }) => {
     const { id } = params;
 
+    if (!id) {
+      return { error: "Feed ID is required", status: 400 };
+    }
+
     logger.info(`[API] Testing extraction for feed ${id}`);
 
     const testConfig = body;
@@ -33,8 +37,9 @@ export const POST = createHandler(
     // If no URL provided, try to use the most recent article URL
     let testUrl = testConfig.url;
     if (!testUrl) {
-      if (feed.articles.length > 0 && feed.articles[0].url) {
-        testUrl = feed.articles[0].url;
+      const firstArticle = feed.articles[0];
+      if (firstArticle?.url) {
+        testUrl = firstArticle.url;
       } else {
         throw new Error("No article URL available to test. Please add a URL parameter or refresh the feed first.");
       }

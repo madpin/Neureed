@@ -10,8 +10,8 @@ import { logger } from "@/lib/logger";
  * Uses Mozilla's Readability library to extract clean article content
  */
 export class ReadabilityExtractor extends BaseExtractor {
-  name = "readability";
-  priority = 75; // Higher priority than basic RSS
+  override name = "readability";
+  override priority = 75; // Higher priority than basic RSS
 
   /**
    * Can handle any HTML URL
@@ -100,7 +100,7 @@ export class ReadabilityExtractor extends BaseExtractor {
       }
 
       // Clean and sanitize content
-      const cleanContent = sanitizeHtml(article.content);
+      const cleanContent = sanitizeHtml(article.content || "");
 
       // Extract metadata
       const metadata = this.extractMetadata(document);
@@ -121,7 +121,7 @@ export class ReadabilityExtractor extends BaseExtractor {
         `[Readability] Successfully extracted: ${article.title} (${cleanContent.length} chars)`
       );
 
-      return this.createSuccessResult(article.title, cleanContent, {
+      return this.createSuccessResult(article.title || "Untitled", cleanContent, {
         excerpt,
         author: article.byline || metadata.author,
         publishedAt,

@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
  * GET - Get comprehensive admin settings overview
  */
 export const GET = createHandler(
-  async () => {
+  async ({}) => {
     // Fetch all admin settings
     const [
       systemLLM,

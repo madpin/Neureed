@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
  * Get current system LLM configuration
  */
 export const GET = createHandler(
-  async () => {
+  async ({}) => {
     const config = await getSystemLLMConfig();
 
     return {

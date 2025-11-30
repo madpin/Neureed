@@ -148,10 +148,11 @@ export async function getEffectiveFeedSettings(
     // Apply category settings (if feed is in a category)
     // Note: If feed is in multiple categories, use the first one
     if (userFeed.user_feed_categories.length > 0) {
-      const categorySettings = userFeed.user_feed_categories[0].user_categories
-        .settings as FeedSettingsJson | null;
+      const firstCategory = userFeed.user_feed_categories[0];
+      if (firstCategory) {
+        const categorySettings = firstCategory.user_categories.settings as FeedSettingsJson | null;
 
-      if (categorySettings) {
+        if (categorySettings) {
         if (
           categorySettings.refreshInterval !== undefined &&
           categorySettings.refreshInterval !== null
@@ -177,6 +178,7 @@ export async function getEffectiveFeedSettings(
           Object.assign(summarization, categorySettings.summarization);
           source.summarization = "category";
         }
+      }
       }
     }
 

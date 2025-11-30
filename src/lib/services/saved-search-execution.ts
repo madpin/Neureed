@@ -59,9 +59,13 @@ function computeCosineSimilarity(embedding1: number[], embedding2: number[]): nu
   let norm2 = 0;
 
   for (let i = 0; i < embedding1.length; i++) {
-    dotProduct += embedding1[i] * embedding2[i];
-    norm1 += embedding1[i] * embedding1[i];
-    norm2 += embedding2[i] * embedding2[i];
+    const val1 = embedding1[i];
+    const val2 = embedding2[i];
+    if (val1 === undefined || val2 === undefined) continue;
+
+    dotProduct += val1 * val2;
+    norm1 += val1 * val1;
+    norm2 += val2 * val2;
   }
 
   norm1 = Math.sqrt(norm1);
@@ -150,11 +154,15 @@ function evaluateBoolean(
 
       case 'not':
         if (!node.children || node.children.length === 0) return true;
-        return !evaluate(node.children[0]);
+        const notChild = node.children[0];
+        if (!notChild) return true;
+        return !evaluate(notChild);
 
       case 'group':
         if (!node.children || node.children.length === 0) return true;
-        return evaluate(node.children[0]);
+        const groupChild = node.children[0];
+        if (!groupChild) return true;
+        return evaluate(groupChild);
 
       default:
         return true;
@@ -404,12 +412,11 @@ export async function matchArticle(
       WHERE id = ${articleId}
     `;
 
-    if (!result || result.length === 0) {
+    const article = result[0];
+    if (!article) {
       logger.warn("Article not found for matching", { articleId });
       return null;
     }
-
-    const article = result[0];
 
     // Parse the query
     const parseResult = parseQuery(query);

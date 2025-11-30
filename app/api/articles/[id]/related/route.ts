@@ -15,6 +15,11 @@ export const dynamic = "force-dynamic";
  */
 export const GET = createHandler(async ({ params, request }) => {
   const { id } = params;
+
+  if (!id) {
+    return { error: "Article ID is required", status: 400 };
+  }
+
   const { searchParams } = new URL(request.url);
 
   const limit = parseInt(searchParams.get("limit") || "10");

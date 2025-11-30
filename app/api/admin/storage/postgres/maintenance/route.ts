@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
     console.error("Maintenance operation failed:", error);
     
     if (error instanceof z.ZodError) {
-      return apiError("Invalid request: " + error.errors.map(e => e.message).join(", "), 400);
+      return apiError("Invalid request: " + error.issues.map(e => e.message).join(", "), 400);
     }
 
     return apiError(

@@ -206,7 +206,8 @@ export async function testFeedExtractionSettings(feedId: string): Promise<{
     }
 
     // Get the most recent article URL
-    if (!feed.articles || feed.articles.length === 0 || !feed.articles[0].url) {
+    const firstArticle = feed.articles?.[0];
+    if (!firstArticle || !firstArticle.url) {
       return {
         success: false,
         method: "none",
@@ -215,7 +216,7 @@ export async function testFeedExtractionSettings(feedId: string): Promise<{
       };
     }
 
-    const articleUrl = feed.articles[0].url;
+    const articleUrl = firstArticle.url;
 
     // Get extraction settings
     const settings = (feed.settings as any)?.extraction;

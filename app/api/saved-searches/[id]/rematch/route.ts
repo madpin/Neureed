@@ -18,6 +18,10 @@ export const POST = createHandler(
     const userId = session!.user.id;
     const { id } = params;
 
+    if (!id) {
+      return { error: "Saved search ID is required", status: 400 };
+    }
+
     // Verify ownership
     const savedSearch = await getSavedSearchById(id, userId);
     if (!savedSearch) {

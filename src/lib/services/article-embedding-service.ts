@@ -201,10 +201,13 @@ export async function generateBatchEmbeddings(
     const errors: Array<{ articleId: string; error: string }> = [];
 
     for (let i = 0; i < validArticles.length; i++) {
+      const validArticle = validArticles[i];
+      if (!validArticle) continue;
+
       try {
-        const targetArticle = validArticles[i].article;
+        const targetArticle = validArticle.article;
         await prisma.$executeRaw`
-          UPDATE articles 
+          UPDATE articles
           SET embedding = ${JSON.stringify(result.embeddings[i])}::vector
           WHERE id = ${targetArticle.id}
         `;
@@ -212,7 +215,7 @@ export async function generateBatchEmbeddings(
       } catch (error) {
         failed++;
         errors.push({
-          articleId: validArticles[i].article.id,
+          articleId: validArticle.article.id,
           error: error instanceof Error ? error.message : String(error),
         });
       }
@@ -292,7 +295,8 @@ export async function countArticlesWithoutEmbeddings(): Promise<number> {
     SELECT COUNT(*) as count FROM articles
     WHERE embedding IS NULL
   `;
-  return Number(result[0].count);
+  const firstResult = result[0];
+  return firstResult ? Number(firstResult.count) : 0;
 }
 
 /**
@@ -311,16 +315,21 @@ export async function getEmbeddingStats(): Promise<{
     with_embeddings: bigint;
     without_embeddings: bigint;
   }>>`
-    SELECT 
+    SELECT
       COUNT(*) as total,
       SUM(CASE WHEN embedding IS NOT NULL THEN 1 ELSE 0 END) as with_embeddings,
       SUM(CASE WHEN embedding IS NULL THEN 1 ELSE 0 END) as without_embeddings
     FROM articles
   `;
 
-  const total = Number(stats[0].total);
-  const withEmbeddings = Number(stats[0].with_embeddings);
-  const withoutEmbeddings = Number(stats[0].without_embeddings);
+  const firstStat = stats[0];
+  if (!firstStat) {
+    return { total: 0, withEmbeddings: 0, withoutEmbeddings: 0, percentage: 0 };
+  }
+
+  const total = Number(firstStat.total);
+  const withEmbeddings = Number(firstStat.with_embeddings);
+  const withoutEmbeddings = Number(firstStat.without_embeddings);
   const percentage = total > 0 ? (withEmbeddings / total) * 100 : 0;
 
   return {
@@ -356,12 +365,13 @@ export async function updateArticleEmbeddingIfNeeded(
     WHERE id = ${articleId}
   `;
 
-  if (result.length === 0) {
+  const firstResult = result[0];
+  if (!firstResult) {
     return { updated: false, reason: "Article not found" };
   }
 
   // If no embedding exists, generate one
-  if (!result[0].has_embedding) {
+  if (!firstResult.has_embedding) {
     await generateArticleEmbedding(articleId, provider);
     return { updated: true, reason: "No embedding existed" };
   }

@@ -11,6 +11,10 @@ export const POST = createHandler(
   async ({ params, session }) => {
     const { id: articleId } = params;
 
+    if (!articleId) {
+      return { error: "Article ID is required", status: 400 };
+    }
+
     const viewData = await recordArticleView(session!.user!.id, articleId);
 
     return {

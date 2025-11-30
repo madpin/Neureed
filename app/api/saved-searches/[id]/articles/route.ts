@@ -30,6 +30,10 @@ export const GET = createHandler(
     const { id } = params;
     const { limit, offset, sortBy, startDate, endDate, feedIds } = query as ArticlesQuery;
 
+    if (!id) {
+      return { error: "Saved search ID is required", status: 400 };
+    }
+
     // Parse feedIds from comma-separated string
     const feedIdsArray = feedIds ? feedIds.split(',') : undefined;
 
