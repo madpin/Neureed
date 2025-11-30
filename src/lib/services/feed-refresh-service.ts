@@ -332,18 +332,19 @@ export async function refreshFeed(
  * Refresh multiple feeds in parallel
  * @param feedIds - Array of feed IDs to refresh
  * @param userId - Optional user ID for user-specific cleanup settings
- * @param maxConcurrent - Maximum number of concurrent refreshes
+ * @param maxConcurrent - Maximum number of concurrent refreshes (defaults to env.FEED_REFRESH_CONCURRENCY)
  */
 export async function refreshFeeds(
   feedIds: string[],
   userId?: string,
-  maxConcurrent = 5
+  maxConcurrent?: number
 ): Promise<RefreshResult[]> {
+  const concurrency = maxConcurrent ?? env.FEED_REFRESH_CONCURRENCY;
   const results: RefreshResult[] = [];
 
   // Process feeds in batches
-  for (let i = 0; i < feedIds.length; i += maxConcurrent) {
-    const batch = feedIds.slice(i, i + maxConcurrent);
+  for (let i = 0; i < feedIds.length; i += concurrency) {
+    const batch = feedIds.slice(i, i + concurrency);
     const batchResults = await Promise.all(
       batch.map((feedId) => refreshFeed(feedId, userId))
     );

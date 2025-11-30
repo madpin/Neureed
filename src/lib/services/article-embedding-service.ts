@@ -381,3 +381,5 @@ export async function updateArticleEmbeddingIfNeeded(
   return { updated: false, reason: "Embedding already exists" };
 }
 
+// Export streaming implementation for memory-efficient batch processing
+export { generateBatchEmbeddingsStreaming } from "./embedding-streaming-service";

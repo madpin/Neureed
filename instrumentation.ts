@@ -28,12 +28,20 @@ export async function register() {
     
     console.log("[Instrumentation] Transformers.js configured for WASM-only backend");
     console.log("[Instrumentation] Running in Node.js runtime, initializing scheduler...");
-    
+
     const { initializeScheduler } = await import("./src/lib/jobs/scheduler");
-    
+    const { registerShutdownHandlers } = await import("./src/lib/process-manager");
+    const { memoryMonitor } = await import("./src/lib/memory-monitor");
+
     // Initialize cron jobs
     initializeScheduler();
-    
+
+    // Register graceful shutdown handlers
+    registerShutdownHandlers();
+
+    // Start memory monitoring
+    memoryMonitor.start();
+
     console.log("[Instrumentation] Scheduler initialization complete");
   } else {
     console.log("[Instrumentation] Not in Node.js runtime, skipping scheduler initialization");

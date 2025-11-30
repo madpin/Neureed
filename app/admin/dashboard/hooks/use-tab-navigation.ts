@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export type TabId = "overview" | "search" | "users" | "jobs" | "storage" | "config" | "llm-config";
+export type TabId = "overview" | "search" | "users" | "jobs" | "storage" | "config" | "llm-config" | "memory";
 
 const FAVORITE_TABS_KEY = "admin-favorite-tabs";
 

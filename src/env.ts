@@ -11,6 +11,12 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
+
+    // Database connection pool configuration
+    DB_POOL_MAX: z.coerce.number().default(10),
+    DB_POOL_MIN: z.coerce.number().default(2),
+    DB_IDLE_TIMEOUT: z.coerce.number().default(30000),
+    DB_CONNECTION_TIMEOUT: z.coerce.number().default(5000),
     
     // Authentication configuration
     NEXTAUTH_URL: z.string().url().optional(),
@@ -45,6 +51,7 @@ export const env = createEnv({
       .default("local"),
     EMBEDDING_MODEL: z.string().default("text-embedding-3-small"),
     EMBEDDING_BATCH_SIZE: z.coerce.number().default(10),
+    EMBEDDING_STREAM_BATCH_SIZE: z.coerce.number().default(25), // Streaming batch size for memory efficiency
     EMBEDDING_AUTO_GENERATE: z
       .enum(["true", "false"])
       .default("false")
@@ -83,8 +90,21 @@ export const env = createEnv({
       .enum(["true", "false"])
       .default("true")
       .transform((val) => val === "true"),
-    FEED_REFRESH_SCHEDULE: z.string().default("*/30 * * * *"), // Every 30 minutes
+    FEED_REFRESH_SCHEDULE: z.string().default("*/5 * * * *"), // Every 5 minutes
+    FEED_REFRESH_CONCURRENCY: z.coerce.number().default(3), // Max concurrent feed refreshes
+    SAVED_SEARCH_CONCURRENCY: z.coerce.number().default(5), // Max concurrent saved search matching
+    JOB_LOCK_TIMEOUT: z.coerce.number().default(600000), // Job lock timeout (10 minutes)
     CLEANUP_SCHEDULE: z.string().default("0 3 * * *"), // Daily at 3 AM
+
+    // Memory monitoring configuration
+    ENABLE_MEMORY_MONITORING: z
+      .enum(["true", "false"])
+      .default("true")
+      .transform((val) => val === "true"),
+    MEMORY_MONITOR_INTERVAL: z.coerce.number().default(10000), // Check every 10 seconds
+    MEMORY_MODERATE_THRESHOLD: z.coerce.number().default(70), // 70% heap usage
+    MEMORY_HIGH_THRESHOLD: z.coerce.number().default(85), // 85% heap usage
+    MEMORY_CRITICAL_THRESHOLD: z.coerce.number().default(95), // 95% heap usage
   },
 
   /**
@@ -103,7 +123,13 @@ export const env = createEnv({
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
-    
+
+    // Database connection pool
+    DB_POOL_MAX: process.env.DB_POOL_MAX,
+    DB_POOL_MIN: process.env.DB_POOL_MIN,
+    DB_IDLE_TIMEOUT: process.env.DB_IDLE_TIMEOUT,
+    DB_CONNECTION_TIMEOUT: process.env.DB_CONNECTION_TIMEOUT,
+
     // Authentication
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
@@ -126,6 +152,7 @@ export const env = createEnv({
     EMBEDDING_PROVIDER: process.env.EMBEDDING_PROVIDER,
     EMBEDDING_MODEL: process.env.EMBEDDING_MODEL,
     EMBEDDING_BATCH_SIZE: process.env.EMBEDDING_BATCH_SIZE,
+    EMBEDDING_STREAM_BATCH_SIZE: process.env.EMBEDDING_STREAM_BATCH_SIZE,
     EMBEDDING_AUTO_GENERATE: process.env.EMBEDDING_AUTO_GENERATE,
     
     // Content Extraction
@@ -148,7 +175,17 @@ export const env = createEnv({
     // Cron job configuration
     ENABLE_CRON_JOBS: process.env.ENABLE_CRON_JOBS,
     FEED_REFRESH_SCHEDULE: process.env.FEED_REFRESH_SCHEDULE,
+    FEED_REFRESH_CONCURRENCY: process.env.FEED_REFRESH_CONCURRENCY,
+    SAVED_SEARCH_CONCURRENCY: process.env.SAVED_SEARCH_CONCURRENCY,
+    JOB_LOCK_TIMEOUT: process.env.JOB_LOCK_TIMEOUT,
     CLEANUP_SCHEDULE: process.env.CLEANUP_SCHEDULE,
+
+    // Memory monitoring configuration
+    ENABLE_MEMORY_MONITORING: process.env.ENABLE_MEMORY_MONITORING,
+    MEMORY_MONITOR_INTERVAL: process.env.MEMORY_MONITOR_INTERVAL,
+    MEMORY_MODERATE_THRESHOLD: process.env.MEMORY_MODERATE_THRESHOLD,
+    MEMORY_HIGH_THRESHOLD: process.env.MEMORY_HIGH_THRESHOLD,
+    MEMORY_CRITICAL_THRESHOLD: process.env.MEMORY_CRITICAL_THRESHOLD,
     // NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
   },
   /**

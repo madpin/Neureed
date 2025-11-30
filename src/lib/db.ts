@@ -11,7 +11,13 @@ const globalForPrisma = globalThis as unknown as {
 // Create connection pool (reuse in development)
 export const pool =
   globalForPrisma.pool ??
-  new Pool({ connectionString: env.DATABASE_URL });
+  new Pool({
+    connectionString: env.DATABASE_URL,
+    max: env.DB_POOL_MAX,
+    min: env.DB_POOL_MIN,
+    idleTimeoutMillis: env.DB_IDLE_TIMEOUT,
+    connectionTimeoutMillis: env.DB_CONNECTION_TIMEOUT,
+  });
 
 // Create adapter
 const adapter = new PrismaPg(pool);

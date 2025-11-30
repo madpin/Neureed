@@ -120,6 +120,16 @@ model CronJobRun {
   @@map("cron_job_runs")
 }
 
+model JobLock {
+  jobName   String   @id
+  lockedAt  DateTime
+  lockedBy  String   // Process ID
+  expiresAt DateTime // Auto-expire after timeout
+
+  @@index([expiresAt])
+  @@map("job_locks")
+}
+
 model feed_categories {
   feedId     String
   categoryId String

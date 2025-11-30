@@ -11,6 +11,7 @@ import { nanoid } from "nanoid";
 import { matchArticle } from "./saved-search-execution";
 import { createNotification } from "./notification-service";
 import { generateEmbedding } from "./embedding-service";
+import { env } from "@/env";
 import type { EmbeddingProvider } from "@/lib/embeddings/types";
 
 export interface MatchStats {
@@ -119,116 +120,125 @@ export async function matchNewArticles(
 
     // Batch process articles (100 at a time to avoid overwhelming the system)
     const batchSize = 100;
+    const searchConcurrency = env.SAVED_SEARCH_CONCURRENCY;
+
     for (let i = 0; i < articleIds.length; i += batchSize) {
       const batch = articleIds.slice(i, i + batchSize);
 
-      // Match each article against all saved searches
+      // Match each article against all saved searches with concurrency control
       for (const articleId of batch) {
-        for (const search of savedSearches) {
-          try {
-            // Use user's LLM preferences if available
-            const userProvider = search.user.user_preferences?.llmProvider as EmbeddingProvider | undefined;
-            const queryEmbedding = queryEmbeddings.get(search.id);
+        // Process searches in parallel batches for better performance
+        for (let j = 0; j < savedSearches.length; j += searchConcurrency) {
+          const searchBatch = savedSearches.slice(j, j + searchConcurrency);
 
-            // Match article against saved search with pre-computed embedding
-            const matchResult = await matchArticle(
-              articleId,
-              search.query,
-              search.threshold,
-              userProvider || provider,
-              queryEmbedding  // Pass pre-computed embedding
-            );
+          await Promise.all(
+            searchBatch.map(async (search) => {
+              try {
+                // Use user's LLM preferences if available
+                const userProvider = search.user.user_preferences?.llmProvider as EmbeddingProvider | undefined;
+                const queryEmbedding = queryEmbeddings.get(search.id);
 
-            if (matchResult) {
-              // Create or update match record
-              const existingMatch = await prisma.saved_search_matches.findUnique({
-                where: {
-                  savedSearchId_articleId: {
-                    savedSearchId: search.id,
-                    articleId: articleId,
-                  },
-                },
-              });
+                // Match article against saved search with pre-computed embedding
+                const matchResult = await matchArticle(
+                  articleId,
+                  search.query,
+                  search.threshold,
+                  userProvider || provider,
+                  queryEmbedding  // Pass pre-computed embedding
+                );
 
-              if (!existingMatch) {
-                // Create new match
-                await prisma.saved_search_matches.create({
-                  data: {
-                    id: nanoid(),
-                    savedSearchId: search.id,
-                    articleId: articleId,
-                    relevanceScore: matchResult.relevanceScore,
-                    matchedTerms: matchResult.matchedTerms,
-                    matchReason: matchResult.matchReason,
-                    notified: false,
-                  },
-                });
-
-                totalMatches++;
-
-                // Update saved search stats
-                await prisma.saved_searches.update({
-                  where: { id: search.id },
-                  data: {
-                    totalMatches: { increment: 1 },
-                    lastMatchedAt: new Date(),
-                  },
-                });
-
-                // Send notification if enabled and threshold met
-                if (
-                  search.notifyOnMatch &&
-                  matchResult.relevanceScore >= search.notifyThreshold
-                ) {
-                  // Fetch article details for notification
-                  const articleDetails = await prisma.articles.findUnique({
-                    where: { id: articleId },
-                    select: {
-                      id: true,
-                      title: true,
-                      feedId: true,
+                if (matchResult) {
+                  // Create or update match record
+                  const existingMatch = await prisma.saved_search_matches.findUnique({
+                    where: {
+                      savedSearchId_articleId: {
+                        savedSearchId: search.id,
+                        articleId: articleId,
+                      },
                     },
                   });
 
-                  if (articleDetails) {
-                    await createNotification({
-                      userId: search.userId,
-                      type: "info",
-                      title: `New match for "${search.name}"`,
-                      message: articleDetails.title,
-                      metadata: {
+                  if (!existingMatch) {
+                    // Create new match
+                    await prisma.saved_search_matches.create({
+                      data: {
+                        id: nanoid(),
                         savedSearchId: search.id,
                         articleId: articleId,
                         relevanceScore: matchResult.relevanceScore,
                         matchedTerms: matchResult.matchedTerms,
                         matchReason: matchResult.matchReason,
+                        notified: false,
                       },
                     });
 
-                    notificationsSent++;
+                    totalMatches++;
 
-                    // Mark match as notified
-                    await prisma.saved_search_matches.updateMany({
-                      where: {
-                        savedSearchId: search.id,
-                        articleId: articleId,
-                      },
+                    // Update saved search stats
+                    await prisma.saved_searches.update({
+                      where: { id: search.id },
                       data: {
-                        notified: true,
+                        totalMatches: { increment: 1 },
+                        lastMatchedAt: new Date(),
                       },
                     });
+
+                    // Send notification if enabled and threshold met
+                    if (
+                      search.notifyOnMatch &&
+                      matchResult.relevanceScore >= search.notifyThreshold
+                    ) {
+                      // Fetch article details for notification
+                      const articleDetails = await prisma.articles.findUnique({
+                        where: { id: articleId },
+                        select: {
+                          id: true,
+                          title: true,
+                          feedId: true,
+                        },
+                      });
+
+                      if (articleDetails) {
+                        await createNotification({
+                          userId: search.userId,
+                          type: "info",
+                          title: `New match for "${search.name}"`,
+                          message: articleDetails.title,
+                          metadata: {
+                            savedSearchId: search.id,
+                            articleId: articleId,
+                            relevanceScore: matchResult.relevanceScore,
+                            matchedTerms: matchResult.matchedTerms,
+                            matchReason: matchResult.matchReason,
+                          },
+                        });
+
+                        notificationsSent++;
+
+                        // Mark match as notified
+                        await prisma.saved_search_matches.updateMany({
+                          where: {
+                            savedSearchId: search.id,
+                            articleId: articleId,
+                          },
+                          data: {
+                            notified: true,
+                          },
+                        });
+                      }
+                    }
                   }
                 }
+              } catch (error) {
+                logger.error("Failed to match article against saved search", {
+                  error: error instanceof Error ? error.message : String(error),
+                  articleId: articleId,
+                  savedSearchId: search.id,
+                });
+                // Continue with next search
               }
-            }
-          } catch (error) {
-            logger.error("Failed to match article against saved search", {
-              error: error instanceof Error ? error.message : String(error),
-              articleId: articleId,
-              savedSearchId: search.id,
-            });
-            // Continue with next search
-          }
+            })
+          );
         }
       }
     }
