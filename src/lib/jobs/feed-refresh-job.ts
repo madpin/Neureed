@@ -74,9 +74,15 @@ async function runFeedRefresh(): Promise<JobResult> {
 
   for (const userFeed of userFeeds) {
     const feed = userFeed.feeds;
-    
+
     // Skip feeds with too many errors
     if (feed.errorCount >= 10) {
+      continue;
+    }
+
+    // Skip disabled feeds
+    if (feed.healthStatus === "disabled") {
+      jobLogger.debug(`Skipping disabled feed: ${feed.name}`, { feedId: feed.id });
       continue;
     }
 

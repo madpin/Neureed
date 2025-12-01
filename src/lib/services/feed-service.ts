@@ -383,6 +383,10 @@ export async function getFeedsToRefresh(): Promise<feeds[]> {
       errorCount: {
         lt: 10,
       },
+      // Don't fetch disabled feeds
+      healthStatus: {
+        not: "disabled",
+      },
     },
     orderBy: {
       lastFetched: "asc",
@@ -433,6 +437,11 @@ export async function getUserFeedsToRefresh(userId: string): Promise<
   for (const userFeed of userFeeds) {
     // Skip feeds with too many errors
     if (userFeed.feeds.errorCount >= 10) {
+      continue;
+    }
+
+    // Skip disabled feeds
+    if (userFeed.feeds.healthStatus === "disabled") {
       continue;
     }
 

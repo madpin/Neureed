@@ -5,6 +5,9 @@ import { AuthProvider } from "./components/auth/AuthProvider";
 import { ThemeProvider } from "./components/theme/ThemeProvider";
 import { QueryProvider } from "./components/providers/QueryProvider";
 
+// Force dynamic rendering for all routes (authentication, database queries, etc.)
+export const dynamic = "force-dynamic";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],

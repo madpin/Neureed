@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from "@/app/components/ui";
 import { useCategories } from "@/hooks/queries/use-categories";
+import { useBulkToggleFeedStatus } from "@/hooks/queries/use-feeds";
 
 interface BulkEditModalProps {
   selectedFeedIds: string[];
@@ -21,25 +23,41 @@ interface BulkEditModalProps {
  */
 export function BulkEditModal({ selectedFeedIds, onClose }: BulkEditModalProps) {
   const { data: categories = [] } = useCategories();
+  const bulkToggleStatus = useBulkToggleFeedStatus();
   const [action, setAction] = useState<"category" | "tags" | "enable" | "settings">("category");
   const [newCategory, setNewCategory] = useState("");
   const [tagsAction, setTagsAction] = useState<"add" | "remove" | "replace">("add");
   const [tags, setTags] = useState("");
   const [enableFeeds, setEnableFeeds] = useState(true);
 
-  const handleApply = () => {
-    const changes = {
-      feedIds: selectedFeedIds,
-      action,
-      data: {
-        category: action === "category" ? newCategory : undefined,
-        tags: action === "tags" ? { action: tagsAction, tags: tags.split(",").map(t => t.trim()).filter(Boolean) } : undefined,
-        enabled: action === "enable" ? enableFeeds : undefined,
-      },
-    };
-    // TODO: Implement bulk edit logic
-    console.log("Applying bulk changes:", changes);
-    onClose();
+  const handleApply = async () => {
+    try {
+      if (action === "enable") {
+        // Handle enable/disable action
+        const result = await bulkToggleStatus.mutateAsync({
+          feedIds: selectedFeedIds,
+          enabled: enableFeeds,
+        });
+        toast.success(result.message || `Feeds ${enableFeeds ? "enabled" : "disabled"} successfully`);
+        onClose();
+      } else {
+        // TODO: Implement other bulk edit actions
+        const changes = {
+          feedIds: selectedFeedIds,
+          action,
+          data: {
+            category: action === "category" ? newCategory : undefined,
+            tags: action === "tags" ? { action: tagsAction, tags: tags.split(",").map(t => t.trim()).filter(Boolean) } : undefined,
+          },
+        };
+        console.log("Applying bulk changes:", changes);
+        toast.info("This action is not yet implemented");
+        onClose();
+      }
+    } catch (error) {
+      console.error("Failed to apply bulk changes:", error);
+      toast.error("Failed to apply changes");
+    }
   };
 
   return (
@@ -238,8 +256,12 @@ export function BulkEditModal({ selectedFeedIds, onClose }: BulkEditModalProps) 
         <Button variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        <Button variant="primary" onClick={handleApply}>
-          Apply Changes
+        <Button
+          variant="primary"
+          onClick={handleApply}
+          disabled={bulkToggleStatus.isPending}
+        >
+          {bulkToggleStatus.isPending ? "Applying..." : "Apply Changes"}
         </Button>
       </ModalFooter>
     </Modal>
