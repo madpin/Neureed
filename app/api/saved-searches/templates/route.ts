@@ -16,6 +16,8 @@ import {
   getTemplateById,
 } from '@/lib/services/search-templates-service';
 
+export const dynamic = "force-dynamic";
+
 const querySchema = z.object({
   category: z.enum(['technology', 'news', 'research', 'jobs', 'custom']).optional(),
   keyword: z.string().optional(),

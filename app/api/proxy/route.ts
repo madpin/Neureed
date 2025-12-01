@@ -4,6 +4,8 @@ import { rewriteUrls, extractBaseUrl } from "@/lib/url-rewriter";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+export const dynamic = "force-dynamic";
+
 // Simple in-memory cache
 const cache = new Map<string, { content: string; contentType: string; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes

@@ -8,6 +8,8 @@ import { createHandler } from "@/lib/api-handler";
 import { z } from "zod";
 import * as savedSearchService from "@/lib/services/saved-search-service";
 
+export const dynamic = "force-dynamic";
+
 // Query schema for filtering and pagination
 const articlesQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional().default(50).catch(50),

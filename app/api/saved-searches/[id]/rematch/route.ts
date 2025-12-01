@@ -8,6 +8,8 @@ import { createHandler } from "@/lib/api-handler";
 import { rematchSavedSearch } from "@/lib/services/saved-search-matcher";
 import { getSavedSearchById } from "@/lib/services/saved-search-service";
 
+export const dynamic = "force-dynamic";
+
 /**
  * POST /api/saved-searches/[id]/rematch
  * Trigger rematch for a saved search

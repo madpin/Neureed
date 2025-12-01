@@ -10,6 +10,8 @@ import { memoryMonitor, formatBytes, getMemoryUsagePercent } from "@/lib/memory-
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/admin/memory
  * Returns current memory statistics and history

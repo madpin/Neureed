@@ -4,6 +4,8 @@ import {
   deleteNotification,
 } from "@/lib/services/notification-service";
 
+export const dynamic = "force-dynamic";
+
 /**
  * PATCH /api/user/notifications/[id]
  * Mark a notification as read

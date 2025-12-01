@@ -7,6 +7,8 @@ import { createHandler } from '@/lib/api-handler';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
+export const dynamic = "force-dynamic";
+
 interface SavedSearchInsight {
   id: string;
   name: string;
