@@ -515,10 +515,10 @@ export function LLMConfigTab() {
               <div className="border-t border-purple-300 dark:border-purple-700 pt-4">
                 <button
                   onClick={handleDeleteEmbeddings}
-                  disabled={pendingDeleteEmbeddings || deleteEmbeddings.isPending}
+                  disabled={deleteEmbeddings.isPending}
                   className={`rounded-lg px-6 py-2 font-medium text-white ${
-                    pendingDeleteEmbeddings 
-                      ? "bg-red-700 hover:bg-red-800" 
+                    pendingDeleteEmbeddings
+                      ? "bg-red-700 hover:bg-red-800"
                       : "bg-red-600 hover:bg-red-700"
                   } disabled:opacity-50`}
                 >
