@@ -99,12 +99,14 @@ export const GET = createHandler(
       },
       config: {
         model: config.model,
+        modelSource: config.modelSource,
         batchSize: config.batchSize,
         autoGenerate: config.autoGenerate,
+        autoGenerateSource: config.autoGenerateSource,
       },
       usingUserConfig: userId ? openaiTest.success : false,
-      message: openaiTest.success 
-        ? "OpenAI working with provided credentials" 
+      message: openaiTest.success
+        ? "OpenAI working with provided credentials"
         : "OpenAI available - users can provide API keys in preferences",
     };
   },
