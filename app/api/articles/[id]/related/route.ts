@@ -28,36 +28,16 @@ export const GET = createHandler(async ({ params, request }) => {
 
   logger.info("Finding related articles", { articleId: id, limit, minScore });
 
-  try {
-    const results = await findRelatedArticles(id, {
-      limit,
-      minScore,
-      excludeSameFeed,
-    });
+  const results = await findRelatedArticles(id, {
+    limit,
+    minScore,
+    excludeSameFeed,
+  });
 
-    return {
-      articleId: id,
-      results,
-      count: results.length,
-    };
-  } catch (error) {
-    // Handle "no embedding" error gracefully
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error("Failed to find related articles", { 
-      error: error instanceof Error ? { message: error.message, stack: error.stack } : error,
-      articleId: id 
-    });
-    
-    if (errorMessage.includes("no embedding")) {
-      return apiResponse({
-        articleId: id,
-        results: [],
-        count: 0,
-        message: "Article has no embedding. Generate embeddings to enable related articles.",
-      });
-    }
-    
-    throw error;
-  }
+  return {
+    articleId: id,
+    results,
+    count: results.length,
+  };
 });
 
