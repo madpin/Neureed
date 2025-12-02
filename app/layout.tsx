@@ -7,6 +7,10 @@ import { QueryProvider } from "./components/providers/QueryProvider";
 
 // Force dynamic rendering for all routes (authentication, database queries, etc.)
 export const dynamic = "force-dynamic";
+// Force Node.js runtime (not Edge) to ensure full compatibility
+export const runtime = "nodejs";
+// Disable static optimization and revalidation
+export const revalidate = 0;
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
