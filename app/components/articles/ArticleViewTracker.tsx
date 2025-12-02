@@ -25,7 +25,7 @@ export function ArticleViewTracker({ articleId, estimatedTime, onReadStatusChang
   const viewStartTime = useRef<number | null>(null);
   const hasTrackedView = useRef(false);
 
-  const autoMarkAsRead = preferences?.autoMarkAsRead ?? false;
+  const autoMarkAsRead = preferences?.autoMarkAsRead ?? true;
 
   // Track view on mount
   useEffect(() => {

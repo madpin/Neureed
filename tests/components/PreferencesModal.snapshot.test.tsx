@@ -19,7 +19,7 @@ vi.mock('@/hooks/queries/use-user-preferences', () => ({
       articlesPerPage: 20,
       defaultView: 'expanded',
       showReadArticles: true,
-      autoMarkAsRead: false,
+      autoMarkAsRead: true,
     },
     isLoading: false,
     error: null,
