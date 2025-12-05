@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState, useEffect, useCallback, useRef } from "react";
+import { ReactNode, useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ResizableSplitPane } from "./ResizableSplitPane";
@@ -181,47 +181,46 @@ export function ReadingPanelLayout({ children, onArticleReadStatusChange }: Read
                           preferences &&
                           readingMode === "standalone";
 
-  // Render children with callback support
-  const renderChildren = () => {
+  // Compute children content once to avoid multiple render function calls
+  const childrenContent = useMemo(() => {
     if (typeof children === "function") {
-      // Pass callbacks for side_panel and inline modes
-      const shouldPassCallbacks = isPanelActive || isInlineMode;
+      // eslint-disable-next-line react-hooks/refs -- Safe: only passing props, not accessing refs
       return children({
-        onArticleSelect: shouldPassCallbacks ? handleArticleSelect : undefined,
-        selectedArticleId: shouldPassCallbacks ? selectedArticleId : null
+        onArticleSelect: (isPanelActive || isInlineMode) ? handleArticleSelect : undefined,
+        selectedArticleId: (isPanelActive || isInlineMode) ? selectedArticleId : null
       });
     }
     return children;
-  };
+  }, [children, isPanelActive, isInlineMode, handleArticleSelect, selectedArticleId]);
 
   // If loading preferences, show loading state
   if (isLoadingPreferences) {
-    return <>{renderChildren()}</>;
+    return <>{childrenContent}</>;
   }
 
   // If not logged in or no preferences, show normal layout
   if (!session?.user || !preferences) {
-    return <>{renderChildren()}</>;
+    return <>{childrenContent}</>;
   }
 
   // For inline mode, render without split pane (ArticleList will handle inline expansion)
   if (isInlineMode) {
-    return <div className="h-full">{renderChildren()}</div>;
+    return <div className="h-full">{childrenContent}</div>;
   }
 
   // For standalone mode, render without callbacks (forces full-page navigation)
   if (isStandaloneMode) {
-    return <>{renderChildren()}</>;
+    return <>{childrenContent}</>;
   }
 
   // For side_panel mode: if panel disabled or mobile, show normal layout
   if (!isPanelActive) {
-    return <>{renderChildren()}</>;
+    return <>{childrenContent}</>;
   }
 
   // If panel enabled but no article selected, show normal layout
   if (!selectedArticleId) {
-    return <div className="h-full">{renderChildren()}</div>;
+    return <div className="h-full">{childrenContent}</div>;
   }
 
   // Safely cast preferences to required types since we verified they exist in isPanelActive
@@ -236,14 +235,14 @@ export function ReadingPanelLayout({ children, onArticleReadStatusChange }: Read
         size={panelSize}
         onResize={handleResize}
         panel={
-          <ArticlePanel 
-            articleId={selectedArticleId} 
+          <ArticlePanel
+            articleId={selectedArticleId}
             onClose={handleClosePanel}
             onReadStatusChange={onArticleReadStatusChange}
           />
         }
       >
-        {renderChildren()}
+        {childrenContent}
       </ResizableSplitPane>
     </div>
   );

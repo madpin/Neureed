@@ -325,7 +325,7 @@ export function CategoryView({ categoryId }: CategoryViewProps) {
       <div className="rounded-lg border border-destructive bg-card p-6">
         <h3 className="font-medium text-destructive">Danger Zone</h3>
         <p className="text-sm text-muted-foreground mt-1 mb-4">
-          Deleting this category will move all feeds to "Uncategorized". This action cannot be undone.
+          Deleting this category will move all feeds to &ldquo;Uncategorized&rdquo;. This action cannot be undone.
         </p>
         <button className="px-3 py-1.5 text-sm border border-destructive text-destructive rounded hover:bg-destructive hover:text-destructive-foreground transition-colors">
           Delete Category

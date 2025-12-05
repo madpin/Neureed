@@ -224,5 +224,5 @@ export const ControlledTabs: Story = {
   },
 };
 
-// @ts-ignore - React is used in the story
+// @ts-expect-error - React is used in the story
 import React from 'react';

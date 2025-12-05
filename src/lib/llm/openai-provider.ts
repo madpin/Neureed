@@ -86,7 +86,23 @@ export class OpenAILLMProvider implements LLMProviderInterface {
       }
 
       const data = await response.json();
+
+      // Log the full API response for debugging
+      logger.debug("Raw LLM API response", {
+        model: data.model,
+        choicesCount: data.choices?.length,
+        hasUsage: !!data.usage,
+        fullResponse: JSON.stringify(data).substring(0, 2000), // First 2000 chars
+      });
+
       const choice = data.choices[0];
+
+      // Log the message content specifically
+      logger.debug("LLM message content", {
+        contentLength: choice.message?.content?.length ?? 0,
+        content: choice.message?.content?.substring(0, 500) ?? "(empty)", // First 500 chars
+        hasContent: !!choice.message?.content,
+      });
 
       logger.debug("LLM response received", {
         model: data.model,

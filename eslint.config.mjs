@@ -16,6 +16,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated and third-party files:
+    "storybook-static/**",
+    ".source/**",
+    "node_modules/**",
   ]),
   {
     rules: {

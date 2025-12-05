@@ -52,7 +52,24 @@ export function parseJSONFromLLM(
   rawResponse: string,
   context?: { model?: string; operation?: string }
 ): unknown {
+  // Log what we're trying to parse
+  logger.debug("Attempting to parse LLM response", {
+    responseLength: rawResponse.length,
+    responsePreview: rawResponse.substring(0, 200),
+    isEmpty: rawResponse.trim().length === 0,
+    model: context?.model,
+    operation: context?.operation,
+  });
+
   const extracted = extractJSON(rawResponse);
+
+  logger.debug("Extracted JSON from response", {
+    extractedLength: extracted.length,
+    extractedPreview: extracted.substring(0, 200),
+    wasModified: extracted !== rawResponse,
+    model: context?.model,
+    operation: context?.operation,
+  });
 
   try {
     return JSON.parse(extracted);
@@ -64,6 +81,7 @@ export function parseJSONFromLLM(
       extractedJSON: extracted.substring(0, 1000),
       responseLength: rawResponse.length,
       extractedLength: extracted.length,
+      isEmpty: rawResponse.trim().length === 0,
       model: context?.model,
       operation: context?.operation,
     });

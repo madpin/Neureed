@@ -149,7 +149,7 @@ function BasicSettingsTab({ feed, categories }: { feed: any; categories: any[] }
           className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary"
         />
         <p className="text-xs text-muted-foreground mt-1">
-          Custom name for this feed (overrides the feed's original title)
+          Custom name for this feed (overrides the feed&apos;s original title)
         </p>
       </div>
 
