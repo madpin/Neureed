@@ -38,5 +38,5 @@
     "**/*.mts",
     "tests/**/*.ts"
   ],
-  "exclude": ["node_modules", "scripts/tests", "**/__tests__/**", "**/*.test.ts", "**/*.test.tsx"]
+  "exclude": ["node_modules", "scripts/tests", "**/__tests__/**", "**/*.test.ts", "**/*.test.tsx", ".source"]
 }
