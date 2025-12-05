@@ -1,4 +1,4 @@
-import { docs } from '../../.source/server';
+import { docs } from 'fumadocs-mdx:collections/server';
 
 // Export docs directly
 export const source = docs;
