@@ -4,6 +4,7 @@ import { BaseExtractor } from "./base-extractor";
 import type { ExtractorConfig, ExtractedContent } from "./types";
 import { sanitizeHtml } from "@/lib/feed-parser";
 import { logger } from "@/lib/logger";
+import { filterPlaceholderImage, getFirstValidImage } from "@/lib/image-utils";
 
 /**
  * Readability-based content extractor
@@ -209,14 +210,18 @@ export class ReadabilityExtractor extends BaseExtractor {
 
   /**
    * Extract featured image from document
+   * Filters out placeholder images and prioritizes real images
    */
   private extractImage(document: Document, baseUrl: string): string | undefined {
-    // Try Open Graph image
+    // Collect all candidate images
+    const candidates: (string | undefined)[] = [];
+    
+    // Try Open Graph image (highest priority)
     const ogImage = document.querySelector('meta[property="og:image"]');
     if (ogImage) {
       const imageUrl = ogImage.getAttribute("content");
       if (imageUrl) {
-        return this.resolveUrl(imageUrl, baseUrl);
+        candidates.push(this.resolveUrl(imageUrl, baseUrl));
       }
     }
 
@@ -225,29 +230,39 @@ export class ReadabilityExtractor extends BaseExtractor {
     if (twitterImage) {
       const imageUrl = twitterImage.getAttribute("content");
       if (imageUrl) {
-        return this.resolveUrl(imageUrl, baseUrl);
+        candidates.push(this.resolveUrl(imageUrl, baseUrl));
       }
     }
 
-    // Try first article image
-    const articleImage = document.querySelector("article img");
-    if (articleImage) {
-      const imageUrl = articleImage.getAttribute("src");
-      if (imageUrl) {
-        return this.resolveUrl(imageUrl, baseUrl);
+    // Try first article image (check both src and data-src for lazy-loaded images)
+    const articleImages = document.querySelectorAll("article img");
+    for (const img of articleImages) {
+      // Prefer data-src for lazy-loaded images
+      const dataSrc = img.getAttribute("data-src");
+      if (dataSrc) {
+        candidates.push(this.resolveUrl(dataSrc, baseUrl));
+      }
+      const src = img.getAttribute("src");
+      if (src) {
+        candidates.push(this.resolveUrl(src, baseUrl));
       }
     }
 
-    // Try first image in content
-    const firstImage = document.querySelector("img");
-    if (firstImage) {
-      const imageUrl = firstImage.getAttribute("src");
-      if (imageUrl) {
-        return this.resolveUrl(imageUrl, baseUrl);
+    // Try images in main content areas
+    const mainImages = document.querySelectorAll("main img, .content img, .article-body img");
+    for (const img of mainImages) {
+      const dataSrc = img.getAttribute("data-src");
+      if (dataSrc) {
+        candidates.push(this.resolveUrl(dataSrc, baseUrl));
+      }
+      const src = img.getAttribute("src");
+      if (src) {
+        candidates.push(this.resolveUrl(src, baseUrl));
       }
     }
 
-    return undefined;
+    // Return the first non-placeholder image
+    return getFirstValidImage(candidates);
   }
 }
 

@@ -6,6 +6,7 @@ import { OpmlImportModal } from "./OpmlImportModal";
 import { OpmlExportModal } from "./OpmlExportModal";
 import { BulkEditModal } from "./BulkEditModal";
 import { CreateCategoryModal } from "./CreateCategoryModal";
+import { AddFeedModal } from "./AddFeedModal";
 
 /**
  * Modal Manager
@@ -25,6 +26,7 @@ export function ModalManager() {
       {modal === "opml-export" && <OpmlExportModal onClose={closeModal} />}
       {modal === "bulk-edit" && <BulkEditModal selectedFeedIds={selectedIds} onClose={closeModal} />}
       {modal === "create-category" && <CreateCategoryModal onClose={closeModal} />}
+      {modal === "add-feed" && <AddFeedModal onClose={closeModal} />}
     </ModalLevelProvider>
   );
 }

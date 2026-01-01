@@ -4,7 +4,7 @@
  * Tests the automatic matching of articles to saved searches
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+// Vitest globals are enabled in vitest.config.ts
 import { matchNewArticles, rematchSavedSearch } from '../saved-search-matcher';
 import { createSavedSearch } from '../saved-search-service';
 import { prisma } from '@/lib/db';

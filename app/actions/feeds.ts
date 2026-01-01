@@ -272,6 +272,12 @@ export async function validateFeedAction(input: ValidateFeedInput) {
 
     try {
       const feedInfo = await parseFeedUrl(normalizedUrl);
+      if (!feedInfo) {
+        return {
+          valid: false,
+          error: 'Unable to fetch feed information',
+        };
+      }
       return {
         valid: true,
         feedInfo: {

@@ -93,13 +93,22 @@ async function fetchUserFeeds(includeAll = false): Promise<UserFeed[] | UserFeed
   }
   
   // Map subscriptions to UserFeed structure
-  return (response.subscriptions || []).map((sub: any) => ({
+  return (response.subscriptions || []).map((sub: any) => {
+    // Extract category from user_feed_categories (take first category if multiple)
+    const categoryRelation = sub.user_feed_categories?.[0]?.user_categories;
+    const category = categoryRelation ? {
+      id: categoryRelation.id,
+      name: categoryRelation.name,
+      color: categoryRelation.color,
+    } : null;
+
+    return {
     ...sub.feeds,
     // Override name with custom name if it exists
     name: sub.customName || sub.feeds.name,
     // Add subscription specific fields
     subscribedAt: sub.createdAt,
-    category: sub.category,
+    category,
     // Compute isActive from healthStatus
     isActive: sub.feeds.healthStatus !== "disabled",
     // Preserve feed settings (extraction, etc.) and add user subscription settings
@@ -120,7 +129,8 @@ async function fetchUserFeeds(includeAll = false): Promise<UserFeed[] | UserFeed
     // Store original name for reference
     _originalName: sub.feeds.name,
     _subscriptionId: sub.id,
-  }));
+  };
+  });
 }
 
 /**

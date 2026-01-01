@@ -72,7 +72,20 @@ export async function refreshFeed(
     let extractionUsed = false;
 
     // Parse feed (always try RSS first)
+    // TODO: Pass etag/lastModified from feed record for conditional requests
     const parsedFeed = await parseFeedUrl(feed.url);
+    
+    // Handle 304 Not Modified - feed hasn't changed
+    if (!parsedFeed) {
+      logger.info(`[FeedRefresh] Feed ${feedId} returned 304 Not Modified, skipping`);
+      return {
+        feedId,
+        success: true,
+        newArticles: 0,
+        updatedArticles: 0,
+        duration: Date.now() - startTime,
+      };
+    }
 
     // If feed has extraction settings and method is not RSS, try content extraction
     if (settings && settings.method !== "rss") {

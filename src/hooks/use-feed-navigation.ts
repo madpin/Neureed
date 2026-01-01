@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 
 export type FeedManagementView = "overview" | "feed" | "category";
-export type FeedManagementModal = "opml-import" | "opml-export" | "bulk-edit" | "create-category" | null;
+export type FeedManagementModal = "opml-import" | "opml-export" | "bulk-edit" | "create-category" | "add-feed" | null;
 
 export interface FeedNavigationState {
   view: FeedManagementView;
