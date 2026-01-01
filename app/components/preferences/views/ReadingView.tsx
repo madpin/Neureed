@@ -145,7 +145,7 @@ export function ReadingView({ preferences, updatePreference }: ReadingViewProps)
         <ToggleSwitch
           label="Auto Mark as Read"
           description="Automatically mark articles as read when you open them"
-          checked={preferences.autoMarkAsRead || false}
+          checked={preferences.autoMarkAsRead ?? true}
           onChange={(checked) => updatePreference("autoMarkAsRead", checked)}
         />
 

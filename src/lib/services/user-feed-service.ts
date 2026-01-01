@@ -9,7 +9,14 @@ import { assignFeedToCategory } from "./user-category-service";
 export async function getUserFeeds(userId: string): Promise<UserFeedSubscription[]> {
   return await prisma.user_feeds.findMany({
     where: { userId },
-    include: { feeds: true },
+    include: {
+      feeds: true,
+      user_feed_categories: {
+        include: {
+          user_categories: true,
+        },
+      },
+    },
     orderBy: { subscribedAt: "desc" },
   });
 }

@@ -59,6 +59,12 @@ export function OverviewView() {
         <h2 className="text-xl font-semibold">Feed Management Overview</h2>
         <div className="flex gap-2">
           <button
+            onClick={() => openModal("add-feed")}
+            className="px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+          >
+            + Add Feed
+          </button>
+          <button
             onClick={() => openModal("opml-import")}
             className="px-3 py-1.5 text-sm border border-border rounded hover:bg-muted transition-colors"
           >
@@ -131,8 +137,16 @@ export function OverviewView() {
             Loading feeds...
           </div>
         ) : feeds.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground">
-            No feeds yet. Add your first feed to get started.
+          <div className="p-8 text-center">
+            <div className="text-muted-foreground mb-4">
+              No feeds yet. Add your first feed to get started.
+            </div>
+            <button
+              onClick={() => openModal("add-feed")}
+              className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+            >
+              + Add Your First Feed
+            </button>
           </div>
         ) : (
           <div className="overflow-x-auto">

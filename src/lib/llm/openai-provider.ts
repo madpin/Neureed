@@ -5,6 +5,7 @@
 
 import { env } from "@/env";
 import { logger } from "../logger";
+import { parseJSONFromLLM } from "./json-parser";
 import type {
   LLMProviderInterface,
   LLMCompletionRequest,
@@ -85,7 +86,23 @@ export class OpenAILLMProvider implements LLMProviderInterface {
       }
 
       const data = await response.json();
+
+      // Log the full API response for debugging
+      logger.debug("Raw LLM API response", {
+        model: data.model,
+        choicesCount: data.choices?.length,
+        hasUsage: !!data.usage,
+        fullResponse: JSON.stringify(data).substring(0, 2000), // First 2000 chars
+      });
+
       const choice = data.choices[0];
+
+      // Log the message content specifically
+      logger.debug("LLM message content", {
+        contentLength: choice.message?.content?.length ?? 0,
+        content: choice.message?.content?.substring(0, 500) ?? "(empty)", // First 500 chars
+        hasContent: !!choice.message?.content,
+      });
 
       logger.debug("LLM response received", {
         model: data.model,
@@ -144,23 +161,23 @@ You MUST respond ONLY with valid JSON in this exact format:
 
       // Try to parse JSON response
       try {
-        const parsed = JSON.parse(response.content);
+        const parsed = parseJSONFromLLM(response.content, {
+          model: this.model,
+          operation: "summarizeArticle",
+        }) as { summary?: string; keyPoints?: string[]; topics?: string[]; sentiment?: string };
         return {
           summary: parsed.summary || "",
           keyPoints: Array.isArray(parsed.keyPoints) ? parsed.keyPoints : [],
           topics: Array.isArray(parsed.topics) ? parsed.topics : [],
           sentiment: ["positive", "neutral", "negative"].includes(
-            parsed.sentiment
+            parsed.sentiment ?? ""
           )
-            ? parsed.sentiment
+            ? (parsed.sentiment as "positive" | "neutral" | "negative")
             : "neutral",
         };
       } catch (parseError) {
         // Fallback: extract from text response
-        logger.error("Failed to parse LLM JSON response, using fallback", {
-          parseError: parseError instanceof Error ? parseError.message : String(parseError),
-          fullRawResponse: response.content,
-          responseLength: response.content.length,
+        logger.warn("Using fallback for article summary due to parse error", {
           model: this.model,
         });
 
@@ -199,12 +216,18 @@ You MUST respond ONLY with a valid JSON array of strings like: ["point 1", "poin
       });
 
       try {
-        const parsed = JSON.parse(response.content);
+        const parsed = parseJSONFromLLM(response.content, {
+          model: this.model,
+          operation: "extractKeyPoints",
+        }) as string[] | unknown;
         if (Array.isArray(parsed)) {
           return parsed.slice(0, count);
         }
       } catch (parseError) {
         // Fallback: split by newlines and filter
+        logger.warn("Using fallback for key points extraction", {
+          model: this.model,
+        });
         const lines = response.content
           .split("\n")
           .map((line) => line.trim())
@@ -244,7 +267,10 @@ You MUST respond ONLY with a valid JSON array of lowercase strings like: ["topic
       });
 
       try {
-        const parsed = JSON.parse(response.content);
+        const parsed = parseJSONFromLLM(response.content, {
+          model: this.model,
+          operation: "detectTopics",
+        }) as string[] | unknown;
         if (Array.isArray(parsed)) {
           return parsed
             .map((topic) => String(topic).toLowerCase().trim())
@@ -253,6 +279,9 @@ You MUST respond ONLY with a valid JSON array of lowercase strings like: ["topic
         }
       } catch (parseError) {
         // Fallback: extract comma-separated values
+        logger.warn("Using fallback for topic detection", {
+          model: this.model,
+        });
         const topics = response.content
           .split(/[,\n]/)
           .map((topic) => topic.toLowerCase().trim())

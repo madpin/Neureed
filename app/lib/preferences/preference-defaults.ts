@@ -15,7 +15,7 @@ export function getDefaultPreferences(): UserPreferences {
     articlesPerPage: 20,
     defaultView: "expanded",
     showReadArticles: true,
-    autoMarkAsRead: false,
+    autoMarkAsRead: true,
     showRelatedExcerpts: false,
     bounceThreshold: 0.25,
     searchRecencyWeight: 0.3,

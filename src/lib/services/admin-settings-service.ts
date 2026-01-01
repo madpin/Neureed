@@ -131,15 +131,20 @@ export async function getEmbeddingConfiguration(): Promise<{
   provider: string;
   providerSource: "database" | "environment";
   model: string;
+  modelSource: "database" | "environment";
   batchSize: number;
 }> {
-  const autoGenerateSetting = await prisma.admin_settings.findUnique({
-    where: { key: "embedding_auto_generate" },
-  });
-
-  const providerSetting = await prisma.admin_settings.findUnique({
-    where: { key: "embedding_provider" },
-  });
+  const [autoGenerateSetting, providerSetting, modelSetting] = await Promise.all([
+    prisma.admin_settings.findUnique({
+      where: { key: "embedding_auto_generate" },
+    }),
+    prisma.admin_settings.findUnique({
+      where: { key: "embedding_provider" },
+    }),
+    prisma.admin_settings.findUnique({
+      where: { key: "system_llm_embedding_model" },
+    }),
+  ]);
 
   const autoGenerate = autoGenerateSetting
     ? (autoGenerateSetting.value as boolean)
@@ -151,12 +156,18 @@ export async function getEmbeddingConfiguration(): Promise<{
     : env.EMBEDDING_PROVIDER;
   const providerSource = providerSetting ? "database" : "environment";
 
+  const model = modelSetting
+    ? (modelSetting.value as string)
+    : env.EMBEDDING_MODEL;
+  const modelSource = modelSetting ? "database" : "environment";
+
   return {
     autoGenerate,
     autoGenerateSource,
     provider,
     providerSource,
-    model: env.EMBEDDING_MODEL,
+    model,
+    modelSource,
     batchSize: env.EMBEDDING_BATCH_SIZE,
   };
 }

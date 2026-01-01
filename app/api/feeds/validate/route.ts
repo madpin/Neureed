@@ -35,6 +35,12 @@ export const POST = createHandler(
     // Get feed info
     try {
       const feedInfo = await parseFeedUrl(normalizedUrl);
+      if (!feedInfo) {
+        return apiResponse({
+          valid: false,
+          error: "Unable to fetch feed information",
+        });
+      }
       return apiResponse({
         valid: true,
         feedInfo: {

@@ -10,6 +10,7 @@ import {
   useTestLLMConfig,
   useDeleteAllEmbeddings,
   useUpdateSummarizationConfig,
+  useUpdateEmbeddingProvider,
 } from "@/hooks/queries/use-admin";
 
 // Loading Spinner Component
@@ -70,6 +71,7 @@ export function LLMConfigTab() {
   const testConfig = useTestLLMConfig();
   const deleteEmbeddings = useDeleteAllEmbeddings();
   const updateSummarizationConfig = useUpdateSummarizationConfig();
+  const updateEmbeddingProvider = useUpdateEmbeddingProvider();
 
   // Summarization toggle state
   const [isSummarizationToggling, setIsSummarizationToggling] = useState(false);
@@ -135,6 +137,7 @@ export function LLMConfigTab() {
     setSaveMessage(null);
 
     try {
+      // Save LLM config
       await updateConfig.mutateAsync({
         provider,
         apiKey: apiKey || undefined,
@@ -144,9 +147,14 @@ export function LLMConfigTab() {
         digestModel: digestModel || undefined,
       });
 
+      // Save embedding provider if it changed
+      if (embeddingConfig && embeddingProvider !== embeddingConfig.provider) {
+        await updateEmbeddingProvider.mutateAsync(embeddingProvider);
+      }
+
       setSaveMessage({ type: "success", text: "Configuration saved successfully" });
       toast.success("LLM configuration saved");
-      
+
       // Clear API key input
       setApiKey("");
 
@@ -515,10 +523,10 @@ export function LLMConfigTab() {
               <div className="border-t border-purple-300 dark:border-purple-700 pt-4">
                 <button
                   onClick={handleDeleteEmbeddings}
-                  disabled={pendingDeleteEmbeddings || deleteEmbeddings.isPending}
+                  disabled={deleteEmbeddings.isPending}
                   className={`rounded-lg px-6 py-2 font-medium text-white ${
-                    pendingDeleteEmbeddings 
-                      ? "bg-red-700 hover:bg-red-800" 
+                    pendingDeleteEmbeddings
+                      ? "bg-red-700 hover:bg-red-800"
                       : "bg-red-600 hover:bg-red-700"
                   } disabled:opacity-50`}
                 >
@@ -542,10 +550,10 @@ export function LLMConfigTab() {
             </button>
             <button
               onClick={handleSave}
-              disabled={updateConfig.isPending || testConfig.isPending}
+              disabled={updateConfig.isPending || testConfig.isPending || updateEmbeddingProvider.isPending}
               className="rounded-lg bg-blue-600 px-6 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
             >
-              {updateConfig.isPending ? "Saving..." : "Save Configuration"}
+              {(updateConfig.isPending || updateEmbeddingProvider.isPending) ? "Saving..." : "Save Configuration"}
             </button>
           </div>
 

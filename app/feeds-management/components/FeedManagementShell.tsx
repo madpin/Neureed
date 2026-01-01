@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import Link from "next/link";
 import { useFeedNavigation } from "@/hooks/use-feed-navigation";
 import { UserMenu } from "@/app/components/auth/UserMenu";
 import { NotificationBell } from "@/app/components/notifications/NotificationBell";
@@ -43,9 +44,9 @@ export function FeedManagementShell({
       {/* Top Navigation Bar */}
       <header className="flex h-14 items-center justify-between border-b border-border bg-background px-6">
         <div className="flex items-center gap-4">
-          <a href="/" className="text-xl font-bold">
+          <Link href="/" className="text-xl font-bold">
             NeuReed
-          </a>
+          </Link>
           <span className="text-muted-foreground">|</span>
           <span className="text-sm text-muted-foreground">Feed Management</span>
         </div>

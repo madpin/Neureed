@@ -188,7 +188,7 @@ export async function getDefaultPreferences(): Promise<
     articlesPerPage: 20,
     defaultView: "expanded",
     showReadArticles: true,
-    autoMarkAsRead: false,
+    autoMarkAsRead: true,
     showRelatedExcerpts: false,
     bounceThreshold: 0.25,
     showLowRelevanceArticles: true,

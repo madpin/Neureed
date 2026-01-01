@@ -473,7 +473,7 @@ async function main() {
       articlesPerPage: 20,
       defaultView: "expanded",
       showReadArticles: true,
-      autoMarkAsRead: false,
+      autoMarkAsRead: true,
       showRelatedExcerpts: false,
       readingMode: "side_panel",
       inlineAutoScroll: true,

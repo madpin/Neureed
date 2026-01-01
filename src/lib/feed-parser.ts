@@ -2,6 +2,7 @@ import { parseFeed as parseRawFeed } from "@rowanmanning/feed-parser";
 import { createHash } from "crypto";
 import { decode as decodeHtmlEntities } from "he";
 import * as iconv from "iconv-lite";
+import { filterPlaceholderImage, extractFirstValidImageFromHtml } from "./image-utils";
 
 /**
  * Type definitions for @rowanmanning/feed-parser
@@ -10,10 +11,15 @@ interface RawFeed {
   title?: string;
   description?: string;
   url?: string;
+  language?: string;
   image?: {
     url?: string;
     title?: string;
   };
+  categories?: Array<{
+    term?: string;
+    label?: string;
+  }>;
   items: RawFeedItem[];
 }
 
@@ -30,51 +36,174 @@ interface RawFeedItem {
     email?: string;
     url?: string;
   }>;
+  categories?: Array<{
+    term?: string;
+    label?: string;
+  }>;
   media?: Array<{
     url?: string;
+    image?: string;
     type?: string;
+    mimeType?: string;
     title?: string;
+    length?: number;
   }>;
+  // Image from media:thumbnail, itunes:image, or media:content
+  image?: {
+    url?: string;
+    title?: string;
+  };
 }
 
 /**
- * Fetch and decode feed with proper encoding handling
- * Supports both RSS and Atom feeds
+ * Fetch options for conditional requests (ETag/Last-Modified caching)
  */
-async function fetchFeedWithEncoding(url: string): Promise<string> {
-  const response = await fetch(url, {
-    headers: {
-      "User-Agent": "NeuReed/1.0 (RSS/Atom Reader)",
-      Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml",
-    },
-  });
+export interface FetchOptions {
+  etag?: string;
+  lastModified?: string;
+}
 
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
+/**
+ * Fetch result with caching headers
+ */
+export interface FetchResult {
+  content: string;
+  etag?: string;
+  lastModified?: string;
+  notModified: boolean;
+}
 
-  const buffer = await response.arrayBuffer();
-  const uint8Array = new Uint8Array(buffer);
+/**
+ * Feed parser timeout configuration
+ */
+const FETCH_TIMEOUT = 30000; // 30 seconds
+const MAX_RETRIES = 2;
+const RETRY_DELAY = 1000; // 1 second
+
+/**
+ * Fetch and decode feed with proper encoding handling
+ * Supports both RSS and Atom feeds, conditional requests, timeouts, and retries
+ */
+async function fetchFeedWithEncoding(
+  url: string,
+  options?: FetchOptions
+): Promise<FetchResult> {
+  let lastError: Error | null = null;
   
-  // Try to detect encoding from XML declaration
-  const firstBytes = uint8Array.slice(0, 200);
-  const asciiText = new TextDecoder('ascii').decode(firstBytes);
-  const encodingMatch = asciiText.match(/encoding=["']([^"']+)["']/i);
-  
-  let encoding = 'utf-8';
-  if (encodingMatch && encodingMatch[1]) {
-    encoding = encodingMatch[1].toLowerCase();
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+      
+      const headers: Record<string, string> = {
+        "User-Agent": "NeuReed/1.0 (RSS/Atom Reader; +https://github.com/neureed)",
+        Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml, */*;q=0.1",
+      };
+      
+      // Add conditional request headers for bandwidth optimization
+      if (options?.etag) {
+        headers["If-None-Match"] = options.etag;
+      }
+      if (options?.lastModified) {
+        headers["If-Modified-Since"] = options.lastModified;
+      }
+      
+      const response = await fetch(url, {
+        headers,
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      
+      // Handle 304 Not Modified
+      if (response.status === 304) {
+        return {
+          content: "",
+          etag: response.headers.get("etag") || options?.etag,
+          lastModified: response.headers.get("last-modified") || options?.lastModified,
+          notModified: true,
+        };
+      }
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const buffer = await response.arrayBuffer();
+      const uint8Array = new Uint8Array(buffer);
+      
+      // Try to detect encoding from XML declaration or Content-Type header
+      const contentType = response.headers.get("content-type") || "";
+      let encoding = 'utf-8';
+      
+      // Check Content-Type header first
+      const charsetMatch = contentType.match(/charset=([^;\s]+)/i);
+      if (charsetMatch && charsetMatch[1]) {
+        encoding = charsetMatch[1].toLowerCase().replace(/["']/g, '');
+      } else {
+        // Fall back to XML declaration
+        const firstBytes = uint8Array.slice(0, 200);
+        const asciiText = new TextDecoder('ascii').decode(firstBytes);
+        const encodingMatch = asciiText.match(/encoding=["']([^"']+)["']/i);
+        if (encodingMatch && encodingMatch[1]) {
+          encoding = encodingMatch[1].toLowerCase();
+        }
+      }
+      
+      // Normalize encoding names and decode
+      const content = decodeWithEncoding(uint8Array, encoding);
+      
+      return {
+        content,
+        etag: response.headers.get("etag") || undefined,
+        lastModified: response.headers.get("last-modified") || undefined,
+        notModified: false,
+      };
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      
+      // Don't retry on abort (timeout) or client errors
+      if (lastError.name === 'AbortError') {
+        throw new Error(`Feed fetch timeout after ${FETCH_TIMEOUT}ms`);
+      }
+      
+      // Retry on network errors
+      if (attempt < MAX_RETRIES) {
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (attempt + 1)));
+        continue;
+      }
+    }
   }
   
-  // Convert to UTF-8 if needed
-  if (encoding === 'iso-8859-1' || encoding === 'latin1') {
-    return iconv.decode(Buffer.from(uint8Array), 'iso-8859-1');
-  } else if (encoding === 'windows-1252') {
-    return iconv.decode(Buffer.from(uint8Array), 'windows-1252');
-  } else {
-    // Assume UTF-8
-    return new TextDecoder('utf-8').decode(uint8Array);
+  throw lastError || new Error('Failed to fetch feed');
+}
+
+/**
+ * Decode buffer with specified encoding
+ */
+function decodeWithEncoding(uint8Array: Uint8Array, encoding: string): string {
+  // Normalize encoding names
+  const normalizedEncoding = encoding.toLowerCase().replace(/-/g, '');
+  
+  // Map common encoding aliases
+  const encodingMap: Record<string, string> = {
+    'latin1': 'iso-8859-1',
+    'iso88591': 'iso-8859-1',
+    'windows1252': 'windows-1252',
+    'cp1252': 'windows-1252',
+    'iso885915': 'iso-8859-15',
+    'utf8': 'utf-8',
+  };
+  
+  const targetEncoding = encodingMap[normalizedEncoding] || encoding;
+  
+  // Use iconv-lite for non-UTF-8 encodings
+  if (targetEncoding !== 'utf-8' && iconv.encodingExists(targetEncoding)) {
+    return iconv.decode(Buffer.from(uint8Array), targetEncoding);
   }
+  
+  // Default to UTF-8
+  return new TextDecoder('utf-8').decode(uint8Array);
 }
 
 /**
@@ -84,8 +213,13 @@ export interface ParsedFeed {
   title: string;
   description?: string;
   link?: string;
+  language?: string;
   imageUrl?: string;
+  categories?: string[];
   items: ParsedArticle[];
+  // Caching headers for conditional requests
+  etag?: string;
+  lastModified?: string;
 }
 
 /**
@@ -100,24 +234,30 @@ export interface ParsedArticle {
   author?: string;
   publishedAt?: Date;
   imageUrl?: string;
+  categories?: string[];
 }
-
-/**
- * Feed parser timeout configuration
- */
-const FETCH_TIMEOUT = 30000; // 30 seconds
 
 /**
  * Parse an RSS 2.0 or Atom 1.0 feed from a URL
  * @param url - The feed URL to parse
- * @returns Parsed feed data with articles
+ * @param options - Optional fetch options for conditional requests
+ * @returns Parsed feed data with articles, or null if not modified (304)
  * @throws Error if feed cannot be parsed or fetched
  */
-export async function parseFeedUrl(url: string): Promise<ParsedFeed> {
+export async function parseFeedUrl(
+  url: string,
+  options?: FetchOptions
+): Promise<ParsedFeed | null> {
   try {
-    // Fetch with proper encoding handling
-    const xmlContent = await fetchFeedWithEncoding(url);
-    const feed = parseRawFeed(xmlContent) as RawFeed;
+    // Fetch with proper encoding handling, timeout, and retries
+    const result = await fetchFeedWithEncoding(url, options);
+    
+    // Return null for 304 Not Modified responses
+    if (result.notModified) {
+      return null;
+    }
+    
+    const feed = parseRawFeed(result.content) as RawFeed;
 
     // Extract and ensure imageUrl is a string
     let imageUrl = extractFeedImage(feed);
@@ -126,13 +266,22 @@ export async function parseFeedUrl(url: string): Promise<ParsedFeed> {
     if (Array.isArray(imageUrl)) {
       imageUrl = imageUrl[0];
     }
+    
+    // Extract categories
+    const categories = feed.categories
+      ?.map(cat => cat.label || cat.term)
+      .filter((c): c is string => !!c);
 
     return {
       title: feed.title || "Untitled Feed",
       description: feed.description || undefined,
       link: feed.url || undefined,
+      language: feed.language || undefined,
       imageUrl: imageUrl,
+      categories: categories?.length ? categories : undefined,
       items: feed.items.map((item) => parseArticle(item)),
+      etag: result.etag,
+      lastModified: result.lastModified,
     };
   } catch (error) {
     if (error instanceof Error) {
@@ -160,10 +309,26 @@ export async function validateFeedUrl(url: string): Promise<boolean> {
     }
 
     // Try to parse the feed with encoding handling
-    const xmlContent = await fetchFeedWithEncoding(url);
-    const result = parseRawFeed(xmlContent) as RawFeed;
+    const result = await fetchFeedWithEncoding(url);
+    if (result.notModified || !result.content) {
+      return false;
+    }
+    parseRawFeed(result.content) as RawFeed;
     return true;
   } catch (error) {
+    return false;
+  }
+}
+
+/**
+ * Check if a URL looks like an image based on extension
+ */
+function looksLikeImageUrl(url: string): boolean {
+  try {
+    const pathname = new URL(url).pathname.toLowerCase();
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.ico'];
+    return imageExtensions.some(ext => pathname.endsWith(ext));
+  } catch {
     return false;
   }
 }
@@ -203,6 +368,11 @@ function parseArticle(item: RawFeedItem): ParsedArticle {
 
   // Extract author (handle both RSS and Atom formats)
   const author = extractAuthor(item);
+  
+  // Extract categories/tags
+  const categories = item.categories
+    ?.map(cat => cat.label || cat.term)
+    .filter((c): c is string => !!c);
 
   // Decode HTML entities from all text fields
   const decodedTitle = item.title ? decodeHtmlEntities(item.title) : "Untitled";
@@ -223,6 +393,7 @@ function parseArticle(item: RawFeedItem): ParsedArticle {
     // publishedAt is already validated above and guaranteed to be a valid Date
     publishedAt,
     imageUrl,
+    categories: categories?.length ? categories : undefined,
   };
 }
 
@@ -253,7 +424,52 @@ function extractAuthor(item: RawFeedItem): string | undefined {
 function extractContent(item: RawFeedItem): string {
   // @rowanmanning/feed-parser provides content and description
   // Prefer content (which includes content:encoded from RSS) over description
-  return item.content || item.description || "";
+  const rawContent = item.content || item.description || "";
+  
+  // Format plain text CDATA content with paragraph breaks
+  return formatPlainTextContent(rawContent);
+}
+
+/**
+ * Break long CDATA/plain text into paragraphs by adding HTML breaks after sentence boundaries.
+ * Only applies if the text has no existing line breaks or HTML tags (typical of CDATA blocks).
+ * Converts sentence breaks to <br><br> for proper HTML display.
+ */
+function formatPlainTextContent(text: string): string {
+  // Skip if already has line breaks or HTML tags
+  if (text.includes('\n') || text.includes('\r') || /<[a-z][\s\S]*>/i.test(text)) {
+    return text;
+  }
+  
+  // Common abbreviations that shouldn't trigger a line break
+  const abbreviations = [
+    'Mr', 'Mrs', 'Ms', 'Dr', 'Prof', 'Sr', 'Jr', 'Rev', 'Gen', 'Col', 'Lt', 'Sgt',
+    'St', 'Ave', 'Blvd', 'Rd', 'Inc', 'Corp', 'Ltd', 'Co', 'vs', 'etc', 'al',
+    'Jan', 'Feb', 'Mar', 'Apr', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Fig', 'No', 'Vol', 'pp', 'ed', 'trans', 'approx', 'est', 'min', 'max'
+  ];
+  
+  // Build regex pattern: sentence-ending punctuation followed by space and capital letter
+  // BUT NOT after single capital letter (initials like "J. K.") or known abbreviations
+  return text.replace(/([.!?])\s+([A-Z])/g, (match, punct, nextChar, offset) => {
+    // Get the word before the punctuation
+    const textBefore = text.substring(0, offset as number);
+    const wordBeforeMatch = textBefore.match(/(\S+)$/);
+    const wordBefore = wordBeforeMatch?.[1] ?? '';
+    
+    // Don't break after single capital letter (initials like "J." or "A.")
+    if (/^[A-Z]$/.test(wordBefore)) {
+      return match;
+    }
+    
+    // Don't break after common abbreviations
+    if (abbreviations.some(abbr => wordBefore.toLowerCase() === abbr.toLowerCase())) {
+      return match;
+    }
+    
+    // This looks like a real sentence boundary
+    return `${punct}<br><br>${nextChar}`;
+  });
 }
 
 /**
@@ -262,7 +478,8 @@ function extractContent(item: RawFeedItem): string {
 function extractExcerpt(item: RawFeedItem, content: string): string | undefined {
   // If description is different from content, use it as excerpt
   if (item.description && item.description !== content) {
-    return item.description.substring(0, 500);
+    const processed = formatPlainTextContent(item.description);
+    return processed.substring(0, 500);
   }
 
   // Otherwise, generate excerpt from content
@@ -277,11 +494,12 @@ function extractExcerpt(item: RawFeedItem, content: string): string | undefined 
 /**
  * Extract image URL from feed metadata
  * Supports both RSS and Atom formats
+ * Filters out placeholder images
  */
 function extractFeedImage(feed: RawFeed): string | undefined {
   // @rowanmanning/feed-parser provides image as an object with url
   if (feed.image?.url) {
-    return feed.image.url;
+    return filterPlaceholderImage(feed.image.url);
   }
   
   return undefined;
@@ -289,36 +507,68 @@ function extractFeedImage(feed: RawFeed): string | undefined {
 
 /**
  * Extract image URL from article
+ * Filters out placeholder images and prioritizes real images
  */
 function extractArticleImage(item: RawFeedItem, content: string): string | undefined {
-  // Check media array (includes enclosures and media:content)
+  // Collect all candidate images
+  const candidates: (string | undefined)[] = [];
+  
+  // 1. Check item.image first (includes media:thumbnail, itunes:image, media:content images)
+  // This is the primary source for article header images
+  if (item.image?.url) {
+    candidates.push(item.image.url);
+  }
+
+  // 2. Check media array for image types (enclosures and media:content)
   if (item.media && item.media.length > 0) {
-    // Find first image media item
+    // First, check for media items with explicit image property (thumbnails)
     for (const media of item.media) {
-      if (media.url && media.type?.startsWith("image/")) {
-        return media.url;
+      if (media.image) {
+        candidates.push(media.image);
       }
     }
-    // If no explicit image type, use first media with URL
+    // Then, find image media items by type or mimeType
+    for (const media of item.media) {
+      const isImage = media.type === "image" || 
+                      media.mimeType?.startsWith("image/") ||
+                      media.type?.startsWith("image");
+      if (media.url && isImage) {
+        candidates.push(media.url);
+      }
+    }
+    // Only use untyped media if URL looks like an image
     const firstMedia = item.media[0];
-    if (firstMedia?.url) {
-      return firstMedia.url;
+    if (firstMedia?.url && looksLikeImageUrl(firstMedia.url)) {
+      candidates.push(firstMedia.url);
     }
   }
 
-  // Extract from content as fallback
-  return extractImageFromContent(content) || undefined;
+  // 3. Extract from content as fallback - use the new function that filters placeholders
+  const contentImage = extractFirstValidImageFromHtml(content);
+  if (contentImage) {
+    candidates.push(contentImage);
+  }
+
+  // Return the first non-placeholder image
+  for (const candidate of candidates) {
+    const filtered = filterPlaceholderImage(candidate);
+    if (filtered) {
+      return filtered;
+    }
+  }
+  
+  return undefined;
 }
 
 /**
  * Extract first image URL from HTML content
  * @param html - HTML content to search
  * @returns First image URL found, or null
+ * @deprecated Use extractFirstValidImageFromHtml from image-utils.ts instead
  */
 export function extractImageFromContent(html: string): string | null {
-  const imgRegex = /<img[^>]+src=["']([^"']+)["']/i;
-  const match = html.match(imgRegex);
-  return (match && match[1]) ? match[1] : null;
+  // Use the new function that filters out placeholder images
+  return extractFirstValidImageFromHtml(html);
 }
 
 /**

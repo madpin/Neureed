@@ -13,6 +13,7 @@ export interface CreateFeedInput {
   imageUrl?: string;
   categoryIds?: string[];
   fetchInterval?: number;
+  extractionMethod?: "rss" | "readability" | "playwright" | "custom";
 }
 
 export interface UpdateFeedInput {
@@ -54,7 +55,8 @@ export async function createFeed(data: CreateFeedInput): Promise<feeds> {
     throw new Error("Feed already exists");
   }
 
-  // Create feed with default extraction method set to "readability"
+  // Create feed with extraction method (default to "readability")
+  const extractionMethod = data.extractionMethod || "readability";
   const feed = await prisma.feeds.create({
     data: {
       id: `feed_${Date.now()}_${Math.random().toString(36).substring(7)}`,
@@ -66,7 +68,7 @@ export async function createFeed(data: CreateFeedInput): Promise<feeds> {
       fetchInterval: data.fetchInterval || 60,
       settings: {
         extraction: {
-          method: "readability",
+          method: extractionMethod,
         },
       },
       // updatedAt is auto-managed by Prisma via @updatedAt directive
@@ -97,7 +99,8 @@ export async function createFeed(data: CreateFeedInput): Promise<feeds> {
 export async function validateAndCreateFeed(
   url: string,
   name?: string,
-  categoryIds?: string[]
+  categoryIds?: string[],
+  settings?: { method?: "rss" | "readability" | "playwright" | "custom" }
 ): Promise<feeds> {
   // Normalize URL
   const normalizedUrl = normalizeFeedUrl(url);
@@ -115,6 +118,11 @@ export async function validateAndCreateFeed(
 
   // Parse feed to get metadata
   const parsedFeed = await parseFeedUrl(normalizedUrl);
+  
+  // Handle case where feed returns null (304 Not Modified - shouldn't happen for new feeds)
+  if (!parsedFeed) {
+    throw new Error("Unable to parse feed content");
+  }
 
   // Ensure imageUrl is a string (handle array case)
   let imageUrl = parsedFeed.imageUrl;
@@ -130,6 +138,7 @@ export async function validateAndCreateFeed(
     siteUrl: parsedFeed.link,
     imageUrl: imageUrl,
     categoryIds,
+    extractionMethod: settings?.method,
   });
 }
 

@@ -2,6 +2,8 @@
  * Content processing utilities for articles
  */
 
+import { removePlaceholderImagesFromHtml } from "./image-utils";
+
 /**
  * Process article content for display
  * - Sanitize HTML
@@ -30,6 +32,9 @@ export function processArticleContent(
 
   // Add target="_blank" to all links
   processed = addTargetBlankToLinks(processed);
+
+  // Remove placeholder images from content
+  processed = removePlaceholderImagesFromHtml(processed);
 
   // Process images (lazy loading, etc.)
   processed = processImages(processed);

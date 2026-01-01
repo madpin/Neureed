@@ -11,6 +11,8 @@ import * as savedSearchService from "@/lib/services/saved-search-service";
 import { matchNewArticles } from "@/lib/services/saved-search-matcher";
 import { logger } from "@/lib/logger";
 
+export const dynamic = "force-dynamic";
+
 // Validation schema for creating a saved search
 const createSavedSearchSchema = z.object({
   name: z.string().min(1).max(100),

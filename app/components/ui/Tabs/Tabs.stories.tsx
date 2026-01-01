@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import React from 'react';
 import { Tabs, TabList, Tab, TabPanels, TabPanel } from './index';
 
 const meta: Meta<typeof Tabs> = {
@@ -223,6 +224,3 @@ export const ControlledTabs: Story = {
     );
   },
 };
-
-// @ts-ignore - React is used in the story
-import React from 'react';

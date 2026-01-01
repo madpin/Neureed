@@ -24,8 +24,15 @@ export function ArticleViewTracker({ articleId, estimatedTime, onReadStatusChang
 
   const viewStartTime = useRef<number | null>(null);
   const hasTrackedView = useRef(false);
+  // Use ref to always have latest estimatedTime in cleanup function
+  const estimatedTimeRef = useRef(estimatedTime);
 
-  const autoMarkAsRead = preferences?.autoMarkAsRead ?? false;
+  const autoMarkAsRead = preferences?.autoMarkAsRead ?? true;
+
+  // Keep ref in sync with prop
+  useEffect(() => {
+    estimatedTimeRef.current = estimatedTime;
+  }, [estimatedTime]);
 
   // Track view on mount
   useEffect(() => {
@@ -59,13 +66,14 @@ export function ArticleViewTracker({ articleId, estimatedTime, onReadStatusChang
       if (timeSpent < 0) return;
 
       // Don't track if estimatedTime is not yet calculated (0 or negative)
-      if (estimatedTime <= 0) return;
+      const currentEstimatedTime = estimatedTimeRef.current;
+      if (currentEstimatedTime <= 0) return;
 
       trackExit.mutate({
         articleId,
         data: {
           timeSpent,
-          estimatedTime,
+          estimatedTime: currentEstimatedTime,
         },
       });
     };

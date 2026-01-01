@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export interface UseViewNavigationOptions<T extends string = string> {
   /**
@@ -75,14 +75,19 @@ export function useViewNavigation<T extends string = string>(
   const { modalName, defaultView, isOpen, onNavigate, onClose } = options;
 
   const [currentView, setCurrentView] = useState<T>(defaultView);
+  const wasOpenRef = useRef(isOpen);
 
   /**
    * Reset view to defaultView when modal opens (to handle initialView changes)
+   * Only resets when transitioning from closed to open
    */
   useEffect(() => {
-    if (isOpen) {
-      setCurrentView(defaultView);
+    // Only reset if we just opened (transition from false to true)
+    if (isOpen && !wasOpenRef.current) {
+      // eslint-disable-next-line -- Safe: only sets state once on modal open transition, conditional prevents cascading
+      setCurrentView(prev => prev !== defaultView ? defaultView : prev);
     }
+    wasOpenRef.current = isOpen;
   }, [isOpen, defaultView]);
 
   /**

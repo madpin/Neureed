@@ -230,7 +230,8 @@ export async function findRelatedArticles(
       throw new Error("Article not found");
     }
     if (!article.hasEmbedding) {
-      throw new Error("Article has no embedding");
+      logger.info("Article has no embedding, returning empty related articles", { articleId });
+      return [];
     }
 
     // Now fetch the actual embedding using the article's embedding directly in the query

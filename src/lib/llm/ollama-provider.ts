@@ -5,6 +5,7 @@
 
 import { env } from "@/env";
 import { logger } from "../logger";
+import { parseJSONFromLLM } from "./json-parser";
 import type {
   LLMProviderInterface,
   LLMCompletionRequest,
@@ -103,21 +104,24 @@ Respond in JSON format with keys: summary, keyPoints (array), topics (array), se
 
       // Try to parse JSON response
       try {
-        const parsed = JSON.parse(response.content);
+        const parsed = parseJSONFromLLM(response.content, {
+          model: this.model,
+          operation: "summarizeArticle",
+        }) as { summary?: string; keyPoints?: string[]; topics?: string[]; sentiment?: string };
         return {
           summary: parsed.summary || "",
           keyPoints: Array.isArray(parsed.keyPoints) ? parsed.keyPoints : [],
           topics: Array.isArray(parsed.topics) ? parsed.topics : [],
           sentiment: ["positive", "neutral", "negative"].includes(
-            parsed.sentiment
+            parsed.sentiment ?? ""
           )
-            ? parsed.sentiment
+            ? (parsed.sentiment as "positive" | "neutral" | "negative")
             : "neutral",
         };
       } catch (parseError) {
         // Fallback: extract from text response
-        logger.warn("Failed to parse LLM JSON response, using fallback", {
-          parseError,
+        logger.warn("Using fallback for article summary due to parse error", {
+          model: this.model,
         });
 
         return {
@@ -155,12 +159,18 @@ Respond with a JSON array of strings.`;
       });
 
       try {
-        const parsed = JSON.parse(response.content);
+        const parsed = parseJSONFromLLM(response.content, {
+          model: this.model,
+          operation: "extractKeyPoints",
+        }) as string[] | unknown;
         if (Array.isArray(parsed)) {
           return parsed.slice(0, count);
         }
       } catch (parseError) {
         // Fallback: split by newlines and filter
+        logger.warn("Using fallback for key points extraction", {
+          model: this.model,
+        });
         const lines = response.content
           .split("\n")
           .map((line) => line.trim())
@@ -200,7 +210,10 @@ Respond with a JSON array of lowercase strings.`;
       });
 
       try {
-        const parsed = JSON.parse(response.content);
+        const parsed = parseJSONFromLLM(response.content, {
+          model: this.model,
+          operation: "detectTopics",
+        }) as string[] | unknown;
         if (Array.isArray(parsed)) {
           return parsed
             .map((topic) => String(topic).toLowerCase().trim())
@@ -209,6 +222,9 @@ Respond with a JSON array of lowercase strings.`;
         }
       } catch (parseError) {
         // Fallback: extract comma-separated values
+        logger.warn("Using fallback for topic detection", {
+          model: this.model,
+        });
         const topics = response.content
           .split(/[,\n]/)
           .map((topic) => topic.toLowerCase().trim())

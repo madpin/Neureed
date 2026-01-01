@@ -8,6 +8,8 @@ import { createHandler } from "@/lib/api-handler";
 import { z } from "zod";
 import * as savedSearchService from "@/lib/services/saved-search-service";
 
+export const dynamic = "force-dynamic";
+
 // Validation schema for preview request
 const previewSearchSchema = z.object({
   query: z.string().min(1),

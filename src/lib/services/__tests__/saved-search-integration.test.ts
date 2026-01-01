@@ -4,7 +4,7 @@
  * Tests the complete flow from creation to matching to notifications
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+// Vitest globals are enabled in vitest.config.ts
 import { prisma } from '@/lib/db';
 import { nanoid } from 'nanoid';
 import { createSavedSearch } from '../saved-search-service';

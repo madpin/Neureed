@@ -72,14 +72,14 @@ export const GET = createHandler(
  */
 export const POST = createHandler(
   async ({ body, session }) => {
-    const { url, name, categoryIds } = body;
+    const { url, name, categoryIds, settings } = body;
 
     let feed;
     let isNewFeed = false;
 
     try {
       // Try to create the feed
-      feed = await validateAndCreateFeed(url, name, categoryIds);
+      feed = await validateAndCreateFeed(url, name, categoryIds, settings);
       isNewFeed = true;
     } catch (error) {
       // If feed already exists, get it instead

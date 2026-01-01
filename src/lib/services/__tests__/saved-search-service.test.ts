@@ -4,7 +4,7 @@
  * Tests CRUD operations and business logic for saved searches
  */
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
+// Vitest globals are enabled in vitest.config.ts
 import {
   createSavedSearch,
   updateSavedSearch,

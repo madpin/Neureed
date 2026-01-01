@@ -4,7 +4,7 @@
  * Tests the search execution and scoring algorithms
  */
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
+// Vitest globals are enabled in vitest.config.ts
 import { executeSearch, matchArticle } from '../saved-search-execution';
 import { prisma } from '@/lib/db';
 import { nanoid } from 'nanoid';

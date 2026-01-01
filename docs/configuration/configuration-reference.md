@@ -146,7 +146,7 @@ All user preferences are stored in the `UserPreferences` database model and can 
 | `articlesPerPage` | Integer | `20` | 5-100 | Number of articles per page |
 | `infiniteScrollMode` | String | `"both"` | `"auto"`, `"button"`, `"both"` | How to load more articles |
 | `showReadArticles` | Boolean | `true` | `true`, `false` | Display already-read articles |
-| `autoMarkAsRead` | Boolean | `false` | `true`, `false` | Automatically mark articles as read when opened |
+| `autoMarkAsRead` | Boolean | `true` | `true`, `false` | Automatically mark articles as read when opened |
 | `showRelatedExcerpts` | Boolean | `false` | `true`, `false` | Show excerpts in related articles section |
 
 **Description:**

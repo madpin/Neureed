@@ -8,6 +8,7 @@ import { env } from "@/env";
 import { logger } from "../logger";
 import { OpenAILLMProvider } from "../llm/openai-provider";
 import { OllamaLLMProvider } from "../llm/ollama-provider";
+import { parseJSONFromLLM } from "../llm/json-parser";
 import { cacheGetOrSet } from "../cache/cache-service";
 import { CacheKeys, CacheTTL } from "../cache/cache-keys";
 import {
@@ -511,7 +512,10 @@ Respond in JSON format with keys: summary, keyPoints (array), topics (array), se
   // Parse the response
   let summary: ArticleSummary;
   try {
-    const parsed = JSON.parse(response.content);
+    const parsed = parseJSONFromLLM(response.content, {
+      model: response.model,
+      operation: "summarizeArticleWithTracking",
+    }) as { summary?: string; keyPoints?: string[]; topics?: string[]; sentiment?: string };
     summary = {
       summary: parsed.summary || "",
       keyPoints:
@@ -522,13 +526,13 @@ Respond in JSON format with keys: summary, keyPoints (array), topics (array), se
         options?.includeTopics && Array.isArray(parsed.topics)
           ? parsed.topics
           : [],
-      sentiment: ["positive", "neutral", "negative"].includes(parsed.sentiment)
-        ? parsed.sentiment
+      sentiment: ["positive", "neutral", "negative"].includes(parsed.sentiment ?? "")
+        ? (parsed.sentiment as "positive" | "neutral" | "negative")
         : "neutral",
     };
   } catch (parseError) {
-    logger.warn("Failed to parse LLM JSON response, using fallback", {
-      parseError,
+    logger.warn("Using fallback for article summary with tracking", {
+      model: response.model,
     });
     summary = {
       summary: response.content.substring(0, 500),

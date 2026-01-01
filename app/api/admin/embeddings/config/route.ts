@@ -74,6 +74,7 @@ export const GET = createHandler(
       config: {
         provider: embeddingConfig.provider,
         model: embeddingConfig.model,
+        modelSource: embeddingConfig.modelSource,
         dimensions,
         batchSize: embeddingConfig.batchSize,
         apiKey: envConfig.apiKey,
@@ -92,6 +93,7 @@ export const GET = createHandler(
       },
       autoGenerate: embeddingConfig.autoGenerate,
       autoGenerateSource: embeddingConfig.autoGenerateSource,
+      providerSource: embeddingConfig.providerSource,
       envDefault: env.EMBEDDING_AUTO_GENERATE,
       usingUserConfig: userId ? openaiTest.success : false,
       message: "OpenAI always available - admin controls enable/disable, users provide credentials",

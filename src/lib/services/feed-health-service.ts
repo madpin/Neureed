@@ -50,7 +50,7 @@ export async function getFeedHealth(feedId: string): Promise<FeedHealthStatus | 
   return {
     feedId: feed.id,
     healthStatus: feed.healthStatus as "healthy" | "warning" | "error" | "disabled",
-    consecutiveFailures: feed.consecutiveFailures,
+    consecutiveFailures: feed.consecutiveFailures ?? 0,
     lastSuccessfulFetch: feed.lastSuccessfulFetch,
     lastError: feed.feed_error_log[0]?.errorMessage || null,
     httpStatus: feed.httpStatus,
@@ -81,7 +81,7 @@ export async function getBulkFeedHealth(feedIds: string[]): Promise<FeedHealthSt
   return feeds.map((feed) => ({
     feedId: feed.id,
     healthStatus: feed.healthStatus as "healthy" | "warning" | "error" | "disabled",
-    consecutiveFailures: feed.consecutiveFailures,
+    consecutiveFailures: feed.consecutiveFailures ?? 0,
     lastSuccessfulFetch: feed.lastSuccessfulFetch,
     lastError: feed.feed_error_log[0]?.errorMessage || null,
     httpStatus: feed.httpStatus,
@@ -123,8 +123,8 @@ export async function recordFeedFailure(
 
   if (!feed) return;
 
-  const newFailureCount = feed.consecutiveFailures + 1;
-  const shouldDisable = newFailureCount >= feed.autoDisableThreshold;
+  const newFailureCount = (feed.consecutiveFailures ?? 0) + 1;
+  const shouldDisable = newFailureCount >= (feed.autoDisableThreshold ?? 10);
 
   // Update feed health status
   await prisma.feeds.update({
@@ -227,7 +227,7 @@ export async function getUnhealthyFeeds(
   return feeds.map((feed) => ({
     feedId: feed.id,
     healthStatus: feed.healthStatus as "healthy" | "warning" | "error" | "disabled",
-    consecutiveFailures: feed.consecutiveFailures,
+    consecutiveFailures: feed.consecutiveFailures ?? 0,
     lastSuccessfulFetch: feed.lastSuccessfulFetch,
     lastError: feed.feed_error_log[0]?.errorMessage || null,
     httpStatus: feed.httpStatus,
