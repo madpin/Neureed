@@ -88,15 +88,36 @@ export async function refreshFeed(
     }
 
     // If feed has extraction settings and method is not RSS, try content extraction
+    // Only extract content for NEW articles to avoid wasting resources
+    // 
+    // IMPORTANT OPTIMIZATION: We check for duplicates BEFORE extracting content
+    // because extraction (Readability/Playwright) is CPU and network intensive.
+    // Most RSS feeds contain articles already in our database, so checking first
+    // prevents wasting resources and reduces risk of rate limiting/IP blocking.
+    // 
+    // See: docs/guides/development/content-extraction-optimization.md
     if (settings && settings.method !== "rss") {
-      logger.info(`[FeedRefresh] Feed ${feedId} has extraction settings, attempting content extraction`);
+      logger.info(`[FeedRefresh] Feed ${feedId} has extraction settings, checking for new articles`);
       
       const mergeStrategy = settings.contentMergeStrategy || "replace";
       
       try {
+        // Import deduplication functions
+        const { findDuplicateArticle } = await import("./article-deduplication");
+        
         // Try to extract content for each article
         for (const article of parsedFeed.items) {
           if (article.link) {
+            // Check if article already exists BEFORE extracting content
+            const existing = await findDuplicateArticle(article, feedId);
+            
+            if (existing) {
+              logger.info(`[FeedRefresh] Article already exists, skipping extraction: ${article.title}`);
+              continue;
+            }
+            
+            // Only extract content for NEW articles
+            logger.info(`[FeedRefresh] New article detected, extracting content: ${article.title}`);
             const extracted = await extractContent(article.link, feedId);
             
             if (extracted.success) {

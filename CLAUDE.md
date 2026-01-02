@@ -1059,6 +1059,9 @@ Users can configure their own:
 - Cookie-based authentication for paywalled feeds
 - Per-feed extraction settings with merge strategies
 - Timeouts prevent hanging on slow sites
+- **Duplicate Detection**: Content extraction is only performed for NEW articles (checked via GUID/URL before extraction)
+- This optimization prevents wasting CPU/network resources on articles already in the database
+- Significantly reduces risk of rate limiting and IP blocking from target sites
 
 #### Cost Management
 - Embedding costs tracked via embedding-cost-tracker.ts

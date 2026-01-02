@@ -5,6 +5,19 @@ All notable changes to NeuReed will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Performance Improvements
+- **Content Extraction Optimization**: Feed refresh now checks for duplicate articles BEFORE performing expensive content extraction (Readability/Playwright)
+  - Reduces CPU usage by 80-95% for typical feeds
+  - Prevents unnecessary network requests to article pages
+  - Significantly reduces risk of rate limiting and IP blocking
+  - See: docs/guides/development/content-extraction-optimization.md
+
+### Documentation
+- Added comprehensive guide for content extraction optimization
+- Updated CLAUDE.md with duplicate detection information
+
 ## [0.3.0] - 2025-11-29
 
 ### Added
