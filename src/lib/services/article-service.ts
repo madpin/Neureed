@@ -9,6 +9,7 @@ import { cacheDeletePattern } from "@/lib/cache/cache-service";
 import { InvalidationPatterns } from "@/lib/cache/cache-keys";
 import { logger } from "@/lib/logger";
 import type { articles, Prisma } from "@/generated/prisma/client";
+import { ArticleExtractionStatus } from "@/generated/prisma/enums";
 import type { ParsedArticle } from "@/lib/feed-parser";
 
 /**
@@ -24,6 +25,8 @@ export interface CreateArticleInput {
   excerpt?: string;
   imageUrl?: string;
   publishedAt?: Date;
+  extractionStatus?: ArticleExtractionStatus;
+  extractionError?: string | null;
 }
 
 export interface UpdateArticleInput {
@@ -33,6 +36,8 @@ export interface UpdateArticleInput {
   imageUrl?: string;
   author?: string;
   publishedAt?: Date;
+  extractionStatus?: ArticleExtractionStatus;
+  extractionError?: string | null;
 }
 
 export interface PaginationOptions {
@@ -115,6 +120,8 @@ export async function upsertArticles(
             excerpt: article.excerpt,
             imageUrl: article.imageUrl,
             publishedAt: article.publishedAt,
+            extractionStatus: article.extractionStatus,
+            extractionError: article.extractionError,
           });
           articleIds.push(newArticle.id);
           created++;
@@ -158,6 +165,8 @@ export async function createArticle(
       excerpt: data.excerpt,
       imageUrl: data.imageUrl,
       contentHash,
+      extractionStatus: data.extractionStatus ?? ArticleExtractionStatus.NONE,
+      extractionError: data.extractionError ?? null,
       // Ensure publishedAt always has a value, fallback to current time
       publishedAt: data.publishedAt || new Date(),
       // updatedAt is auto-managed by Prisma via @updatedAt directive

@@ -48,6 +48,9 @@ export interface Article {
   imageUrl?: string;
   keyPoints?: string[];
   summary?: string;
+  /** Server-side full-page extraction outcome */
+  extractionStatus?: "NONE" | "SUCCESS" | "FAILED";
+  extractionError?: string | null;
 }
 
 /**

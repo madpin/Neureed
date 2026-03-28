@@ -7,13 +7,16 @@ import {
   getFeedsToRefresh,
   getUserFeedsToRefresh,
 } from "./feed-service";
-import { upsertArticles } from "./article-service";
+import { upsertArticles, updateArticle } from "./article-service";
 import { generateBatchEmbeddings } from "./article-embedding-service";
 import { extractContent } from "./content-extraction-service";
 import { shouldAutoGenerateEmbeddings } from "./admin-settings-service";
 import { cleanupFeedArticles } from "./article-cleanup-service";
+import { extractionRateLimiter } from "./extraction-rate-limiter";
 import { env } from "@/env";
+import { ArticleExtractionStatus } from "@/generated/prisma/enums";
 import { logger } from "@/lib/logger";
+import { sanitizeExtractionErrorMessage } from "@/lib/services/extraction-error-utils";
 
 /**
  * Result of a feed refresh operation
@@ -110,47 +113,85 @@ export async function refreshFeed(
           if (article.link) {
             // Check if article already exists BEFORE extracting content
             const existing = await findDuplicateArticle(article, feedId);
-            
+
             if (existing) {
               logger.info(`[FeedRefresh] Article already exists, skipping extraction: ${article.title}`);
               continue;
             }
-            
+
             // Only extract content for NEW articles
             logger.info(`[FeedRefresh] New article detected, extracting content: ${article.title}`);
-            const extracted = await extractContent(article.link, feedId);
-            
-            if (extracted.success) {
-              // Update article metadata
-              article.title = extracted.title || article.title;
-              article.excerpt = extracted.excerpt || article.excerpt;
-              article.author = extracted.author || article.author;
-              article.publishedAt = extracted.publishedAt || article.publishedAt;
-              article.imageUrl = extracted.imageUrl || article.imageUrl;
-              
-              // Merge content based on strategy
-              const rssContent = article.content || "";
-              const extractedContent = extracted.content || "";
-              
-              switch (mergeStrategy) {
-                case "prepend":
-                  article.content = extractedContent + "\n\n" + rssContent;
-                  break;
-                case "append":
-                  article.content = rssContent + "\n\n" + extractedContent;
-                  break;
-                case "replace":
-                default:
-                  article.content = extractedContent;
-                  break;
+
+            // RATE LIMITING: Wait for rate limit slot before extracting
+            await extractionRateLimiter.waitForSlot(article.link, feedId);
+
+            let extractionSuccess = false;
+            let extractionError: string | undefined;
+            let extractionHttpStatus: number | undefined;
+
+            try {
+              const extracted = await extractContent(article.link, feedId);
+              extractionSuccess = extracted.success;
+              extractionError = extracted.error;
+
+              // Try to extract HTTP status from error if available
+              if (!extractionSuccess && extracted.error) {
+                const statusMatch = extracted.error.match(/status[:\s]+(\d{3})/i);
+                if (statusMatch && statusMatch[1]) {
+                  extractionHttpStatus = parseInt(statusMatch[1]);
+                }
               }
-              
-              extractionMethod = extracted.method;
-              extractionUsed = true;
-              
-              logger.info(`[FeedRefresh] Successfully extracted content for article: ${article.title} (strategy: ${mergeStrategy})`);
-            } else {
-              logger.warn(`[FeedRefresh] Content extraction failed for ${article.link}, using RSS content: ${extracted.error}`);
+
+              if (extractionSuccess) {
+                // Update article metadata
+                article.title = extracted.title || article.title;
+                article.excerpt = extracted.excerpt || article.excerpt;
+                article.author = extracted.author || article.author;
+                article.publishedAt = extracted.publishedAt || article.publishedAt;
+                article.imageUrl = extracted.imageUrl || article.imageUrl;
+
+                // Merge content based on strategy
+                const rssContent = article.content || "";
+                const extractedContent = extracted.content || "";
+
+                switch (mergeStrategy) {
+                  case "prepend":
+                    article.content = extractedContent + "\n\n" + rssContent;
+                    break;
+                  case "append":
+                    article.content = rssContent + "\n\n" + extractedContent;
+                    break;
+                  case "replace":
+                  default:
+                    article.content = extractedContent;
+                    break;
+                }
+
+                extractionMethod = extracted.method;
+                extractionUsed = true;
+                article.extractionStatus = ArticleExtractionStatus.SUCCESS;
+                article.extractionError = null;
+
+                logger.info(`[FeedRefresh] Successfully extracted content for article: ${article.title} (strategy: ${mergeStrategy})`);
+              } else {
+                article.extractionStatus = ArticleExtractionStatus.FAILED;
+                article.extractionError = sanitizeExtractionErrorMessage(extractionError);
+                logger.warn(`[FeedRefresh] Content extraction failed for ${article.link}, using RSS content: ${extractionError}`);
+              }
+            } catch (error) {
+              extractionSuccess = false;
+              extractionError = error instanceof Error ? error.message : String(error);
+              article.extractionStatus = ArticleExtractionStatus.FAILED;
+              article.extractionError = sanitizeExtractionErrorMessage(extractionError);
+              logger.error(`[FeedRefresh] Exception during content extraction: ${extractionError}`);
+            } finally {
+              // RATE LIMITING: Record extraction attempt (success or failure)
+              await extractionRateLimiter.recordExtraction(
+                article.link,
+                extractionSuccess,
+                extractionError,
+                extractionHttpStatus
+              );
             }
           }
         }
@@ -611,6 +652,10 @@ export async function refreshLastArticles(
 
     // Process each article
     for (const article of articles) {
+      let extractionSuccess = false;
+      let extractionError: string | undefined;
+      let extractionHttpStatus: number | undefined;
+
       try {
         if (!article.url) {
           logger.warn(`[RefreshLastArticles] Article ${article.id} has no URL, skipping`);
@@ -618,17 +663,42 @@ export async function refreshLastArticles(
           continue;
         }
 
+        // RATE LIMITING: Wait for rate limit slot before extracting
+        await extractionRateLimiter.waitForSlot(article.url, feedId);
+
         // Extract content
         const extracted = await extractContent(article.url, feedId);
+        extractionSuccess = extracted.success;
+        extractionError = extracted.error;
 
-        if (!extracted.success) {
-          logger.warn(`[RefreshLastArticles] Failed to extract content for article ${article.id}: ${extracted.error}`);
+        if (!extractionSuccess && extracted.error) {
+          const statusMatch = extracted.error.match(/status[:\s]+(\d{3})/i);
+          if (statusMatch?.[1]) {
+            extractionHttpStatus = parseInt(statusMatch[1], 10);
+          }
+        }
+
+        if (!extractionSuccess) {
+          logger.warn(`[RefreshLastArticles] Failed to extract content for article ${article.id}: ${extractionError}`);
           articlesFailed++;
+
+          await updateArticle(article.id, {
+            extractionStatus: ArticleExtractionStatus.FAILED,
+            extractionError: sanitizeExtractionErrorMessage(extractionError),
+          });
+
+          // Record failed extraction
+          await extractionRateLimiter.recordExtraction(
+            article.url,
+            false,
+            extractionError,
+            extractionHttpStatus
+          );
           continue;
         }
 
         // Prepare update data
-        const updateData: any = {};
+        const updateData: Parameters<typeof updateArticle>[1] = {};
         let hasChanges = false;
 
         // Update metadata if available
@@ -680,12 +750,15 @@ export async function refreshLastArticles(
           hasChanges = true;
         }
 
-        // Only update if there are changes
-        if (hasChanges) {
-          await prisma.articles.update({
-            where: { id: article.id },
-            data: updateData,
-          });
+        updateData.extractionStatus = ArticleExtractionStatus.SUCCESS;
+        updateData.extractionError = null;
+
+        const extractionMetaChanged =
+          article.extractionStatus !== ArticleExtractionStatus.SUCCESS;
+
+        // Persist body changes and/or extraction outcome (e.g. clear prior FAILED)
+        if (hasChanges || extractionMetaChanged) {
+          await updateArticle(article.id, updateData);
 
           updatedArticleIds.push(article.id);
           articlesUpdated++;
@@ -695,9 +768,34 @@ export async function refreshLastArticles(
           logger.info(`[RefreshLastArticles] No changes for article ${article.id}, skipping update`);
         }
 
+        // Record successful extraction
+        await extractionRateLimiter.recordExtraction(
+          article.url,
+          true
+        );
+
       } catch (error) {
-        logger.error(`[RefreshLastArticles] Error processing article ${article.id}: ${error}`);
+        extractionError = error instanceof Error ? error.message : String(error);
+        logger.error(`[RefreshLastArticles] Error processing article ${article.id}: ${extractionError}`);
         articlesFailed++;
+
+        try {
+          await updateArticle(article.id, {
+            extractionStatus: ArticleExtractionStatus.FAILED,
+            extractionError: sanitizeExtractionErrorMessage(extractionError),
+          });
+        } catch (persistErr) {
+          logger.error(`[RefreshLastArticles] Failed to persist extraction error for ${article.id}: ${persistErr}`);
+        }
+
+        // Record failed extraction
+        if (article.url) {
+          await extractionRateLimiter.recordExtraction(
+            article.url,
+            false,
+            extractionError
+          );
+        }
       }
     }
 

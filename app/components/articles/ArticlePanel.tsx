@@ -7,6 +7,7 @@ import { ArticleSummary, ArticleSummaryRef } from "./ArticleSummary";
 import { ArticleFeedbackSection } from "./ArticleFeedbackSection";
 import { RelatedArticles } from "./RelatedArticles";
 import { LoadingSpinner } from "@/app/components/ui/LoadingSpinner";
+import { ArticleExtractionWarning } from "@/app/components/articles/ArticleExtractionWarning";
 import { processArticleContent, estimateReadingTime } from "@/lib/content-processor";
 import { formatLocalizedDateTime, toISOString as formatISOString } from "@/lib/date-utils";
 import { useArticle } from "@/hooks/queries/use-articles";
@@ -387,6 +388,12 @@ export function ArticlePanel({ articleId, onClose, onReadStatusChange, variant =
                 {article.excerpt}
               </p>
             )}
+
+            <ArticleExtractionWarning
+              articleId={article.id}
+              extractionStatus={article.extractionStatus}
+              extractionError={article.extractionError}
+            />
 
             {/* Toolbar */}
             <ArticleToolbar

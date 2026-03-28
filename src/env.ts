@@ -67,6 +67,11 @@ export const env = createEnv({
       .default("false")
       .transform((val) => val === "true"),
     EXTRACTION_TIMEOUT: z.coerce.number().default(30000),
+    EXTRACTION_DELAY_MS: z.coerce.number().default(3000), // Delay between extractions (default: 3 seconds)
+    EXTRACTION_RESPECT_ROBOTS_TXT: z
+      .enum(["true", "false"])
+      .default("true")
+      .transform((val) => val === "true"),
     
     // Redis/Cache configuration
     REDIS_URL: z.string().default("redis://localhost:6379"),
@@ -159,6 +164,8 @@ export const env = createEnv({
     ENCRYPTION_SECRET: process.env.ENCRYPTION_SECRET,
     PLAYWRIGHT_ENABLED: process.env.PLAYWRIGHT_ENABLED,
     EXTRACTION_TIMEOUT: process.env.EXTRACTION_TIMEOUT,
+    EXTRACTION_DELAY_MS: process.env.EXTRACTION_DELAY_MS,
+    EXTRACTION_RESPECT_ROBOTS_TXT: process.env.EXTRACTION_RESPECT_ROBOTS_TXT,
     
     // Redis/Cache configuration
     REDIS_URL: process.env.REDIS_URL,

@@ -134,6 +134,15 @@ export abstract class BaseExtractor implements ContentExtractor {
       });
 
       clearTimeout(timeoutId);
+
+      // If response is 429 (Too Many Requests), throw error with response attached
+      // This allows retry logic to access the response and handle it specially
+      if (response.status === 429) {
+        const error = new Error(`Rate limited (429) when fetching ${url}`) as Error & { response: Response };
+        error.response = response;
+        throw error;
+      }
+
       return response;
     } catch (error) {
       clearTimeout(timeoutId);
@@ -218,7 +227,7 @@ export abstract class BaseExtractor implements ContentExtractor {
   }
 
   /**
-   * Retry logic for extraction
+   * Retry logic for extraction with enhanced 429 handling
    */
   protected async retry<T>(
     fn: () => Promise<T>,
@@ -226,23 +235,84 @@ export abstract class BaseExtractor implements ContentExtractor {
     delay: number = 1000
   ): Promise<T> {
     let lastError: Error | undefined;
+    let lastResponse: Response | undefined;
 
     for (let i = 0; i < maxRetries; i++) {
       try {
         return await fn();
-      } catch (error) {
+      } catch (error: unknown) {
         lastError = error instanceof Error ? error : new Error(String(error));
+
+        // Check if error contains response information (for 429 handling)
+        if (
+          error !== null &&
+          typeof error === "object" &&
+          "response" in error &&
+          (error as { response: unknown }).response instanceof Response
+        ) {
+          lastResponse = (error as { response: Response }).response;
+        }
+
         logger.warn(
           `[${this.name}] Retry ${i + 1}/${maxRetries} failed: ${lastError.message}`
         );
 
         if (i < maxRetries - 1) {
-          await new Promise((resolve) => setTimeout(resolve, delay * (i + 1)));
+          let waitTime = delay * (i + 1); // Default exponential backoff
+
+          // Enhanced handling for 429 (Too Many Requests)
+          if (lastResponse?.status === 429) {
+            // Parse Retry-After header if present
+            const retryAfter = lastResponse.headers.get("Retry-After");
+
+            if (retryAfter) {
+              // Retry-After can be in seconds or a date
+              const retryAfterSeconds = parseInt(retryAfter);
+              if (!isNaN(retryAfterSeconds)) {
+                waitTime = retryAfterSeconds * 1000;
+                logger.info(
+                  `[${this.name}] 429 response with Retry-After: ${retryAfterSeconds}s. Waiting ${waitTime}ms`
+                );
+              } else {
+                // Try parsing as HTTP date
+                const retryAfterDate = new Date(retryAfter);
+                if (!isNaN(retryAfterDate.getTime())) {
+                  waitTime = Math.max(0, retryAfterDate.getTime() - Date.now());
+                  logger.info(
+                    `[${this.name}] 429 response with Retry-After date. Waiting ${waitTime}ms`
+                  );
+                }
+              }
+            } else {
+              // No Retry-After header, use aggressive backoff
+              // 30s, 60s, 120s for successive 429 responses
+              waitTime = Math.min(30 * 1000 * Math.pow(2, i), 120 * 1000);
+              logger.info(
+                `[${this.name}] 429 response without Retry-After. Using backoff: ${waitTime}ms`
+              );
+            }
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, waitTime));
         }
       }
     }
 
     throw lastError || new Error("Retry failed");
+  }
+
+  /**
+   * Parse HTTP status code from error
+   * Helper method for extracting status codes from fetch errors
+   */
+  protected getHttpStatusFromError(error: unknown): number | undefined {
+    if (error && typeof error === 'object' && 'response' in error) {
+      const response = (error as any).response;
+      if (response instanceof Response) {
+        return response.status;
+      }
+    }
+    return undefined;
   }
 
   /**

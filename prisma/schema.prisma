@@ -60,6 +60,13 @@ model article_feedback {
   @@index([userId])
 }
 
+/// Outcome of server-side full-text extraction (Readability/Playwright), vs RSS-only body
+enum ArticleExtractionStatus {
+  NONE
+  SUCCESS
+  FAILED
+}
+
 model articles {
   id                   String                 @id
   feedId               String
@@ -78,6 +85,8 @@ model articles {
   keyPoints            Json?
   summary              String?
   topics               String[]
+  extractionStatus     ArticleExtractionStatus @default(NONE)
+  extractionError      String?
   article_feedback     article_feedback[]
   feeds                feeds                  @relation(fields: [feedId], references: [id], onDelete: Cascade)
   read_articles        read_articles[]
@@ -163,6 +172,9 @@ model feeds {
   notifyOnError        Boolean?          @default(false)
   httpStatus           Int?
   redirectUrl          String?
+  extractionDelayMs    Int?              // Override default extraction delay for this feed (milliseconds)
+  respectRobotsTxt     Boolean?          @default(true) // Whether to respect robots.txt crawl-delay
+  lastExtractionAt     DateTime?         @db.Timestamp(6) // Last content extraction time (for debugging)
   articles             articles[]
   feed_categories      feed_categories[]
   feed_error_log       feed_error_log[]
@@ -188,6 +200,22 @@ model feed_error_log {
   @@index([feedId])
   @@index([timestamp(sort: Desc)])
   @@index([resolved])
+}
+
+model domain_extraction_log {
+  id              String   @id @default(cuid())
+  domain          String
+  lastExtractedAt DateTime @default(now()) @db.Timestamp(6)
+  failureCount    Int      @default(0)
+  lastError       String?
+  crawlDelay      Int?     // From robots.txt (milliseconds)
+  rateLimitCount  Int      @default(0) // Number of 429 responses
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([domain])
+  @@index([domain])
+  @@index([lastExtractedAt])
 }
 
 model read_articles {

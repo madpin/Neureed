@@ -2,6 +2,7 @@ import { parseFeed as parseRawFeed } from "@rowanmanning/feed-parser";
 import { createHash } from "crypto";
 import { decode as decodeHtmlEntities } from "he";
 import * as iconv from "iconv-lite";
+import type { ArticleExtractionStatus } from "@/generated/prisma/enums";
 import { filterPlaceholderImage, extractFirstValidImageFromHtml } from "./image-utils";
 
 /**
@@ -235,6 +236,9 @@ export interface ParsedArticle {
   publishedAt?: Date;
   imageUrl?: string;
   categories?: string[];
+  /** Set during feed refresh when full-page extraction is enabled */
+  extractionStatus?: ArticleExtractionStatus;
+  extractionError?: string | null;
 }
 
 /**

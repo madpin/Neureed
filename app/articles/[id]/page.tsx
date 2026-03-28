@@ -164,6 +164,8 @@ export default function ArticlePage() {
         footerContent={footerContent}
         readingTime={readingTime}
         initialSummary={parsedSummary}
+        extractionStatus={article.extractionStatus}
+        extractionError={article.extractionError}
       />
     </div>
   );

@@ -5,6 +5,7 @@ import { ArticleToolbar, ViewMode } from "./ArticleToolbar";
 import { ArticleSummary, ArticleSummaryRef } from "./ArticleSummary";
 import { useUserPreferences, type UserPreferences } from "@/hooks/queries/use-user-preferences";
 import { useLinkifyContent } from "@/hooks/use-linkify-content";
+import { ArticleExtractionWarning } from "@/app/components/articles/ArticleExtractionWarning";
 
 interface ReadingPreferences {
   readingFontFamily: string;
@@ -50,6 +51,8 @@ interface ArticlePageClientProps {
     keyPoints: string[];
     topics: string[];
   } | null;
+  extractionStatus?: string;
+  extractionError?: string | null;
 }
 
 export function ArticlePageClient({
@@ -60,6 +63,8 @@ export function ArticlePageClient({
   footerContent,
   readingTime,
   initialSummary = null,
+  extractionStatus,
+  extractionError,
 }: ArticlePageClientProps) {
   const summaryRef = useRef<ArticleSummaryRef>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -187,6 +192,12 @@ export function ArticlePageClient({
         <article className="mx-auto max-w-4xl px-4 py-8">
           {/* Header Content (Image, Metadata, Title, Excerpt) */}
           {headerContent}
+
+          <ArticleExtractionWarning
+            articleId={articleId}
+            extractionStatus={extractionStatus}
+            extractionError={extractionError}
+          />
 
           {/* Sticky Toolbar - sticks to top when scrolled past */}
           <ArticleToolbar

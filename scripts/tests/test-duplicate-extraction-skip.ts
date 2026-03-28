@@ -11,27 +11,11 @@ import { prisma } from "@/lib/db";
 import { refreshFeed } from "@/lib/services/feed-refresh-service";
 import { createFeed } from "@/lib/services/feed-service";
 
-// Mock the extractContent function to track calls
+/**
+ * Call tracking would require a test runner (Vitest/Jest) to mock `extractContent`.
+ * Standalone `tsx` runs use the real implementation; `extractionCalls` stays empty.
+ */
 let extractionCalls: string[] = [];
-const originalExtractContent = require("@/lib/services/content-extraction-service").extractContent;
-
-// Replace with mock
-jest.mock("@/lib/services/content-extraction-service", () => ({
-  ...jest.requireActual("@/lib/services/content-extraction-service"),
-  extractContent: async (url: string, feedId?: string) => {
-    console.log(`[MOCK] extractContent called for: ${url}`);
-    extractionCalls.push(url);
-    
-    // Return mock success
-    return {
-      success: true,
-      method: "readability",
-      title: "Extracted Title",
-      content: "Extracted content for testing",
-      excerpt: "Extracted excerpt",
-    };
-  },
-}));
 
 async function testDuplicateExtractionSkip() {
   console.log("=== Testing Duplicate Article Extraction Skip ===\n");

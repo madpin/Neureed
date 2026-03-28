@@ -1061,7 +1061,14 @@ Users can configure their own:
 - Timeouts prevent hanging on slow sites
 - **Duplicate Detection**: Content extraction is only performed for NEW articles (checked via GUID/URL before extraction)
 - This optimization prevents wasting CPU/network resources on articles already in the database
-- Significantly reduces risk of rate limiting and IP blocking from target sites
+- **Rate Limiting System**: Multi-layered protection against website blocking
+  - Domain-aware throttling with configurable delays (default: 3 seconds between extractions)
+  - Respects robots.txt crawl-delay directives
+  - Enhanced 429 (Too Many Requests) handling with Retry-After header parsing
+  - Adaptive delays based on rate limit responses (10s → 30s → 60s → 120s)
+  - Per-feed extraction delay overrides for fine-grained control
+  - Comprehensive metrics tracking and domain health monitoring
+  - See [docs/CONTENT_EXTRACTION_RATE_LIMITING.md](docs/CONTENT_EXTRACTION_RATE_LIMITING.md) for details
 
 #### Cost Management
 - Embedding costs tracked via embedding-cost-tracker.ts
