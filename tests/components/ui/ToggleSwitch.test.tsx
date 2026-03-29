@@ -2,6 +2,10 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { ToggleSwitch } from '@/app/components/ui/ToggleSwitch';
 
+function getSwitch(container: HTMLElement) {
+  return container.querySelector('button[role="switch"]') as HTMLButtonElement;
+}
+
 describe('ToggleSwitch', () => {
   it('renders with label', () => {
     render(
@@ -35,8 +39,8 @@ describe('ToggleSwitch', () => {
       />
     );
 
-    const input = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
-    expect(input?.checked).toBe(true);
+    const btn = getSwitch(container);
+    expect(btn?.getAttribute('aria-checked')).toBe('true');
   });
 
   it('renders unchecked state', () => {
@@ -48,8 +52,8 @@ describe('ToggleSwitch', () => {
       />
     );
 
-    const input = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
-    expect(input?.checked).toBe(false);
+    const btn = getSwitch(container);
+    expect(btn?.getAttribute('aria-checked')).toBe('false');
   });
 
   it('calls onChange when clicked', () => {
@@ -62,8 +66,8 @@ describe('ToggleSwitch', () => {
       />
     );
 
-    const input = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
-    fireEvent.click(input);
+    const btn = getSwitch(container);
+    fireEvent.click(btn);
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenCalledWith(true);
@@ -80,8 +84,8 @@ describe('ToggleSwitch', () => {
       />
     );
 
-    const input = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
-    fireEvent.click(input);
+    const btn = getSwitch(container);
+    fireEvent.click(btn);
 
     expect(onChange).not.toHaveBeenCalled();
   });
@@ -96,8 +100,8 @@ describe('ToggleSwitch', () => {
       />
     );
 
-    const input = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
-    expect(input?.disabled).toBe(true);
+    const btn = getSwitch(container);
+    expect(btn?.disabled).toBe(true);
   });
 
   it('applies custom className', () => {
@@ -123,9 +127,9 @@ describe('ToggleSwitch', () => {
       />
     );
 
-    const input = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
-    expect(input?.getAttribute('role')).toBe('switch');
-    expect(input?.getAttribute('aria-checked')).toBe('true');
+    const btn = getSwitch(container);
+    expect(btn?.getAttribute('role')).toBe('switch');
+    expect(btn?.getAttribute('aria-checked')).toBe('true');
   });
 
   it('associates label with input', () => {
@@ -138,10 +142,10 @@ describe('ToggleSwitch', () => {
       />
     );
 
-    const input = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    const btn = getSwitch(container);
     const label = container.querySelector('label');
 
-    expect(input?.id).toBe('test-toggle');
+    expect(btn?.id).toBe('test-toggle');
     expect(label?.getAttribute('for')).toBe('test-toggle');
   });
 });

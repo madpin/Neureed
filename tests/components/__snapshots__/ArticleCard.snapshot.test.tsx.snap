@@ -17,6 +17,11 @@ exports[`ArticleCard - Baseline Snapshot > matches snapshot - normal density 1`]
         <div
           class="mb-2 flex items-center gap-4 text-secondary flex-wrap"
         >
+          <span
+            class="font-medium"
+          >
+            Test Feed
+          </span>
           <span>
             •
           </span>

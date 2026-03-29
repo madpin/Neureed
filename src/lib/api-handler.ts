@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { apiResponse, apiError } from "@/lib/api-response";
+import { HttpError } from "@/lib/http-error";
 import { requireAdmin, requireUserOrAbove } from "@/lib/middleware/auth-middleware";
 import type { Session } from "next-auth";
 
@@ -223,6 +224,10 @@ export function createHandler<TBody = unknown, TQuery = unknown, TResult = unkno
     } catch (error) {
       // Centralized error logging
       console.error("API Error:", error);
+
+      if (error instanceof HttpError) {
+        return apiError(error.message, error.statusCode, error.details);
+      }
 
       // Handle specific error types
       if (error instanceof Error) {

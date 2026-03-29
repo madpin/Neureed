@@ -16,15 +16,23 @@ export const articleSortOrderSchema = z.enum([
 // Article sort direction
 export const articleSortDirectionSchema = z.enum(["asc", "desc"]);
 
-export const articleQuerySchema = z.object({
-  page: z.coerce.number().int().min(1).optional().default(1).catch(1),
-  limit: z.coerce.number().int().min(1).max(100).optional().default(20).catch(20),
-  feedId: z.string().optional().nullable(),
-  categoryId: z.string().optional().nullable(),
-  since: z.coerce.date().optional().nullable(),
-  sortBy: articleSortOrderSchema.optional().default("publishedAt").catch("publishedAt"),
-  sortDirection: articleSortDirectionSchema.optional().default("desc").catch("desc"),
-});
+export const articleQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).optional().default(1).catch(1),
+    limit: z.coerce.number().int().min(1).max(100).optional().default(20).catch(20),
+    feedId: z.string().optional().nullable(),
+    categoryId: z.string().optional().nullable(),
+    since: z.coerce.date().optional().nullable(),
+    sortBy: articleSortOrderSchema.optional().default("publishedAt").catch("publishedAt"),
+    /** API / OpenAPI style */
+    sortDirection: articleSortDirectionSchema.optional().nullable(),
+    /** Client hook uses `sortOrder`; accept both */
+    sortOrder: articleSortDirectionSchema.optional().nullable(),
+  })
+  .transform(({ sortOrder, sortDirection, ...rest }) => ({
+    ...rest,
+    sortDirection: sortDirection ?? sortOrder ?? "desc",
+  }));
 
 export const searchArticlesSchema = z.object({
   q: z.string().min(1, "Search query is required"),

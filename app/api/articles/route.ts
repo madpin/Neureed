@@ -76,7 +76,7 @@ export const GET = createHandler(
       // Query articles from subscribed feeds
       const skip = (page - 1) * limit;
       
-      const       where = feedId
+      const where = feedId
         ? { feedId, feeds: { id: { in: subscribedFeedIds } } }
         : { feedId: { in: subscribedFeedIds } };
 
@@ -85,10 +85,9 @@ export const GET = createHandler(
 
       if (finalSortBy === "relevance") {
         // For relevance sorting, we'll fetch scores and sort in memory
-        // Use publishedAt as primary sort (fallback to createdAt for articles without publishedAt)
         orderBy = [
-          { publishedAt: { sort: "desc", nulls: "last" } },
-          { createdAt: "desc" }
+          { publishedAt: "desc" },
+          { createdAt: "desc" },
         ];
       } else if (finalSortBy === "title") {
         orderBy = { title: finalSortDirection };
@@ -96,16 +95,15 @@ export const GET = createHandler(
         orderBy = { updatedAt: finalSortDirection };
       } else if (finalSortBy === "feed") {
         orderBy = [
-          { feeds: { title: finalSortDirection } },
-          { publishedAt: { sort: "desc", nulls: "last" } },
-          { createdAt: "desc" }
+          { feeds: { name: finalSortDirection } },
+          { publishedAt: finalSortDirection },
+          { createdAt: finalSortDirection },
         ];
       } else {
-        // Default: Sort by publishedAt (the actual publication date from the feed)
-        // NULL values go last, then fallback to createdAt for secondary sorting
+        // Default: publishedAt then createdAt (avoid nested { sort, nulls } — can trigger P2022 on some PG/Prisma combos)
         orderBy = [
-          { publishedAt: { sort: finalSortDirection, nulls: finalSortDirection === "desc" ? "last" : "first" } },
-          { createdAt: finalSortDirection }
+          { publishedAt: finalSortDirection },
+          { createdAt: finalSortDirection },
         ];
       }
 

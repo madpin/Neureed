@@ -128,7 +128,7 @@ export async function getArticlesAction(input: ArticleQueryInput) {
       let orderBy: any;
       if (finalSortBy === 'relevance') {
         orderBy = [
-          { publishedAt: { sort: 'desc', nulls: 'last' } },
+          { publishedAt: 'desc' },
           { createdAt: 'desc' },
         ];
       } else if (finalSortBy === 'title') {
@@ -137,19 +137,25 @@ export async function getArticlesAction(input: ArticleQueryInput) {
         orderBy = { updatedAt: finalSortDirection };
       } else if (finalSortBy === 'feed') {
         orderBy = [
-          { feeds: { title: finalSortDirection } },
-          { publishedAt: { sort: 'desc', nulls: 'last' } },
-          { createdAt: 'desc' },
+          { feeds: { name: finalSortDirection } },
+          { publishedAt: finalSortDirection },
+          { createdAt: finalSortDirection },
         ];
       } else {
         orderBy = [
-          { publishedAt: { sort: finalSortDirection, nulls: finalSortDirection === 'desc' ? 'last' : 'first' } },
+          { publishedAt: finalSortDirection },
           { createdAt: finalSortDirection },
         ];
       }
 
       [articles, total] = await Promise.all([
-        prisma.articles.findMany({ where, include: { feeds: true }, orderBy, skip, take: limit }),
+        prisma.articles.findMany({
+          where,
+          include: { feeds: true },
+          orderBy,
+          skip,
+          take: limit,
+        }),
         prisma.articles.count({ where }),
       ]);
 

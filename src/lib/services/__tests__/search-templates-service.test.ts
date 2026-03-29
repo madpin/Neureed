@@ -4,7 +4,7 @@
  * Tests template management and search functionality
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect } from 'vitest';
 import {
   getAllTemplates,
   getTemplatesByCategory,

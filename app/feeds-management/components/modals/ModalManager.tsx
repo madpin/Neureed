@@ -2,8 +2,8 @@
 
 import { useFeedNavigation } from "@/hooks/use-feed-navigation";
 import { ModalLevelProvider } from "@/app/components/ui/Modal/useModalLevel";
-import { OpmlImportModal } from "./OpmlImportModal";
-import { OpmlExportModal } from "./OpmlExportModal";
+import { OpmlImportModal } from "@/app/components/feeds/OpmlImportModal";
+import { OpmlExportModal } from "@/app/components/feeds/OpmlExportModal";
 import { BulkEditModal } from "./BulkEditModal";
 import { CreateCategoryModal } from "./CreateCategoryModal";
 import { AddFeedModal } from "./AddFeedModal";
@@ -22,8 +22,16 @@ export function ModalManager() {
 
   return (
     <ModalLevelProvider>
-      {modal === "opml-import" && <OpmlImportModal onClose={closeModal} />}
-      {modal === "opml-export" && <OpmlExportModal onClose={closeModal} />}
+      {modal === "opml-import" && (
+        <OpmlImportModal
+          isOpen
+          onClose={closeModal}
+          onSuccess={closeModal}
+        />
+      )}
+      {modal === "opml-export" && (
+        <OpmlExportModal isOpen onClose={closeModal} />
+      )}
       {modal === "bulk-edit" && <BulkEditModal selectedFeedIds={selectedIds} onClose={closeModal} />}
       {modal === "create-category" && <CreateCategoryModal onClose={closeModal} />}
       {modal === "add-feed" && <AddFeedModal onClose={closeModal} />}

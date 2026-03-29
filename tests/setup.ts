@@ -2,6 +2,9 @@ import '@testing-library/jest-dom/vitest';
 import { afterEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
 
+// Allow importing modules that use src/env.ts (t3) without a full .env in test runs
+process.env.SKIP_ENV_VALIDATION = '1';
+
 // Cleanup after each test
 afterEach(() => {
   cleanup();

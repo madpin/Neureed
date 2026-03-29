@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { ArticleCard } from '@/app/components/articles/ArticleCard';
+import type { Article } from '@/hooks/queries/use-articles';
 
 // Mock the hooks
 vi.mock('@/hooks/queries/use-articles', () => ({
@@ -20,28 +21,24 @@ vi.mock('next/navigation', async () => {
 });
 
 describe('ArticleCard - Baseline Snapshot', () => {
-  const mockArticle = {
+  const mockArticle: Article = {
     id: 'test-123',
     title: 'Test Article',
     url: 'https://example.com/article',
     content: 'Test content',
     excerpt: 'Test excerpt',
     author: 'Test Author',
-    publishedAt: new Date('2024-01-01'),
+    publishedAt: '2024-01-01T00:00:00.000Z',
     feedId: 'feed-123',
-    feed: {
+    feeds: {
       id: 'feed-123',
-      title: 'Test Feed',
+      name: 'Test Feed',
       url: 'https://example.com/feed',
-      description: null,
-      faviconUrl: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
     },
     isRead: false,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    imageUrl: null,
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+    imageUrl: undefined,
     embedding: null,
   };
 

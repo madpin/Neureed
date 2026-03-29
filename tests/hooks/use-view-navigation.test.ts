@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useViewNavigation } from '../../src/hooks/use-view-navigation';
 
+type PreferencesView = 'profile' | 'appearance' | 'search';
+
 describe('useViewNavigation', () => {
   beforeEach(() => {
     // Clear history state before each test
@@ -15,7 +17,8 @@ describe('useViewNavigation', () => {
 
   it('should initialize with default view', () => {
     const { result } = renderHook(() =>
-      useViewNavigation({
+      useViewNavigation<PreferencesView>({
+        isOpen: true,
         modalName: 'preferences',
         defaultView: 'profile',
       })
@@ -26,7 +29,8 @@ describe('useViewNavigation', () => {
 
   it('should navigate to a different view', () => {
     const { result } = renderHook(() =>
-      useViewNavigation({
+      useViewNavigation<PreferencesView>({
+        isOpen: true,
         modalName: 'preferences',
         defaultView: 'profile',
       })
@@ -45,7 +49,8 @@ describe('useViewNavigation', () => {
     const pushStateSpy = vi.spyOn(window.history, 'pushState');
 
     const { result } = renderHook(() =>
-      useViewNavigation({
+      useViewNavigation<PreferencesView>({
+        isOpen: true,
         modalName: 'preferences',
         defaultView: 'profile',
       })
@@ -67,7 +72,8 @@ describe('useViewNavigation', () => {
     const onNavigate = vi.fn();
 
     const { result } = renderHook(() =>
-      useViewNavigation({
+      useViewNavigation<PreferencesView>({
+        isOpen: true,
         modalName: 'preferences',
         defaultView: 'profile',
         onNavigate,
@@ -83,7 +89,8 @@ describe('useViewNavigation', () => {
 
   it('should handle browser back button', () => {
     const { result } = renderHook(() =>
-      useViewNavigation({
+      useViewNavigation<PreferencesView>({
+        isOpen: true,
         modalName: 'preferences',
         defaultView: 'profile',
       })
@@ -115,7 +122,8 @@ describe('useViewNavigation', () => {
 
   it('should handle browser forward button', () => {
     const { result } = renderHook(() =>
-      useViewNavigation({
+      useViewNavigation<PreferencesView>({
+        isOpen: true,
         modalName: 'preferences',
         defaultView: 'profile',
       })
@@ -152,8 +160,9 @@ describe('useViewNavigation', () => {
   it('should call onClose when navigating away from modal via back button', () => {
     const onClose = vi.fn();
 
-    const { result } = renderHook(() =>
-      useViewNavigation({
+    renderHook(() =>
+      useViewNavigation<PreferencesView>({
+        isOpen: true,
         modalName: 'preferences',
         defaultView: 'profile',
         onClose,
@@ -175,8 +184,9 @@ describe('useViewNavigation', () => {
   it('should call onClose with skipHistoryPush when modal is different', () => {
     const onClose = vi.fn();
 
-    const { result } = renderHook(() =>
-      useViewNavigation({
+    renderHook(() =>
+      useViewNavigation<PreferencesView>({
+        isOpen: true,
         modalName: 'preferences',
         defaultView: 'profile',
         onClose,
@@ -197,7 +207,8 @@ describe('useViewNavigation', () => {
 
   it('should fallback to default view when popstate has no view', () => {
     const { result } = renderHook(() =>
-      useViewNavigation({
+      useViewNavigation<PreferencesView>({
+        isOpen: true,
         modalName: 'preferences',
         defaultView: 'profile',
       })
@@ -225,7 +236,8 @@ describe('useViewNavigation', () => {
     const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
 
     const { unmount } = renderHook(() =>
-      useViewNavigation({
+      useViewNavigation<PreferencesView>({
+        isOpen: true,
         modalName: 'preferences',
         defaultView: 'profile',
       })
@@ -239,6 +251,7 @@ describe('useViewNavigation', () => {
   it('should support multiple view types', () => {
     const { result } = renderHook(() =>
       useViewNavigation<'view1' | 'view2' | 'view3'>({
+        isOpen: true,
         modalName: 'test-modal',
         defaultView: 'view1',
       })
@@ -263,7 +276,8 @@ describe('useViewNavigation', () => {
     const onNavigate = vi.fn();
 
     const { result } = renderHook(() =>
-      useViewNavigation({
+      useViewNavigation<PreferencesView>({
+        isOpen: true,
         modalName: 'preferences',
         defaultView: 'profile',
         onNavigate,

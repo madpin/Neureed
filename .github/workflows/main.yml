@@ -59,9 +59,14 @@ jobs:
         env:
           DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
 
+      # Storybook vitest project uses Playwright browsers; CI skips browser download, so only run unit tests here.
+      - name: Unit tests
+        run: npm run test:run -- --project unit
+        env:
+          DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
+
       - name: Lint
         run: npm run lint
-        continue-on-error: true
 
       - name: Type check
         run: npm exec tsc -- --noEmit

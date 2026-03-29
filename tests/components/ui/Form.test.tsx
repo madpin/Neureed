@@ -1,7 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import { Form } from '@/app/components/ui/Form';
-import { FormField } from '@/app/components/ui/Form';
+import { Form, FormField, Input } from '@/app/components/ui/Form';
 import { z } from 'zod';
 
 const testSchema = z.object({
@@ -133,7 +132,9 @@ describe('Form', () => {
         {({ register, formState: { errors } }) => (
           <>
             <input {...register('email')} />
-            {errors.email && <div>{errors.email.message}</div>}
+            {errors.email?.message != null && (
+              <div>{String(errors.email.message)}</div>
+            )}
             <button type="submit">Submit</button>
           </>
         )}
@@ -171,7 +172,11 @@ describe('FormField', () => {
   it('renders text input with label', () => {
     render(
       <Form schema={simpleSchema} onSubmit={() => {}}>
-        <FormField name="name" label="Name" />
+        {({ register }) => (
+          <FormField label="Name" htmlFor="name">
+            <Input id="name" {...register('name')} />
+          </FormField>
+        )}
       </Form>
     );
 
@@ -181,8 +186,18 @@ describe('FormField', () => {
   it('shows error message when validation fails', async () => {
     render(
       <Form schema={simpleSchema} onSubmit={() => {}}>
-        <FormField name="name" label="Name" />
-        <button type="submit">Submit</button>
+        {({ register, formState: { errors } }) => (
+          <>
+            <FormField
+              label="Name"
+              htmlFor="name"
+              error={errors.name?.message as string | undefined}
+            >
+              <Input id="name" {...register('name')} />
+            </FormField>
+            <button type="submit">Submit</button>
+          </>
+        )}
       </Form>
     );
 
@@ -196,7 +211,15 @@ describe('FormField', () => {
   it('displays description text', () => {
     render(
       <Form schema={simpleSchema} onSubmit={() => {}}>
-        <FormField name="name" label="Name" description="Enter your full name" />
+        {({ register }) => (
+          <FormField
+            label="Name"
+            htmlFor="name"
+            description="Enter your full name"
+          >
+            <Input id="name" {...register('name')} />
+          </FormField>
+        )}
       </Form>
     );
 
@@ -206,7 +229,11 @@ describe('FormField', () => {
   it('shows required indicator', () => {
     render(
       <Form schema={simpleSchema} onSubmit={() => {}}>
-        <FormField name="name" label="Name" required />
+        {({ register }) => (
+          <FormField label="Name" htmlFor="name" required>
+            <Input id="name" {...register('name')} />
+          </FormField>
+        )}
       </Form>
     );
 
